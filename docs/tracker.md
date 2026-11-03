@@ -40,8 +40,8 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-002 | Move capture (extension + ingest server) into this repo | build | M | required | ✅ 2026-11-02 | D-015; D-011 |
 | T-001 | Fix submit capture in the extension | build | M | required | ✅ 2026-11-03 `/test run` | eval-plan build order 1; D-014 |
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
-| T-004 | Inference-side data models + read-only capture loader | build | M | required | 🔄 built 2026-11-03; ready for `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
-| T-005 | Prompt loader + manifest | build | S | required | 🔄 built 2026-11-03; ready for `/test run` | arch §7; rule 6 |
+| T-004 | Inference-side data models + read-only capture loader | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
+| T-005 | Prompt loader + manifest | build | S | required | ✅ 2026-11-03 `/test run` | arch §7; rule 6 |
 | T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⏸ after T-005; human: confirm model id + enter prices | arch §6; rule 5; D-008, D-018 |
 | T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ⬜ after T-004, T-006 | M0 checkpoint |
 
@@ -303,6 +303,10 @@ excluded on the frozen copy.
   naming the session (D-025). Unit tests: 13 (`tests/unit/test_loader_internals.py`). Results:
   T-004 acceptance 26/26 + frozen copy 1/1 (`live_capture`: 8 kept, 14 excluded, file
   unchanged), contract read-only 5/5, fences 7/7. No judging files edited.
+- 2026-11-03 `/test run` → **✅ PASS.** Build diff (77863fc..b4b6869) touches no judging files.
+  T-004 acceptance 26/26 + frozen copy 1/1 (`live_capture`), contract 26/26 (whole dir),
+  builder unit 13. Done-when 1–5 met. Not run: Python lint/type check (none configured),
+  grader tests (none exist), evals (no LLM field).
 
 ### T-005 · Prompt loader + manifest
 **Milestone:** M0 · **Size:** S · **Owner:** build
@@ -330,6 +334,10 @@ templating errors.
   (`tests/unit/test_prompts_internals.py`). Results: T-005 acceptance 17/17, contract manifest
   3/3, `tutor prompts check` exit 0 on the repo. Whole suite: `uv run pytest` 142 passed,
   6 skipped; `-m live_capture` 6 passed; capture contract 20/20, unit 8/8, `tsc` clean.
+- 2026-11-03 `/test run` → **✅ PASS.** Same diff, no judging files. T-005 acceptance 17/17,
+  contract manifest 3/3, builder unit 9, `tutor prompts check` exit 0. Done-when met. Whole
+  suite 142 passed / 6 skipped, `live_capture` 6/6, capture contract 20/20, capture unit 8/8,
+  `tsc` clean. Not run: Python lint/type check (none configured), evals (no LLM field).
 
 ### T-006 · LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log
 **Milestone:** M0 · **Size:** M · **Owner:** build
@@ -344,10 +352,15 @@ templating errors.
 4. Every attempt writes one `logs/llm_calls.jsonl` line with all §6.5 fields. Bodies go to
    `logs/llm_bodies/<call_id>.json`, and cost comes from `config/pricing.toml`.
 **Not included:** `chat()` and tool calls (M5); Anthropic adapter (M2); Gemini adapter (M7).
-**Blocked on the human:** (a) confirm the OpenAI model id (`gpt-5.5` was taken from the old
+**Blocked on the human (resolved 2026-11-03, see log):** (a) confirm the OpenAI model id (`gpt-5.5` was taken from the old
 repo); (b) enter its prices and `as_of` date in `config/pricing.toml`.
 **Test assets:** required. `/test write T-006` covers the SDK-fence contract test, the
 log-line schema, the retry table, and config errors.
+**Log**
+- 2026-11-03 Unblocked by the human: `gpt-5.5` confirmed as a listed OpenAI model id (pricing
+  page screenshot), prices entered in `config/pricing.toml` — input $5.00 / 1M, output
+  $30.00 / 1M, `as_of = 2026-11-03` (cached input $0.50 / 1M noted, not used). Ready for
+  `/test write T-006`.
 
 ### T-007 · M0 checkpoint: load one session, make one logged call
 **Milestone:** M0 · **Size:** S · **Owner:** build
