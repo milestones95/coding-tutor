@@ -56,7 +56,8 @@ export function normalizeJudge(raw: Raw, url = ""): NormalizedJudge {
     memory: str(raw.status_memory),
     error_detail: error ? clip(error) : null,
     language: str(raw.lang ?? raw.pretty_lang),
-    submission_id: str(raw.submission_id) ?? url.match(/\/detail\/([^/]+)\/check/)?.[1] ?? null,
+    // Run: /detail/runcode_<id>/check/ · Submit: /detail/<id>/v2/check/
+    submission_id: str(raw.submission_id) ?? url.match(/\/detail\/([^/]+)\/(?:v\d+\/)?check/)?.[1] ?? null,
   };
 }
 

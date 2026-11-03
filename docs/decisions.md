@@ -332,3 +332,19 @@ it to another status would hide it in Part 2's per-status counts.
 **Cost.** One more status value. `analysis.db` hasn't been created yet (T-008 is ⬜), so no
 migration is needed: the change goes straight into `0001_init.sql`.
 **Supersedes.** D-020 (and D-019's OLE row)
+
+## D-023 · Capture matches check/ URLs by an optional version segment and dedupes by submission id per problem · 2026-11-02 · builder (human approved)
+**Decision.**
+1. The page hook matches `/submissions/detail/<id>/(v<digits>/)?check/`, not the literal
+   `/check/`. `judge.ts`'s URL fallback uses the same pattern.
+2. A judge result is posted even when reading the editor throws; `code` is then null.
+3. A result whose LeetCode `submission_id` is already stored for the same problem is ignored,
+   whichever session is open now. The check runs before a session is chosen. The DB's unique
+   index stays per `(session_id, submission_id)`: the capture schema is frozen, so the rule
+   lives in code.
+**Why.** (1) LeetCode moved Submit polling to `/v2/check/` and every submit was lost silently.
+Matching `v\d+` means a future `/v3/` doesn't repeat that. (2) The verdict is the fact status
+depends on (D-014); the code snapshot is secondary. (3) An Accepted ends the session, so a
+repeat of the same result a second later used to open a new session holding a copy. LeetCode
+ids identify a submission exactly, which a time window can't.
+**Supersedes.** —

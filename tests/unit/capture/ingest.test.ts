@@ -64,3 +64,47 @@ test("a late Accepted marks an ended session accepted without deleting legacy at
   assert.equal(session(db).end_reason, "accepted");
   assert.equal((db.prepare(`SELECT COUNT(*) AS n FROM attempts`).get() as { n: number }).n, 1);
 });
+
+// ---- T-001: a result is recognised by its LeetCode submission id, per problem ----
+
+const count = (db: DB, sql: string) => (db.prepare(sql).get() as { n: number }).n;
+
+test("a repeated Accepted result after the session ended is stored once, in one session", () => {
+  const { db, ingest } = fresh();
+  ingest.handle({ type: "snapshot", slug: SLUG, ts: "2026-01-05T10:00:00.000Z", code: "a" });
+  const first = ingest.handle({ type: "judge", slug: SLUG, ts: "2026-01-05T10:01:00.000Z", data: acceptedSubmit });
+  const again = ingest.handle({ type: "judge", slug: SLUG, ts: "2026-01-05T10:01:01.000Z", data: acceptedSubmit });
+  assert.equal(again.session_id, first.session_id);
+  assert.equal(count(db, `SELECT COUNT(*) AS n FROM judge_events`), 1);
+  assert.equal(count(db, `SELECT COUNT(*) AS n FROM sessions`), 1);
+});
+
+test("a repeated Run result after the session was ended does not open a new session", () => {
+  const { db, ingest } = fresh();
+  ingest.handle({ type: "snapshot", slug: SLUG, ts: "2026-01-05T10:00:00.000Z", code: "a" });
+  ingest.handle({ type: "judge", slug: SLUG, ts: "2026-01-05T10:01:00.000Z", data: runResult });
+  ingest.handle({ type: "session_end", slug: SLUG, ts: "2026-01-05T10:02:00.000Z", reason: "ended" });
+  ingest.handle({ type: "judge", slug: SLUG, ts: "2026-01-05T10:05:00.000Z", data: runResult });
+  assert.equal(count(db, `SELECT COUNT(*) AS n FROM sessions`), 1);
+  assert.equal(count(db, `SELECT COUNT(*) AS n FROM judge_events`), 1);
+});
+
+test("a different submission for the same problem is still stored", () => {
+  const { db, ingest } = fresh();
+  const wrong = { ...acceptedSubmit, status_msg: "Wrong Answer", total_correct: 2, submission_id: "1234500" };
+  ingest.handle({ type: "snapshot", slug: SLUG, ts: "2026-01-05T10:00:00.000Z", code: "a" });
+  ingest.handle({ type: "judge", slug: SLUG, ts: "2026-01-05T10:01:00.000Z", data: wrong });
+  ingest.handle({ type: "judge", slug: SLUG, ts: "2026-01-05T10:02:00.000Z", data: acceptedSubmit });
+  const rows = db.prepare(`SELECT submission_id, status FROM judge_events ORDER BY ts`).all();
+  assert.deepEqual(rows, [
+    { submission_id: "1234500", status: "Wrong Answer" },
+    { submission_id: "1234567", status: "Accepted" },
+  ]);
+});
+
+test("the same submission id on a different problem is not treated as a repeat", () => {
+  const { db, ingest } = fresh();
+  ingest.handle({ type: "judge", slug: "problem-a", ts: "2026-01-05T10:01:00.000Z", data: runResult });
+  ingest.handle({ type: "judge", slug: "problem-b", ts: "2026-01-05T10:01:00.000Z", data: runResult });
+  assert.equal(count(db, `SELECT COUNT(*) AS n FROM judge_events`), 2);
+});

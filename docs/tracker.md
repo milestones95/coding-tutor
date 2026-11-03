@@ -38,7 +38,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-002 | Move capture (extension + ingest server) into this repo | build | M | required | ✅ 2026-11-02 | D-015; D-011 |
-| T-001 | Fix submit capture in the extension | build | M | required | ⬜ tests written; next `/build` | eval-plan build order 1; D-014 |
+| T-001 | Fix submit capture in the extension | build | M | required | 🔄 built; waits on human: reload + 3 submits (DW 3, 5) | eval-plan build order 1; D-014 |
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ⬜ after T-003 | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ⬜ after T-003 | arch §7; rule 6 |
@@ -183,6 +183,17 @@ row shape before the fix.
   holding a second copy (the Accepted ended the first session). Live: fails until the human
   submits. Builder must also add the `test:contract` script (architecture §12); until then
   run `cd ux-extension && npx tsx --test ../tests/contract/capture/*.test.ts`.
+- 2026-11-02 `/build` → 🔄. `page-hook.js`: `CHECK_URL` accepts an optional `v<digits>/` segment
+  (Submit polls `/v2/check/`); the code read is wrapped so an editor error posts the result with
+  `code = null` and doesn't drop it. `judge.ts`: the same optional segment in the
+  `submission_id` URL fallback. `ingest.ts` / `db.ts`: before a session is chosen, a result
+  whose `submission_id` is already stored for that problem is ignored (`sessionWithJudgeEvent`
+  replaces the per-session `hasJudgeEvent`), so a repeated Accepted can't open a phantom
+  session (D-023). `package.json`: `test:contract`. Unit tests: 4 added (8 total). Results:
+  capture contract 20/20, capture unit 8/8, `tsc` clean, `uv run pytest` 69 passed, 5 skipped
+  (`live_capture`). No judging files edited. **Waiting on the human:** restart the ingest server,
+  reload the extension and the LeetCode tab, make the 3 deliberate submits (Done-when 3);
+  then propose `capture.submits_reliable_since` (Done-when 5).
 
 ### T-003 · Python project skeleton, config, JSON-lines logging, test harness
 **Milestone:** M0 · **Size:** M · **Owner:** build

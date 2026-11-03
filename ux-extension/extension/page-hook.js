@@ -49,8 +49,10 @@
   setInterval(() => snapshot(), POLL_MS);
 
   // ---- Results: watch LeetCode's judge polling ----
-  // Both Run and Submit poll /submissions/detail/<id>/check/ until state is SUCCESS.
-  const CHECK_URL = /\/submissions\/detail\/[^/]+\/check\/?/;
+  // Run polls /submissions/detail/runcode_<id>/check/ and Submit polls
+  // /submissions/detail/<numeric id>/v2/check/ until state is SUCCESS. The version segment is
+  // optional and matched as v<digits>, so a future /v3/ doesn't silently stop capture (T-001).
+  const CHECK_URL = /\/submissions\/detail\/[^/]+\/(?:v\d+\/)?check\/?/;
   const origFetch = window.fetch;
   window.fetch = async function (...args) {
     const res = await origFetch.apply(this, args);
@@ -62,7 +64,14 @@
           .json()
           .then((data) => {
             if (data?.state !== "SUCCESS") return;
-            const read = readCode();
+            // The verdict is the fact we must not lose; the code is secondary. If the editor
+            // can't be read (e.g. Monaco is mid-update), post the result with code = null.
+            let read = null;
+            try {
+              read = readCode();
+            } catch {
+              read = null;
+            }
             post("judge", { url, data, code: read?.code ?? null, language: read?.language ?? null });
           })
           .catch(() => {});

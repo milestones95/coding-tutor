@@ -12,7 +12,6 @@ import {
   endSession,
   findOpenSession,
   getDb,
-  hasJudgeEvent,
   insertJudgeEvent,
   insertSnapshot,
   lastSnapshot,
@@ -20,6 +19,7 @@ import {
   listJudgeEvents,
   listSnapshots,
   markAccepted,
+  sessionWithJudgeEvent,
   touchSession,
   upsertProblem,
 } from "./db.js";
@@ -66,10 +66,16 @@ export class Ingest {
       }
       case "judge": {
         const j = normalizeJudge(e.data, e.url);
+        // Already stored (a repeated final poll, or a backfill of a result the hook caught): do
+        // nothing. Checked before choosing a session, so a repeat that arrives after an Accepted
+        // ended the session can't open a phantom session (T-001).
+        if (j.submission_id) {
+          const seen = sessionWithJudgeEvent(this.db, e.slug, j.submission_id);
+          if (seen) return { session_id: seen };
+        }
         // A result backfilled from LeetCode after you ended the session belongs to that session.
         const past = this.endedSessionAt(e.slug, ts);
         const s = past ?? this.openSession(e.slug, ts);
-        if (j.submission_id && hasJudgeEvent(this.db, s.id, j.submission_id)) return { session_id: s.id }; // already have it
         const language = e.language ?? j.language;
         if (e.code) this.addSnapshot(s.id, ts, e.code, language);
         insertJudgeEvent(this.db, { session_id: s.id, ts, ...j, language });

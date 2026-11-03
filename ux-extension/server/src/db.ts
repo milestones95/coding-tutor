@@ -286,8 +286,18 @@ export function insertJudgeEvent(db: DB, e: Omit<JudgeEventRow, "id" | "submissi
   ).run({ ...e, submission_id: e.submission_id ?? null });
 }
 
-export function hasJudgeEvent(db: DB, sessionId: string, submissionId: string): boolean {
-  return Boolean(db.prepare(`SELECT 1 FROM judge_events WHERE session_id = ? AND submission_id = ?`).get(sessionId, submissionId));
+/**
+ * The session that already holds this LeetCode result for this problem, if any. LeetCode ids are
+ * unique per submission, so a second arrival is a repeat, whichever session is open now (T-001).
+ */
+export function sessionWithJudgeEvent(db: DB, slug: string, submissionId: string): string | undefined {
+  const row = db
+    .prepare(
+      `SELECT j.session_id FROM judge_events j JOIN sessions s ON s.id = j.session_id
+       WHERE s.slug = ? AND j.submission_id = ? LIMIT 1`,
+    )
+    .get(slug, submissionId) as { session_id: string } | undefined;
+  return row?.session_id;
 }
 
 /** Mark an ended session as Accepted after the fact (an Accepted result arrived after it ended). */

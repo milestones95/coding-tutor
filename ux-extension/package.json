@@ -11,6 +11,7 @@
     "start": "tsx server/src/ingest.ts",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test ../tests/unit/capture/*.test.ts",
+    "test:contract": "tsx --test ../tests/contract/capture/*.test.ts",
     "seed:problems": "tsx server/src/seed-problems.ts"
   },
   "dependencies": {
