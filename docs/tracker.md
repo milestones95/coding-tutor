@@ -40,8 +40,8 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-002 | Move capture (extension + ingest server) into this repo | build | M | required | ✅ 2026-11-02 | D-015; D-011 |
 | T-001 | Fix submit capture in the extension | build | M | required | ✅ 2026-11-03 `/test run` | eval-plan build order 1; D-014 |
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
-| T-004 | Inference-side data models + read-only capture loader | build | M | required | ⬜ after T-003 | arch §4.1, §4.4; D-005, D-011, D-016 |
-| T-005 | Prompt loader + manifest | build | S | required | ⬜ after T-003 | arch §7; rule 6 |
+| T-004 | Inference-side data models + read-only capture loader | build | M | required | 🔄 built 2026-11-03; ready for `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
+| T-005 | Prompt loader + manifest | build | S | required | 🔄 built 2026-11-03; ready for `/test run` | arch §7; rule 6 |
 | T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⏸ after T-005; human: confirm model id + enter prices | arch §6; rule 5; D-008, D-018 |
 | T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ⬜ after T-004, T-006 | M0 checkpoint |
 
@@ -294,6 +294,15 @@ excluded on the frozen copy.
   T-004 tests fail for the right reason (`tutor.models` / `tutor.capture` missing); the fence
   passes. Note for the architecture: "no test reads `data/`" (§12) vs this task's frozen-copy
   check, which is `live_capture` like T-001's.
+- 2026-11-03 `/build` → 🔄. `src/tutor/models.py` (§4.1 models + `Verdict`; frozen, `extra=forbid`,
+  timestamps must be aware and are normalised to UTC; `events` discriminated by `kind`).
+  `src/tutor/capture/loader.py`: `CaptureLoader` opens a SQLite URI (`mode=ro`, or
+  `mode=ro&immutable=1`), selects named columns from sessions / snapshots / judge_events /
+  problems only, merges verdicts.csv per D-024, logs `session_excluded`. Rows the models can't
+  take (missing problem, NULL language or difficulty, unknown kind) raise `CaptureFormatError`
+  naming the session (D-025). Unit tests: 13 (`tests/unit/test_loader_internals.py`). Results:
+  T-004 acceptance 26/26 + frozen copy 1/1 (`live_capture`: 8 kept, 14 excluded, file
+  unchanged), contract read-only 5/5, fences 7/7. No judging files edited.
 
 ### T-005 · Prompt loader + manifest
 **Milestone:** M0 · **Size:** S · **Owner:** build
@@ -314,6 +323,13 @@ templating errors.
   `prompts/manifest.json` missing) except the naming check, which passes on an empty tree.
   For `/pm`: nothing says how a manifest entry is written for a new prompt (`tutor prompts
   lock`?); the tests write their own manifests, so this doesn't block T-005.
+- 2026-11-03 `/build` → 🔄. `src/tutor/prompts.py`: `load_prompt`, `LoadedPrompt.substitute`,
+  `PromptError`, `check_manifest`; front matter read by a small flat `key: value` / `key: [a, b]`
+  parser, no YAML dependency (D-025). `tutor prompts check [--root]` in `cli.py`.
+  `prompts/manifest.json` = `{}` (no prompts yet). Unit tests: 9
+  (`tests/unit/test_prompts_internals.py`). Results: T-005 acceptance 17/17, contract manifest
+  3/3, `tutor prompts check` exit 0 on the repo. Whole suite: `uv run pytest` 142 passed,
+  6 skipped; `-m live_capture` 6 passed; capture contract 20/20, unit 8/8, `tsc` clean.
 
 ### T-006 · LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log
 **Milestone:** M0 · **Size:** M · **Owner:** build

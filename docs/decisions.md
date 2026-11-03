@@ -386,3 +386,20 @@ loader crash on a new LeetCode verdict, which §4.3 says must not raise. (2) The
 in local dates; `attempted_date_local` uses the same timezone. (3) Overlap isn't expected, so
 a disagreement can only be a data error; a captured submit is the better record when both agree.
 **Supersedes.** — (narrows §4.1's `verdict: Verdict` to `str`)
+
+## D-025 · Loader and prompt-loader details left open by D-024 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. Prompt front matter is read by a small parser that accepts only flat `key: value` lines and
+   `key: [a, b]` lists, the form §7 shows. Anything else is a `PromptError`. No YAML dependency.
+2. A capture row the models can't accept is a `CaptureFormatError` naming the session (and the
+   row where there is one): a session whose slug has no `problems` row, a NULL difficulty or
+   snapshot language, a `tags` value that isn't JSON, a judge event whose kind isn't run or
+   submit. None occur in today's data.
+3. `CaptureLoader(run_id=None)` makes a fresh `new_run_id()`, so every exclusion log line has a
+   run id.
+**Why.** (1) Six lines of front matter don't justify a dependency, and a strict subset can't be
+misread. If prompts ever need richer metadata, switching to YAML is a contained change. (2)
+The loader is the validation boundary: a row it can't represent faithfully stops the load
+rather than becoming a guessed default that later reads as a fact. (3) Log lines without a run
+id can't be tied back to the run that wrote them (§13).
+**Supersedes.** —
