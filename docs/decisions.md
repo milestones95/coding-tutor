@@ -319,3 +319,16 @@ LLM call with the verdict and error in its input (no rule), which will usually g
 (7) A plain file copy would miss writes still in the old server's `-wal` file (it was not
 shut down cleanly; the WAL was 4 MB).
 **Supersedes.** —
+
+## D-022 · Output Limit Exceeded gets its own status, `failed_output_limit` · 2026-11-02 · human
+**Decision.** The status list gains `failed_output_limit`, and LeetCode's "Output Limit
+Exceeded" maps to it. It no longer maps to `failed_runtime_error` (D-020) or
+`failed_wrong_answer` (D-019). The status CHECK in `analysis.db` and the eval plan's status
+list include it. Failure type for these sessions has no rule: the LLM decides, with the
+verdict and error detail in its input.
+**Why.** The human wants OLE visible as its own outcome, like TLE. It usually means too many
+print statements, a habit worth tracking on its own, not a wrong answer or a crash. Mapping
+it to another status would hide it in Part 2's per-status counts.
+**Cost.** One more status value. `analysis.db` hasn't been created yet (T-008 is ⬜), so no
+migration is needed: the change goes straight into `0001_init.sql`.
+**Supersedes.** D-020 (and D-019's OLE row)

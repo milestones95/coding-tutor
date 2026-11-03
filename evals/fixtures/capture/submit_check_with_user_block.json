@@ -1,0 +1,33 @@
+{
+  "status_code": 10,
+  "lang": "python3",
+  "run_success": true,
+  "status_runtime": "1037 ms",
+  "memory": 22240000,
+  "display_runtime": "1037",
+  "question_id": "322",
+  "elapsed_time": 1112,
+  "compare_result": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+  "code_output": "",
+  "std_output": "",
+  "last_testcase": "",
+  "expected_output": "",
+  "task_finish_time": 1793660747730,
+  "task_name": "judger.judgetask.Judge",
+  "finished": true,
+  "total_correct": 191,
+  "total_testcases": 191,
+  "runtime_percentile": 11.967300000000424,
+  "status_memory": "22.2 MB",
+  "memory_percentile": 24.909000000000006,
+  "pretty_lang": "Python3",
+  "submission_id": "2188200003",
+  "status_msg": "Accepted",
+  "state": "SUCCESS",
+  "judger_status_code": 10,
+  "user": {
+    "username": "SENTINEL-LEETCODE-USER-7731",
+    "realName": "SENTINEL-REAL-NAME-7731",
+    "userAvatar": "https://assets.leetcode.com/users/SENTINEL-AVATAR-7731.png"
+  }
+}

@@ -37,9 +37,9 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-002 | Move capture (extension + ingest server) into this repo | build | M | required | 🔄 built; waits on human: Chrome reload + one Run (DW 3, 5) | D-015; D-011 |
-| T-001 | Fix submit capture in the extension | build | M | required | ⬜ after T-002; finding written | eval-plan build order 1; D-014 |
-| T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | 🔄 built; next `/test run` | arch §2, §11, §12, §13 |
+| T-002 | Move capture (extension + ingest server) into this repo | build | M | required | ✅ 2026-11-02 | D-015; D-011 |
+| T-001 | Fix submit capture in the extension | build | M | required | ⬜ tests written; next `/build` | eval-plan build order 1; D-014 |
+| T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ⬜ after T-003 | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ⬜ after T-003 | arch §7; rule 6 |
 | T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⏸ after T-005; human: confirm model id + enter prices | arch §6; rule 5; D-008, D-018 |
@@ -101,6 +101,15 @@ Run-event check.
   `-m live_capture`: 3 passed, 1 failed = Done-when 5, waiting for a real Run.
   **Waiting on the human:** load the unpacked extension from `ux-extension/extension`, remove
   the old one (Done-when 3), start the server, click Run once (Done-when 5).
+- 2026-11-02 Human: duplicate-zeros session at 04:12–04:20Z captured by the new server
+  (41 snapshots, 5 Runs; Submit missing, which is the T-001 bug). **Done-when 3 confirmed by the
+  human:** Chrome has the unpacked extension from `ux-extension/extension` loaded (renamed
+  "LeetCode Tutor Agent" in `manifest.json` to tell it apart), not the old copy.
+- 2026-11-02 `/test run` → ✅. Commit f8d38d7; no judging files in the builder's diff. Capture
+  fence 5/5; T-002 acceptance 18 passed + 4 `live_capture` passed (row superset, old DB hash
+  unchanged, seed counts, Run after seeding); capture unit 4/4; `tsc --noEmit` clean.
+  Done-when 1–7 met. Scope: the popup edits and the `db.ts` write changes follow from removing
+  the analyzer (D-021); not creep. Uncommitted: the human's `manifest.json` name change.
 
 ### T-001 · Fix submit capture in the extension
 **Milestone:** M0 · **Size:** M · **Owner:** build, in this repo's `ux-extension/` (D-015) · **Depends on:** T-002
@@ -159,6 +168,21 @@ row shape before the fix.
   `false`, run `true`). Secondary: `server/src/judge.ts:59` URL fallback for `submission_id`
   has the same blind spot (body field is used first, so not triggered today).
   Status → ⬜ ready for `/test write T-001`.
+- 2026-11-02 `/test write T-001`. Fixtures (`evals/fixtures/capture/`): Accepted and OLE submit
+  responses **transcribed** from the human's screenshots, a RUNNING_TESTS poll (screenshot);
+  **hand-built** WA, TLE, PENDING, and an Accepted response with a SENTINEL `user` block.
+  Provenance is in the README. Contract `tests/contract/capture/submit_capture.test.ts` (20):
+  `page-hook.js` loaded unchanged in `node:vm` with stubbed fetch/monaco/postMessage, plus
+  `normalizeJudge`. **Agreed with the human:** the result must still be posted when reading the
+  editor throws (code = null). Acceptance `tests/acceptance/test_t001_submit_capture.py` (8: Done-
+  when 2 and 4 on the real server with a temp DB; Done-when 3 `live_capture` via the new
+  `scripts/discovery/17_t001_submit_rows.sql`). Result: contract 8 fail for the right reason
+  (6 × `/v2/` not matched, 1 × editor error drops the result, 1 × `judge.ts` URL fallback),
+  12 pass as guards. Acceptance: 6 pass as guards (the server already stores submits),
+  **1 fails: a new defect.** A repeated final poll of an Accepted submit opens a phantom session
+  holding a second copy (the Accepted ended the first session). Live: fails until the human
+  submits. Builder must also add the `test:contract` script (architecture §12); until then
+  run `cd ux-extension && npx tsx --test ../tests/contract/capture/*.test.ts`.
 
 ### T-003 · Python project skeleton, config, JSON-lines logging, test harness
 **Milestone:** M0 · **Size:** M · **Owner:** build
@@ -196,6 +220,15 @@ from-env rule, the unknown-key error, and the network block.
   errors name the key and never the value); `src/tutor/logs.py`; `src/tutor/cli.py`
   (argparse, help only). Unit tests: `tests/unit/test_config.py` (9), `tests/unit/test_logs.py` (4).
   `uv run pytest`: 62 passed, 4 skipped (`live_capture`). No judging files edited.
+- 2026-11-02 `/test run` → ✅. Commit f8d38d7; no judging files in the builder's diff.
+  Contract 16/16; acceptance 32 passed + 4 `live_capture` skipped (those 4 pass with
+  `-m live_capture`); Python unit 14/14; capture unit 4/4; `tsc --noEmit` clean. **Gate not
+  run:** Python lint/types — none configured (the architecture names none). Fresh clone of the
+  branch: after `uv sync` alone, all T-003 and contract tests pass. The 3 problems are T-002 Node
+  tests that need `npm --prefix ux-extension install` (2 errors + 1 failure, each with that
+  message); after it, 62 passed, 4 skipped. **Finding for `/pm`:** Done-when 1 says "`uv sync` and
+  `uv run pytest` on a clean checkout", but the repo now needs both installs. The wording
+  should name both. Not a build defect.
 
 ### T-004 · Inference-side data models + read-only capture loader
 **Milestone:** M0 · **Size:** M · **Owner:** build

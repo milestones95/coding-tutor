@@ -31,7 +31,7 @@ Every LLM field reads this condensed version. It is stored in the analysis datab
 | Problem | LeetCode metadata | Slug, title, difficulty, topic tags |
 | Time to finish | Calculated from timestamps | Minutes, from the first event to the final submit (or the last event if never submitted) |
 | Attempted at | Capture timestamp | Date. Part 2 needs this for "not seen in a while" |
-| Status | LeetCode verdict of the final submit, read by code (D-014); `unknown` when no verdict was captured | One of: Passed · Failed – wrong answer · Failed – too slow · Failed – runtime error · Not submitted · Unknown. The verdict text is mapped by a fixed table (D-019) and also kept verbatim |
+| Status | LeetCode verdict of the final submit, read by code (D-014); `unknown` when no verdict was captured | One of: Passed · Failed – wrong answer · Failed – too slow · Failed – output limit exceeded · Failed – runtime error · Not submitted · Unknown. The verdict text is mapped by a fixed table (D-019) and also kept verbatim |
 | Failure reason | LLM reads the condensed events | One failure type (list below) + a 1–2 sentence explanation |
 | Algorithm type | LLM reads the final code | Up to 2 labels from the fixed list below |
 | Timeline summary | LLM reads the condensed events | 3–5 sentences: approaches tried, where I got stuck, pivots, final outcome |

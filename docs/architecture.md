@@ -225,7 +225,8 @@ CREATE TABLE sessions (
   attempted_date_local  TEXT NOT NULL,      -- YYYY-MM-DD in config timezone
   time_to_finish_min    REAL NOT NULL,      -- 1 decimal
   status                TEXT NOT NULL CHECK (status IN ('passed','failed_wrong_answer',
-                          'failed_too_slow','failed_runtime_error','not_submitted','unknown')),
+                          'failed_too_slow','failed_output_limit','failed_runtime_error',
+                          'not_submitted','unknown')),
   leetcode_verdict      TEXT,               -- raw verdict of the final submit; NULL if none
   tests_passed          INTEGER,            -- final submit
   tests_total           INTEGER,            -- final submit
@@ -415,7 +416,7 @@ Exceeded, Runtime Error, Memory Limit Exceeded, Output Limit Exceeded, Compile E
 The key is the final submit's verdict text exactly as captured: `judge_events.status`, which
 is LeetCode's `status_msg` from the `check/` response (`judge.ts` substitutes "Compile Error"
 or "Runtime Error" when those error fields are present). It is stored verbatim in
-`sessions.leetcode_verdict`, so the mapping below loses nothing (D-019, D-020).
+`sessions.leetcode_verdict`, so the mapping below loses nothing (D-019, D-022).
 
 | Final submit verdict text | `status` | `status_source` |
 |---|---|---|
@@ -425,7 +426,7 @@ or "Runtime Error" when those error fields are present). It is stored verbatim i
 | Memory Limit Exceeded | `failed_too_slow` | its source |
 | Runtime Error | `failed_runtime_error` | its source |
 | Compile Error | `failed_runtime_error` | its source |
-| Output Limit Exceeded | `failed_runtime_error` | its source (D-020: usually excess print output, not a wrong answer) |
+| Output Limit Exceeded | `failed_output_limit` | its source (D-022: its own status, like TLE; usually excess print output) |
 | any other text | `unknown` | its source. Logged as `unmapped_verdict` with the text; it does not raise |
 | none, and `submit_capture_reliable` | `not_submitted` | `no_submit` |
 | none, capture not reliable | `unknown` | `not_captured` |
