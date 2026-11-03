@@ -280,6 +280,20 @@ from-env rule, the unknown-key error, and the network block.
 **Test assets:** required. `/test write T-004` covers loader contract tests on tiny SQL
 fixtures, the extension-analysis fence (§4.3 #3), and an acceptance check of 8 kept / 14
 excluded on the frozen copy.
+**Log**
+- 2026-11-03 `/test write T-004`. Interfaces and edge rules agreed with the human: D-024
+  (verdict is verbatim text; reliable-since compared in New York time; captured submit wins
+  over an agreeing CSV row, a disagreement raises; CSV matches by session id only).
+  Shared builder `tests/_capture_fixture.py` (capture DDL as frozen, optional analyzer tables
+  with a sentinel). Acceptance `tests/acceptance/test_t004_loader.py` (26 + 1 `live_capture`:
+  DW 1 models, DW 2 modes / sorting / since / live-path refusal / analyzer sentinel / session-id
+  matching / reliable-since timezone, DW 3 exclusion reasons, DW 4 CSV rules, DW 5 timestamps;
+  the frozen-copy check expects the 8 ids in verdicts.csv and 14 exclusions). Contract
+  `test_capture_loader_readonly.py` (5: file unchanged, missing file not created, `ro` sees WAL
+  rows) and `test_extension_analysis_fence.py` (2, with its own grading test). Result: all
+  T-004 tests fail for the right reason (`tutor.models` / `tutor.capture` missing); the fence
+  passes. Note for the architecture: "no test reads `data/`" (§12) vs this task's frozen-copy
+  check, which is `live_capture` like T-001's.
 
 ### T-005 · Prompt loader + manifest
 **Milestone:** M0 · **Size:** S · **Owner:** build
@@ -291,6 +305,15 @@ missing or extra variable. `prompts/manifest.json` records each file's sha256, a
 **Not included:** any field prompt; the agent system-prompt builder (M5).
 **Test assets:** required. `/test write T-005` adds the manifest-hash contract test and the
 templating errors.
+**Log**
+- 2026-11-03 `/test write T-005`. Interfaces: D-024 items 6–7. Acceptance
+  `tests/acceptance/test_t005_prompts.py` (19: fields, `$$` escape, missing/extra variables,
+  missing file, front matter vs path and body, `tutor prompts check` pass / edited / unlisted /
+  gone / no manifest). Contract `test_prompt_manifest.py` (3, on the real `prompts/`). Result:
+  all fail for the right reason (`tutor.prompts` and the `prompts` subcommand missing,
+  `prompts/manifest.json` missing) except the naming check, which passes on an empty tree.
+  For `/pm`: nothing says how a manifest entry is written for a new prompt (`tutor prompts
+  lock`?); the tests write their own manifests, so this doesn't block T-005.
 
 ### T-006 · LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log
 **Milestone:** M0 · **Size:** M · **Owner:** build

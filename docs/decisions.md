@@ -348,3 +348,41 @@ depends on (D-014); the code snapshot is secondary. (3) An Accepted ends the ses
 repeat of the same result a second later used to open a new session holding a copy. LeetCode
 ids identify a submission exactly, which a time window can't.
 **Supersedes.** —
+
+## D-024 · Loader and prompt-loader interfaces the tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+1. `SubmitEvent.verdict` is LeetCode's verdict text verbatim (`str`), not the `Verdict` enum.
+   `Verdict` still lists the 7 known values for the status mapping (M1), which handles text
+   it doesn't know as `unknown` (§4.3).
+2. `submit_capture_reliable` compares the session's start date in `time.timezone`
+   (America/New_York) with `capture.submits_reliable_since`, a date (the human set
+   2026-11-04, T-001).
+3. `verdicts.csv` rows match sessions by session id only. When a session has both a captured
+   submit and a CSV row: the same verdict as the last captured submit means the captured one
+   is kept and the CSV row is dropped; a different verdict raises `VerdictConflict`. The CSV
+   stays frozen for the 8 pre-fix sessions; new sessions rely on captured submits. A missing
+   CSV file means no backfill.
+4. Loader: `tutor.capture.loader.CaptureLoader(path, *, mode: "ro" | "immutable", settings,
+   run_id=None)` with `.iter_sessions(since=None)` (ordered by `started_at`) and
+   `.load_session(id)` (`LookupError` if unknown or excluded). A bad mode, or `immutable` on
+   `paths.capture_db` (compared after resolving the path), raises `ValueError`.
+   `VerdictConflict` and `CaptureFormatError` live in the same module; a timestamp error names
+   the session, the table and the row id.
+5. Exclusions are logged to `<paths.logs>/pipeline.jsonl` as `session_excluded` with
+   `reason` `no_activity` (≤ 1 snapshot and no judge events) or `human_exclude` (a CSV
+   `EXCLUDE` row; it wins when both apply).
+6. Prompts: `tutor.prompts.load_prompt(name, version, *, root=None)` → `LoadedPrompt` with
+   `text` = the body after the front matter and `sha256` = the hash of the whole file's
+   bytes. `LoadedPrompt.substitute(mapping)`. `PromptError` for: a missing file (the message
+   names the path), no front matter, a front-matter name or version that differs from the
+   path, a `$var` in the body that isn't declared, a declared variable the body never uses,
+   and a missing or extra variable at substitution.
+7. `prompts/manifest.json` is `{"<name>/v<N>.md": "<sha256>"}`, keys relative to `prompts/`,
+   judges and generators included. `tutor prompts check [--root DIR]` exits 0 when every
+   file matches its entry, else 1, naming each file that was edited, is unlisted, or is gone.
+**Why.** The architecture names these pieces (§4.1, §4.4, §7) but not their signatures or edge
+rules, and black-box tests need them fixed before the build. (1) An enum would make the
+loader crash on a new LeetCode verdict, which §4.3 says must not raise. (2) The human thinks
+in local dates; `attempted_date_local` uses the same timezone. (3) Overlap isn't expected, so
+a disagreement can only be a data error; a captured submit is the better record when both agree.
+**Supersedes.** — (narrows §4.1's `verdict: Verdict` to `str`)
