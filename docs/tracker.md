@@ -307,7 +307,7 @@ missing or extra variable. `prompts/manifest.json` records each file's sha256, a
 templating errors.
 **Log**
 - 2026-11-03 `/test write T-005`. Interfaces: D-024 items 6–7. Acceptance
-  `tests/acceptance/test_t005_prompts.py` (19: fields, `$$` escape, missing/extra variables,
+  `tests/acceptance/test_t005_prompts.py` (17: fields, `$$` escape, missing/extra variables,
   missing file, front matter vs path and body, `tutor prompts check` pass / edited / unlisted /
   gone / no manifest). Contract `test_prompt_manifest.py` (3, on the real `prompts/`). Result:
   all fail for the right reason (`tutor.prompts` and the `prompts` subcommand missing,
