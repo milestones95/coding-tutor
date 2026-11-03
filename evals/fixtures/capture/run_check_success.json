@@ -1,0 +1,20 @@
+{
+  "status_code": 10,
+  "lang": "python3",
+  "run_success": true,
+  "status_runtime": "0 ms",
+  "memory": 17600000,
+  "code_answer": ["[0,1]"],
+  "expected_code_answer": ["[0,1]"],
+  "correct_answer": true,
+  "total_correct": 1,
+  "total_testcases": 1,
+  "elapsed_time": 40,
+  "task_finish_time": 1793660300553,
+  "task_name": "judger.runcodetask.RunCode",
+  "finished": true,
+  "status_msg": "Accepted",
+  "state": "SUCCESS",
+  "submission_id": "runcode_1793660300.5534081_T002probe",
+  "pretty_lang": "Python3"
+}

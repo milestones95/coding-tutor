@@ -13,25 +13,25 @@ This is a learning project for building an agent harness and evals, not a produc
 
 ## Part 1: Session Analyzer
 
-Code first condenses each captured session. Then it produces seven fields: three come straight from the data and four come from the LLM, including pass/fail.
+Code first condenses each captured session. Then it produces seven fields: four come straight from the data, including pass/fail, and three come from the LLM.
 
-**Input:** the problem slug, the event stream, code snapshots, and the final code. If there's a LeetCode verdict, it gets saved at capture time **as the eval label only**. The model never sees it.
+**Input:** the problem slug, the event stream, code snapshots, and the final code. The LeetCode verdict is saved at capture time and used as a fact. Verdicts for sessions captured before submit capture worked were backfilled by hand (D-005).
 
 **Condensing step (code, no LLM):** before any LLM call, raw events are collapsed into a short list of meaningful moments:
 
 - A text snapshot of the code every 2 minutes (skipped if nothing changed), plus one at each run and each submit. A 50-minute session tops out around 25 timed snapshots
 - Every run and submit with its result and error message
-- The diff between snapshots, so big rewrites (new approaches) stand out
+- A change summary for each kept snapshot (lines added/removed, fraction changed, rewrite flag), so big rewrites (new approaches) stand out (D-013)
 - Timestamps and elapsed minutes
 
-Every LLM field reads this condensed version, and Part 2's `get_session` tool returns it. How much condensing is needed depends on what the capture tool records (every keystroke vs. periodic snapshots). The raw events stay stored; condensing only decides what the LLM sees.
+Every LLM field reads this condensed version. It is stored in the analysis database, where Part 2 reads it with `run_sql` (D-012). How much condensing is needed depends on what the capture tool records (every keystroke vs. periodic snapshots). The raw events stay stored; condensing only decides what the LLM sees.
 
 | Field | Source | Output format |
 | --- | --- | --- |
 | Problem | LeetCode metadata | Slug, title, difficulty, topic tags |
 | Time to finish | Calculated from timestamps | Minutes, from the first event to the final submit (or the last event if never submitted) |
 | Attempted at | Capture timestamp | Date. Part 2 needs this for "not seen in a while" |
-| Status | LLM judges the final code against the problem | One of: Passed · Failed – wrong answer · Failed – too slow · Failed – runtime error · Not submitted |
+| Status | LeetCode verdict of the final submit, read by code (D-014); `unknown` when no verdict was captured | One of: Passed · Failed – wrong answer · Failed – too slow · Failed – runtime error · Not submitted · Unknown. The verdict text is mapped by a fixed table (D-019) and also kept verbatim |
 | Failure reason | LLM reads the condensed events | One failure type (list below) + a 1–2 sentence explanation |
 | Algorithm type | LLM reads the final code | Up to 2 labels from the fixed list below |
 | Timeline summary | LLM reads the condensed events | 3–5 sentences: approaches tried, where I got stuck, pivots, final outcome |
@@ -40,24 +40,19 @@ Every LLM field reads this condensed version, and Part 2's `get_session` tool re
 
 **Algorithm labels:** hash map · two pointers · sliding window · binary search · stack / monotonic stack · heap · BFS · DFS / backtracking · dynamic programming · greedy · intervals · linked list · tree traversal · trie · union find · graph / topological sort · bit manipulation · math.
 
-**Status is judged by the AI on purpose.** That makes it an eval exercise: can a model read code and predict whether it passes? The LeetCode verdict gives free ground-truth labels. Expect near-misses and TLE cases to be the hardest.
-
 ## Part 1 evals
 
 Start with 30 labeled sessions, measure a baseline, then set targets. The targets below are starting points, not commitments.
 
-**Dataset:** 30 sessions, split 20 dev / 10 test. Mix real sessions from the capture tool with synthetic ones. Cover every status, every failure type, and the common algorithms, and over-sample near-misses and TLEs. For each session, I write the algorithm label, the failure type, and a short list of key facts about the timeline.
+**Dataset:** 30 sessions, split 20 dev / 10 test. Mix real sessions from the capture tool with synthetic ones. Cover every failure type and the common algorithms. Real captured data supplies about 8 cases; the rest are synthetic. For each session, I write the algorithm label, the failure type, and a short list of key facts about the timeline.
 
 | Field | Grader | Metric | Starting target |
 | --- | --- | --- | --- |
-| Status | Exact match vs. LeetCode verdict | Accuracy, broken out by verdict type; track the false "Passed" rate separately | 90% |
-| Failure type | Exact match vs. my label | Accuracy | 85% |
+| Failure type | Exact match vs. my label | Accuracy, reported separately for rule-decided and LLM-decided cases | 85% |
 | Failure explanation | LLM judge | Consistent with the real failure, no invented causes | 85% |
 | Algorithm type | Exact match vs. my label | Accuracy (any overlap with my labels counts). Compare against a keyword-matching baseline | 90% |
 | Timeline summary | LLM judge + checklist | % of checklist items met | 85% |
-| Condensed events, time to finish, problem, date | Unit tests | Exact | 100% |
-
-A false "Passed" is the costliest status error because it makes my analytics look better than they are, so it gets its own number.
+| Condensed events, time to finish, problem, date, status | Unit tests | Exact | 100% |
 
 **Summary checklist:**
 
@@ -72,7 +67,7 @@ A false "Passed" is the costliest status error because it makes my analytics loo
 - Every run and submit is kept, with its result
 - There's a snapshot every 2 minutes while the code changes, plus one at each run and each submit
 - Elapsed times match the raw timestamps
-- A 60-minute session fits a token budget (set it after looking at real sessions)
+- A 60-minute session fits a token budget of 16,000 estimated tokens, from the worst measured rate of 253 tokens/min
 
 **Checking the judge:** I hand-grade 20 outputs and measure how often the LLM judge agrees with me. Don't trust judge scores until agreement is at least 85%.
 
@@ -148,9 +143,9 @@ Test the agent on a fake practice history with planted patterns, not on Part 1's
 Build the easy, deterministic pieces first and the timeline last, because it's the hardest to label and grade.
 
 1. Lock the session data format, and save the LeetCode verdict at capture time.
-2. Build the deterministic pieces: the condensing step, problem, time to finish, attempted at.
+2. Build the deterministic pieces: the condensing step, problem, time to finish, attempted at, status.
 3. Label 30 sessions and split them into dev and test.
-4. Build status, algorithm type, and failure reason, each with its eval.
+4. Build algorithm type and failure reason, each with its eval. (Status is read from the verdict in step 2.)
 5. Build the timeline summary, its judge checklist, and the judge-vs-me agreement check.
 6. Seed the fixture database and build the Part 2 agent, harness, and evals.
 7. Run the model comparison across both parts.
@@ -160,5 +155,5 @@ Build the easy, deterministic pieces first and the timeline last, because it's t
 - [x] Part 2 tools: raw SQL or fixed tools? Decided: raw SQL.
 - [ ] Final definitions of "interview ready" and "strength" (the drafts above are placeholders)
 - [ ] Aggregate questions like "do I spend too long planning?" need numbers. Add per-session planning / coding / debugging minutes later?
-- [ ] How do I label "Not submitted" sessions, given there's no LeetCode verdict to check against?
-- [ ] Where do the synthetic sessions come from: hand-written, or generated by a model and then reviewed?
+- [x] How do I label "Not submitted" sessions? Decided: status is the verdict; `not_submitted` only once submit capture is reliable, otherwise `unknown` (D-014).
+- [x] Where do the synthetic sessions come from? Decided: generated by Claude from specs I write or approve, then reviewed by me before use (D-017).
