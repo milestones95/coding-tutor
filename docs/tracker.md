@@ -38,7 +38,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-002 | Move capture (extension + ingest server) into this repo | build | M | required | ✅ 2026-11-02 | D-015; D-011 |
-| T-001 | Fix submit capture in the extension | build | M | required | 🔄 built; waits on human: reload + 3 submits (DW 3, 5) | eval-plan build order 1; D-014 |
+| T-001 | Fix submit capture in the extension | build | M | required | ✅ 2026-11-03 `/test run` | eval-plan build order 1; D-014 |
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ⬜ after T-003 | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ⬜ after T-003 | arch §7; rule 6 |
@@ -194,6 +194,25 @@ row shape before the fix.
   (`live_capture`). No judging files edited. **Waiting on the human:** restart the ingest server,
   reload the extension and the LeetCode tab, make the 3 deliberate submits (Done-when 3);
   then propose `capture.submits_reliable_since` (Done-when 5).
+- 2026-11-03 live verification (human at the browser, server restarted 12:09:52Z with the fix).
+  `17_t001_submit_rows.sql` on the live DB: 7 submits, each stored once with a numeric id —
+  Time Limit Exceeded 259/286, Output Limit Exceeded 260/286, Accepted ×2 (min-cost-climbing-stairs);
+  Accepted 72/72, Wrong Answer 55/72 ×2 with distinct ids (contains-duplicate-ii). Failures carry
+  `error_detail`, Accepted don't; each Accepted ended its session. `pytest -m live_capture`
+  `test_dw3_three_deliberate_submits_were_captured`: 1 passed (Done-when 3).
+  **Done-when 5 — human confirmed:** `capture.submits_reliable_since = 2026-11-04`. The fix went live
+  mid-day 2026-11-03 and the setting holds a date, so the next full day is used; setting it to
+  2026-11-03 would label the 04:12Z duplicate-zeros session (submitted, not captured) as
+  not_submitted. Not yet written to `tutor.toml`: `test_t003_skeleton.py` asserts it is unset, so
+  writing it needs `/test write` to update that expectation (reason: human set the value per T-001
+  DW 5). For `/pm`. Status: ready for `/test run`.
+- 2026-11-03 `/test run` → **✅ PASS.** Build diff (a244c08..69e7848) touches no judging files.
+  Capture contract 20/20, capture unit 8/8, `tsc` clean, `uv run pytest` 69 passed / 5 skipped
+  (`live_capture`, run separately: 5 passed against the live DB). Done-when 1–5 met (finding at
+  `page-hook.js:53`; DW 2/4 acceptance on a temp-DB server; DW 3 live, 7 real submits incl. Accepted,
+  WA, TLE, OLE; no `user` block stored; DW 5 human set 2026-11-04). Not run: Python lint/type
+  check (none configured in `pyproject.toml`), grader tests (none exist yet), evals (no LLM field
+  touched). Out of scope, not the builder's: the human's uncommitted `manifest.json` rename.
 
 ### T-003 · Python project skeleton, config, JSON-lines logging, test harness
 **Milestone:** M0 · **Size:** M · **Owner:** build
