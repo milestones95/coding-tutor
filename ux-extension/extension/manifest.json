@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "LeetCode Practice Analyzer",
+  "name": "LeetCode Tutor Agent",
   "version": "0.1.0",
   "description": "Captures your LeetCode code and results and sends them to your local analyzer.",
   "permissions": ["storage", "activeTab"],
