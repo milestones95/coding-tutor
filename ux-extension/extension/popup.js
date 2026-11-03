@@ -33,7 +33,6 @@ async function refresh() {
     return;
   }
   const m = status.metrics;
-  const analysis = s.analysis_status === "error" ? `error: ${esc(s.analysis_error)}` : esc(s.analysis_status);
   $("content").innerHTML = `
     <div><strong>${esc(slug)}</strong></div>
     <div class="timer" id="timer">${fmt(m.wall_minutes)}</div>
@@ -41,7 +40,6 @@ async function refresh() {
     <div class="row"><span class="muted">Snapshots</span><span>${m.snapshot_count}</span></div>
     <div class="row"><span class="muted">Runs / submits</span><span>${m.run_count} / ${m.submit_count}</span></div>
     <div class="row"><span class="muted">${status.open ? "Status" : "Ended"}</span><span>${status.open ? "in progress" : esc(s.end_reason)}</span></div>
-    ${status.open ? "" : `<div class="row"><span class="muted">Analysis</span><span>${analysis}</span></div>`}
     ${status.queued ? `<div class="row"><span class="muted">Unsent events</span><span>${status.queued}</span></div>` : ""}`;
   $("buttons").hidden = !status.open;
   if (status.open) {
@@ -99,8 +97,5 @@ async function backfill() {
   }
 }
 
-const openPage = (hash) => chrome.tabs.create({ url: `http://localhost:7777/dashboard#${hash}` });
-$("view-dashboard").addEventListener("click", () => openPage("dashboard"));
-$("view-problems").addEventListener("click", () => openPage("problems"));
 $("end").addEventListener("click", () => end("ended"));
 refresh();

@@ -1,3 +1,14 @@
-data/
+# Local data: the live capture DB, its frozen copy, labels, analysis DB (root data/ only —
+# docs/data/ is documentation and is committed).
+/data/
+logs/
 .env
 evals/results/
+
+# Node (capture)
+node_modules/
+
+# Python
+__pycache__/
+.venv/
+.pytest_cache/

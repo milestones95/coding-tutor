@@ -295,3 +295,27 @@ those sessions into "wrong approach / edge case" analytics. Failure type for the
 LLM call with the verdict and error in its input (no rule), which will usually give
 `implementation_bug`.
 **Supersedes.** D-019 (the OLE row only)
+
+## D-021 · Build choices for T-002 / T-003 · 2026-11-02 · builder (human approved the list)
+**Decision.**
+1. **Capture stops writing analysis state.** `endSession` no longer sets
+   `sessions.analysis_status = 'pending'`, and `markAccepted` (a late Accepted) only sets
+   `end_reason = 'accepted'`: it no longer deletes that session's `attempts` rows. New
+   sessions keep `analysis_status = 'open'` forever. `attempts` / `attempt_gaps` keep their old
+   rows and get no new ones.
+2. **Popup:** the "View dashboard" / "View problems" buttons and the "Analysis" row were
+   removed. They pointed at the deleted dashboard and analyzer.
+3. **`tutor.toml` is the only home of defaults.** The config models have no in-code defaults,
+   except for keys the architecture says are unset by default.
+4. **`tutor-eval` lives in `tutor/cli.py` (`eval_main`)** until an evals package exists.
+5. **Run ids** are `YYYYmmddTHHMMSSZ-<8 hex>`: sortable by start time, random suffix.
+6. **Log lines:** `ts`, `run_id` and `event` can't be overridden by extra fields.
+7. **Seeding** is a one-off stdlib script, `scripts/seed_capture_db.py`, not product code. It
+   uses SQLite's backup API (which captures `-wal` content), checks the hash before and after,
+   and refuses to overwrite.
+8. `seed:problems` (calls LeetCode's public GraphQL list) is kept as a manual script.
+**Why.** (1) Deleting `attempts` rows would destroy legacy data on a late Accepted, and
+`'pending'` would advertise an analysis that will never run. (3) Two copies of defaults drift.
+(7) A plain file copy would miss writes still in the old server's `-wal` file (it was not
+shut down cleanly; the WAL was 4 MB).
+**Supersedes.** —

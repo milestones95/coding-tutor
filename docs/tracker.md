@@ -37,9 +37,9 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-002 | Move capture (extension + ingest server) into this repo | build | M | required | ⬜ tests written; next `/build` | D-015; D-011 |
+| T-002 | Move capture (extension + ingest server) into this repo | build | M | required | 🔄 built; waits on human: Chrome reload + one Run (DW 3, 5) | D-015; D-011 |
 | T-001 | Fix submit capture in the extension | build | M | required | ⬜ after T-002; finding written | eval-plan build order 1; D-014 |
-| T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ⬜ tests written; next `/build` | arch §2, §11, §12, §13 |
+| T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | 🔄 built; next `/test run` | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ⬜ after T-003 | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ⬜ after T-003 | arch §7; rule 6 |
 | T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⏸ after T-005; human: confirm model id + enter prices | arch §6; rule 5; D-008, D-018 |
@@ -86,6 +86,21 @@ Run-event check.
   `node_modules`), all for the right reason. 8 pass already as guards (`.env`/`data/` ignored,
   no Python reaches into `ux-extension/`); 4 skipped. The two server-probe tests can't be
   exercised until the build exists. Done-when 3 stays a human confirmation in this log.
+- 2026-11-02 `/build` → 🔄. Removed `server/src/agent/`, `mcp/`, `dashboard.*` and `diff.ts`.
+  `ingest.ts` has no analyzer queue and no dashboard routes. `db.ts`: `endSession` no longer
+  sets `analysis_status`, `markAccepted` no longer deletes `attempts` rows, and the
+  attempt-writing helpers are gone (D-021). `config.ts`: only `PORT` / `LCA_DB` (default
+  `<repo>/data/capture.db`) / `LCA_IDLE_MINUTES`, no `.env`. The popup's dashboard buttons
+  and Analysis row were removed (they pointed at the deleted dashboard). Added
+  `package.json` (start/typecheck/test/seed:problems, engines), lockfile, `tsconfig.json`,
+  `.nvmrc`, README. `.gitignore` → `/data/`, `logs/`, `node_modules/`, Python caches.
+  **Seeded** `data/capture.db` with `scripts/seed_capture_db.py` (rehearsed on a scratch copy
+  first): 4091 problems, 38 sessions, 971 snapshots, 33 judge events, 13 attempts, 22 gaps.
+  The source `.db` and `-wal` are unchanged (hash 01d45f73…). Tests: Python suite 62 passed,
+  4 skipped; capture unit tests 4/4 (`npm --prefix ux-extension test`); typecheck clean;
+  `-m live_capture`: 3 passed, 1 failed = Done-when 5, waiting for a real Run.
+  **Waiting on the human:** load the unpacked extension from `ux-extension/extension`, remove
+  the old one (Done-when 3), start the server, click Run once (Done-when 5).
 
 ### T-001 · Fix submit capture in the extension
 **Milestone:** M0 · **Size:** M · **Owner:** build, in this repo's `ux-extension/` (D-015) · **Depends on:** T-002
@@ -175,6 +190,12 @@ from-env rule, the unknown-key error, and the network block.
   the right reason (no `pyproject.toml`, no `tutor.toml`, no `tutor` package, no console
   scripts); the 6 harness tests pass. Whole `tests/` tree: 14 passed, 32 failed, 2 errors,
   4 skipped (T-002 + T-003 combined; T-002's localhost server probe is not blocked).
+- 2026-11-02 `/build` → 🔄. `pyproject.toml` (hatchling, src layout, Python ≥ 3.13, pydantic ≥ 2.7,
+  python-dotenv, pytest dev group) + `uv.lock`; `tutor.toml` with the §11 defaults;
+  `src/tutor/config.py` (frozen pydantic sections with `extra="forbid"`, no in-code defaults,
+  errors name the key and never the value); `src/tutor/logs.py`; `src/tutor/cli.py`
+  (argparse, help only). Unit tests: `tests/unit/test_config.py` (9), `tests/unit/test_logs.py` (4).
+  `uv run pytest`: 62 passed, 4 skipped (`live_capture`). No judging files edited.
 
 ### T-004 · Inference-side data models + read-only capture loader
 **Milestone:** M0 · **Size:** M · **Owner:** build

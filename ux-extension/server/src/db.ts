@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { config } from "./config.js";
-import type { AttemptStatus, Category, GapTag } from "./taxonomy.js";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS problems (
@@ -58,7 +57,8 @@ CREATE TABLE IF NOT EXISTS judge_events (
 );
 CREATE INDEX IF NOT EXISTS judge_session ON judge_events(session_id, ts);
 
--- One analyzed record per session: the practice log.
+-- Legacy: written by the old analyzer, which was removed (D-015). Kept in the schema so existing
+-- files stay valid; nothing writes or reads these tables now.
 CREATE TABLE IF NOT EXISTS attempts (
   id               INTEGER PRIMARY KEY,
   session_id       TEXT UNIQUE REFERENCES sessions(id),
@@ -173,31 +173,6 @@ export interface JudgeEventRow {
   submission_id: string | null;
 }
 
-export interface AttemptRow {
-  id: number;
-  session_id: string | null;
-  slug: string;
-  date: string;
-  status: AttemptStatus;
-  time_taken_min: number | null;
-  category: Category;
-  approach_pattern: string | null;
-  approach_summary: string | null;
-  verdict_reason: string | null;
-  strengths: string;
-  optimal_approach: string | null;
-  time_complexity: string | null;
-  space_complexity: string | null;
-  confidence: number | null;
-  source: string;
-  created_at: string;
-}
-
-export interface GapInput {
-  tag: GapTag;
-  detail: string;
-}
-
 // ---- Problems ----
 
 export interface ProblemInput {
@@ -273,12 +248,8 @@ export function touchSession(db: DB, id: string, ts: string): void {
 
 export function endSession(db: DB, id: string, ts: string, reason: string): void {
   db.prepare(
-    `UPDATE sessions SET ended_at = ?, end_reason = ?, analysis_status = 'pending' WHERE id = ? AND ended_at IS NULL`,
+    `UPDATE sessions SET ended_at = ?, end_reason = ? WHERE id = ? AND ended_at IS NULL`,
   ).run(ts, reason, id);
-}
-
-export function setAnalysisStatus(db: DB, id: string, status: string, error: string | null = null): void {
-  db.prepare(`UPDATE sessions SET analysis_status = ?, analysis_error = ? WHERE id = ?`).run(status, error, id);
 }
 
 export function listSnapshots(db: DB, sessionId: string): SnapshotRow[] {
@@ -319,50 +290,7 @@ export function hasJudgeEvent(db: DB, sessionId: string, submissionId: string): 
   return Boolean(db.prepare(`SELECT 1 FROM judge_events WHERE session_id = ? AND submission_id = ?`).get(sessionId, submissionId));
 }
 
-/** Mark an ended session as Accepted after the fact, discarding any analysis made without that result. */
+/** Mark an ended session as Accepted after the fact (an Accepted result arrived after it ended). */
 export function markAccepted(db: DB, id: string): void {
-  db.transaction(() => {
-    db.prepare(`DELETE FROM attempts WHERE session_id = ?`).run(id);
-    db.prepare(`UPDATE sessions SET end_reason = 'accepted' WHERE id = ?`).run(id);
-  })();
-}
-
-// ---- Attempts ----
-
-export type AttemptInput = Omit<AttemptRow, "id" | "created_at" | "strengths"> & { strengths: string[] };
-
-export function insertAttempt(db: DB, a: AttemptInput, gaps: GapInput[]): number {
-  return db.transaction(() => {
-    const { lastInsertRowid } = db
-      .prepare(
-        `INSERT INTO attempts (session_id, slug, date, status, time_taken_min, category, approach_pattern, approach_summary,
-           verdict_reason, strengths, optimal_approach, time_complexity, space_complexity, confidence, source, created_at)
-         VALUES (@session_id, @slug, @date, @status, @time_taken_min, @category, @approach_pattern, @approach_summary,
-           @verdict_reason, @strengths, @optimal_approach, @time_complexity, @space_complexity, @confidence, @source, @created_at)`,
-      )
-      .run({ ...a, strengths: JSON.stringify(a.strengths), created_at: new Date().toISOString() });
-    const insertGap = db.prepare(`INSERT INTO attempt_gaps (attempt_id, tag, detail) VALUES (?, ?, ?)`);
-    for (const g of gaps) insertGap.run(lastInsertRowid, g.tag, g.detail);
-    return Number(lastInsertRowid);
-  })();
-}
-
-export function getAttemptBySession(db: DB, sessionId: string): AttemptRow | undefined {
-  return db.prepare(`SELECT * FROM attempts WHERE session_id = ?`).get(sessionId) as AttemptRow | undefined;
-}
-
-export function gapsForAttempts(db: DB, attemptIds: number[]): Map<number, GapInput[]> {
-  const out = new Map<number, GapInput[]>();
-  if (attemptIds.length === 0) return out;
-  const rows = db
-    .prepare(
-      `SELECT attempt_id, tag, detail FROM attempt_gaps WHERE attempt_id IN (${attemptIds.map(() => "?").join(",")}) ORDER BY id`,
-    )
-    .all(...attemptIds) as Array<{ attempt_id: number; tag: GapTag; detail: string }>;
-  for (const r of rows) {
-    const list = out.get(r.attempt_id) ?? [];
-    list.push({ tag: r.tag, detail: r.detail });
-    out.set(r.attempt_id, list);
-  }
-  return out;
+  db.prepare(`UPDATE sessions SET end_reason = 'accepted' WHERE id = ?`).run(id);
 }

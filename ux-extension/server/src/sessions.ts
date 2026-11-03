@@ -46,13 +46,3 @@ export function computeMetrics(session: SessionRow, snapshots: SnapshotRow[], ju
 function lastActivity(session: SessionRow, snapshots: SnapshotRow[], judge: JudgeEventRow[]): string {
   return [session.started_at, ...snapshots.map((s) => s.ts), ...judge.map((j) => j.ts)].sort().at(-1)!;
 }
-
-/** Sessions that are just page views (no runs, barely any typing) aren't worth an analysis. */
-export function shouldSkipAnalysis(session: SessionRow, snapshots: SnapshotRow[], judge: JudgeEventRow[]): string | null {
-  if (snapshots.length === 0 && judge.length === 0) return "no code captured";
-  if (judge.length === 0 && session.end_reason === "idle") {
-    const m = computeMetrics(session, snapshots, judge);
-    if (m.active_minutes < 3) return "idle with under 3 active minutes and no runs";
-  }
-  return null;
-}

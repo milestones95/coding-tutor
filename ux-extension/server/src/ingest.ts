@@ -1,10 +1,9 @@
-// Ingest server: receives events from the Chrome extension, maintains sessions, and runs the analyzer
-// when a session ends. `npm run dev`
+// Ingest server: receives events from the Chrome extension and stores them in the capture DB, which
+// it is the only writer of (D-015). It makes no LLM calls and runs no analysis; the Python side reads
+// the DB read-only. Start: `npm --prefix ux-extension start`
 import { randomUUID } from "node:crypto";
 import http from "node:http";
 import { pathToFileURL } from "node:url";
-import { analyzeSession } from "./agent/analyze-session.js";
-import { dashboardData, dashboardHtml } from "./dashboard.js";
 import { config } from "./config.js";
 import {
   type DB,
@@ -13,7 +12,6 @@ import {
   endSession,
   findOpenSession,
   getDb,
-  getSession,
   hasJudgeEvent,
   insertJudgeEvent,
   insertSnapshot,
@@ -22,12 +20,11 @@ import {
   listJudgeEvents,
   listSnapshots,
   markAccepted,
-  setAnalysisStatus,
   touchSession,
   upsertProblem,
 } from "./db.js";
 import { htmlToText, normalizeJudge } from "./judge.js";
-import { computeMetrics, shouldSkipAnalysis } from "./sessions.js";
+import { computeMetrics } from "./sessions.js";
 import { categoryFromTags } from "./taxonomy.js";
 
 export type IncomingEvent =
@@ -41,16 +38,8 @@ export type IncomingEvent =
   | { type: "judge"; slug: string; ts?: string; url?: string; data: Record<string, unknown>; code?: string; language?: string }
   | { type: "session_end"; slug: string; ts?: string; reason: "ended" };
 
-type Analyzer = (sessionId: string) => Promise<unknown>;
-
 export class Ingest {
-  private queue: string[] = [];
-  private running = false;
-
-  constructor(
-    private readonly db: DB,
-    private readonly analyze: Analyzer = (id) => analyzeSession(id),
-  ) {}
+  constructor(private readonly db: DB) {}
 
   handle(e: IncomingEvent): { session_id: string | null; ended?: boolean } {
     const ts = e.ts ?? new Date().toISOString();
@@ -86,7 +75,7 @@ export class Ingest {
         insertJudgeEvent(this.db, { session_id: s.id, ts, ...j, language });
         touchSession(this.db, s.id, ts);
         if (j.kind === "submit" && j.status === "Accepted") {
-          if (past) this.reanalyzeAsAccepted(past);
+          if (past) this.markAcceptedLate(past);
           else this.finish(s.id, ts, "accepted");
           return { session_id: s.id, ended: true };
         }
@@ -119,13 +108,11 @@ export class Ingest {
     return s?.ended_at && s.started_at <= ts && ts <= s.ended_at ? s : undefined;
   }
 
-  /** An Accepted submit turned up for a session already ended another way: redo its analysis as passed. */
-  private reanalyzeAsAccepted(s: SessionRow) {
+  /** An Accepted submit turned up for a session already ended another way: record it as accepted. */
+  private markAcceptedLate(s: SessionRow) {
     if (s.end_reason === "accepted") return;
     markAccepted(this.db, s.id);
-    setAnalysisStatus(this.db, s.id, "pending");
-    console.log(`session ${s.id} (${s.slug}) had a missed Accepted submit; re-queued for analysis`);
-    this.enqueue(s.id);
+    console.log(`session ${s.id} (${s.slug}) had a late Accepted submit; marked accepted`);
   }
 
   private addSnapshot(sessionId: string, ts: string, code: string, language: string | null, partial?: boolean) {
@@ -136,15 +123,7 @@ export class Ingest {
 
   finish(sessionId: string, ts: string, reason: string) {
     endSession(this.db, sessionId, ts, reason);
-    const s = getSession(this.db, sessionId)!;
-    const skip = shouldSkipAnalysis(s, listSnapshots(this.db, s.id), listJudgeEvents(this.db, s.id));
-    if (skip) {
-      setAnalysisStatus(this.db, s.id, "skipped", skip);
-      console.log(`session ${s.id} (${s.slug}) ended: ${reason}; analysis skipped (${skip})`);
-      return;
-    }
-    console.log(`session ${s.id} (${s.slug}) ended: ${reason}; queued for analysis`);
-    this.enqueue(s.id);
+    console.log(`session ${sessionId} ended: ${reason}`);
   }
 
   /** End sessions with no activity for `idleMinutes`. */
@@ -156,53 +135,12 @@ export class Ingest {
     for (const s of stale) this.finish(s.id, s.last_activity_at, "idle");
   }
 
-  /** Re-queue sessions that ended but weren't analyzed (e.g. the server stopped mid-run). */
-  resumePending() {
-    const rows = this.db.prepare(`SELECT id FROM sessions WHERE analysis_status IN ('pending', 'running')`).all() as Array<{ id: string }>;
-    rows.forEach((r) => this.enqueue(r.id));
-  }
-
-  enqueue(sessionId: string) {
-    if (!this.queue.includes(sessionId)) this.queue.push(sessionId);
-    void this.drain();
-  }
-
-  /** One analysis at a time, in the order sessions ended. */
-  private async drain() {
-    if (this.running) return;
-    this.running = true;
-    try {
-      while (this.queue.length) {
-        const id = this.queue.shift()!;
-        setAnalysisStatus(this.db, id, "running");
-        try {
-          const r = (await this.analyze(id)) as { saved?: boolean; summary?: string; tracePath?: string } | undefined;
-          if (r && r.saved === false) {
-            setAnalysisStatus(this.db, id, "error", `agent finished without saving; trace: ${r.tracePath}`);
-          } else {
-            setAnalysisStatus(this.db, id, "done");
-            if (r?.summary) console.log(`\n[analysis ${id}]\n${r.summary}\n`);
-          }
-        } catch (err) {
-          setAnalysisStatus(this.db, id, "error", err instanceof Error ? err.message : String(err));
-          console.error(`analysis of ${id} failed:`, err);
-        }
-      }
-    } finally {
-      this.running = false;
-    }
-  }
-
   currentStatus(slug: string) {
     const open = findOpenSession(this.db, slug);
     const latest = open ?? latestSession(this.db, slug);
     if (!latest) return { session: null };
     const metrics = computeMetrics(latest, listSnapshots(this.db, latest.id), listJudgeEvents(this.db, latest.id));
     return { session: latest, metrics, open: !latest.ended_at };
-  }
-
-  dashboard() {
-    return dashboardData(this.db);
   }
 }
 
@@ -232,11 +170,6 @@ export function createServer(ingest: Ingest) {
     };
     try {
       if (req.method === "GET" && url.pathname === "/health") return send(200, { ok: true });
-      if (req.method === "GET" && url.pathname === "/dashboard") {
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        return res.end(dashboardHtml());
-      }
-      if (req.method === "GET" && url.pathname === "/api/attempts") return send(200, ingest.dashboard());
       if (req.method === "GET" && url.pathname === "/sessions/current") {
         const slug = url.searchParams.get("slug");
         if (!slug) return send(400, { error: "slug required" });
@@ -259,9 +192,8 @@ export function createServer(ingest: Ingest) {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const db = getDb();
   const ingest = new Ingest(db);
-  ingest.resumePending();
   setInterval(() => ingest.sweepIdle(), 60_000).unref();
   createServer(ingest).listen(config.port, "127.0.0.1", () => {
-    console.log(`ingest server on http://localhost:${config.port} · db ${config.dbPath} · model ${config.model}`);
+    console.log(`ingest server on http://localhost:${config.port} · db ${config.dbPath}`);
   });
 }
