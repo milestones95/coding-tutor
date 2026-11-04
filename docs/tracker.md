@@ -3,8 +3,8 @@
 > **The only place work status lives.** Owned by `/pm`. `/build` moves its own task to 🔄;
 > only `/test` moves a task to ✅. Every status change gets a dated log line with evidence.
 
-**Last reviewed:** 2026-11-03 (`/pm review`, M0 close)
-**Active milestone:** M1, with task detail pending `/pm plan`
+**Last reviewed:** 2026-11-03 (`/pm review`, M1 close)
+**Active milestone:** M2, with task detail pending `/pm plan`
 **Cost of one full dev eval run:** — *(fill in after the first run)*
 
 Status: ⬜ Not started · 🔄 In progress · ⏸ Blocked (name who/what) · ✅ Done (by `/test` only)
@@ -435,7 +435,7 @@ fake OpenAI server from `tests/contract/test_openai_adapter.py`.
   scope creep. Skipped gate: Python lint/types, not set up (open `/pm` follow-up). **M0
   checkpoint met:** one captured session loads and validates, and one logged LLM call runs.
 
-## Tasks — active milestone: M1
+## Tasks — M1 (✅ done 2026-11-03)
 
 M0 closed 2026-11-03. Planned in detail 2026-11-03 (`/pm plan`). Order:
 **T-013 → T-008 → T-009 → T-010 → T-011 → T-012**. T-010 reuses T-009's time helper (§5.1),
@@ -828,3 +828,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-02 | — | — | T-003 – T-007 (M0); T-008 – T-012 reserved (M1) | `/pm plan` (first plan). M0 = 7 tasks, 2 of them capture. Baselines table: status rows removed (D-014). |
 | 2026-11-03 | T-001, T-004, T-005, T-006, T-007; **M0 ✅** | — | T-013 | `/pm review`, the first. Repo matches the tracker: every M0 task has `/test write` → `/build` → `/test run` with commits, and nothing is 🔄 or 👀. Unplanned work: one item, the human's extension rename (`c39c1c8`, 1 line in `manifest.json`), already noted in T-002's log; not a creep signal. Added since the plan: 1 (T-013). Deferred: 7 (+3 today: Part 2, stuck periods, `prompts lock`). Dropped: 1. Real LLM spend: ≈ $0.0045 (3 smoke calls); no eval runs yet. 10 commits on `m0-architecture-and-tests` not pushed. For `/architect`: §12 says "no test reads `data/`" but the `live_capture` tests and T-007's `llm` test do; §12 names no lint/type tools (T-013 decides them). |
 | 2026-11-03 | — | — | — | `/pm plan` for M1: Done-when / Not included / test assets written for T-008 – T-013. No new tasks. Order T-013 → T-008 → T-009 → T-010 → T-011 → T-012. Branch `m1-deterministic` off `main`. |
+| 2026-11-03 | T-013, T-008, T-009, T-010, T-011, T-012; **M1 ✅** | — | — | `/pm review`, M1 close. Repo matches the tracker: 21 commits since the last review, every one belonging to a task, nothing 🔄 or 👀, no unplanned work. Each task went `/test write` → `/build` → `/test run`; T-012 (tester-owned) has the human's confirmation. Added since the last review: 0. Completed: 6. Deferred: 7. **Quality signal:** two `/test write` fixes this milestone (T-008: fake migrations missing `schema_migrations`; T-010: a T-004 test that depended on `tutor.toml` having no cutoff). Both were caught by the builder before any ✅ and fixed with a written reason, but the tester should run the whole suite against a change's side effects before committing test assets. Real LLM spend: ≈ $0.0015 (1 smoke rerun); no eval runs. 21 commits on `m1-deterministic` not pushed. For `/architect`: §4.1 doesn't list `CondensedSession.language` (D-035); §5.5's example says 24.4 min where the real session is 24.3; plus the open §12 notes from the M0 review. Before M2's generator runs: an Anthropic price in `config/pricing.toml`. |
