@@ -522,3 +522,23 @@ dev dependency, with no Node download.
 **Rejected.** The strict gate (wider ruff sets, plus types over `tests/`): about one extra session,
 for little bug-catching value.
 **Supersedes.** —
+
+## D-032 · Migration interfaces the T-008 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+- `tutor.db.migrate.migrate(db_path, *, settings, migrations_dir=None) -> list[int]` applies the
+  pending migrations, each in its own transaction, records each one in `schema_migrations`, and
+  returns the versions it applied. `migrations_dir` defaults to `src/tutor/db/migrations/`.
+- `MigrationError` covers a refused target, and a migration that failed and was rolled back.
+- `tutor migrate [--db PATH]`; `PATH` defaults to `paths.analysis_db`. It exits 1 with a message on
+  stderr on error (D-030).
+- `schema_migrations.name` is the file name with the number and `.sql` removed: `0001_init.sql`
+  → `init`.
+- The refusal covers both `paths.capture_db` and `paths.eval_capture_db`, compared after resolving
+  symlinks and `..`, and happens before the file is opened.
+- The acceptance test checks `0001_init.sql` against the SQL block in architecture §3.2: both are
+  applied to empty databases and the schemas compared, ignoring comments and whitespace.
+**Why.** `migrations_dir` lets a test supply a migration that fails partway, which is the only
+way to check the one-transaction rule. Comparing against the doc's own DDL means the migration
+and the architecture can't drift apart unnoticed. The frozen copy is refused as well as the live
+DB because it must never change either (D-016).
+**Supersedes.** —

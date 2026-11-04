@@ -505,6 +505,18 @@ CI; rewriting code beyond what the tools flag.
 **Test assets:** required. `/test write T-008` writes the migration-manifest contract test, the
 capture-path refusal, and acceptance tests for Done-when 2, 3 and 6.
 **Log**
+- 2026-11-03 `/test write T-008`. Interfaces pinned with the human (D-032). Written:
+  `tests/contract/test_migrations.py` (11 tests: at least one migration; hashes match
+  `migrations/manifest.json`; numbering with no gaps; no `IF NOT EXISTS`; refusal of both
+  capture DBs by plain path, `..` path and symlink, and of a capture DB that doesn't exist yet,
+  without creating it); `tests/acceptance/test_t008_migrations.py` (17 tests: Done-when 1, the
+  schema equals architecture §3.2's DDL, plus a header about rows; Done-when 2, creates every
+  table and index, version 1 recorded, second run a no-op, CLI default and `--db`, refusal exit
+  1; Done-when 3, a failing `0002` rolls back to version 1 with no partial table or rows, then
+  applies once fixed; Done-when 6, valid rows accepted, and 8 bad values rejected). Checked the
+  tests against the §3.2 DDL directly: they pass on it. Result: 26 fail for the right reason
+  (no `tutor.db`, no `migrate` command, no `0001_init.sql`); 2 contract tests pass vacuously
+  while there are no files, and the at-least-one test covers that. Rest of the suite unchanged.
 
 ### T-009 · Condenser `c1`
 **Milestone:** M1 · **Size:** M · **Owner:** build
