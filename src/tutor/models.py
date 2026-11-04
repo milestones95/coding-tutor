@@ -31,6 +31,27 @@ class Verdict(StrEnum):
     COMPILE_ERROR = "Compile Error"
 
 
+class Status(StrEnum):
+    """Session status (§4.3, D-014, D-022). A fact read from the verdict, never an LLM guess."""
+
+    PASSED = "passed"
+    FAILED_WRONG_ANSWER = "failed_wrong_answer"
+    FAILED_TOO_SLOW = "failed_too_slow"
+    FAILED_OUTPUT_LIMIT = "failed_output_limit"
+    FAILED_RUNTIME_ERROR = "failed_runtime_error"
+    NOT_SUBMITTED = "not_submitted"
+    UNKNOWN = "unknown"
+
+
+class StatusSource(StrEnum):
+    """Where a status came from (§3.2 `sessions.status_source`)."""
+
+    CAPTURE_SUBMIT = "capture_submit"
+    HUMAN_RESUBMIT = "human_resubmit"
+    NO_SUBMIT = "no_submit"
+    NOT_CAPTURED = "not_captured"
+
+
 class _Model(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 

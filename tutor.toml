@@ -11,7 +11,7 @@ verdicts = "data/labels/verdicts.csv"          # hand-backfilled verdicts (D-005
 logs = "logs"
 
 [capture]
-# submits_reliable_since = "YYYY-MM-DD"  # unset until submit capture is fixed and verified (T-001)
+submits_reliable_since = "2026-11-04"  # human, T-001: submit capture verified 2026-11-03 (D-024)
 
 [time]
 timezone = "America/New_York"
