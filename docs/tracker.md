@@ -447,7 +447,7 @@ and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` 
 | T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | ✅ 2026-11-03 `/test run` | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
 | T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | ✅ 2026-11-03 `/test run` | arch §3.2–3.3 |
 | T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ✅ 2026-11-03 `/test run` | arch §5; eval-plan condensing tests; D-006, D-013 |
-| T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | 🔄 built 2026-11-03, awaiting `/test run` | arch §4.3, §5.1; D-014, D-019, D-020 |
+| T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.3, §5.1; D-014, D-019, D-020 |
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ⬜ | arch §5.6, §13; D-012 |
 | T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | ⬜ | M1 checkpoint; eval-plan condensing tests |
 
@@ -645,6 +645,13 @@ and the time zone and DST date cases.
   `tests/unit/test_deterministic_internals.py` (3). Gate clean (mypy, 21 files). Suite: 325
   passed, 6 skipped, 1 deselected; `live_capture` 6/6, so the frozen sessions are still "not
   reliable". T-010 acceptance 31/31.
+- 2026-11-03 `/test run` → ✅. The builder's diff (`34a4ed7`) touches no judging files; the one
+  test change (`57b3c82`) came through `/test write` with a written reason. Lint + types clean
+  (mypy, 21 files). Python: contract 49, acceptance 200 (T-010 31/31; +6 `live_capture`: 6/6),
+  unit 76. Capture: unit 8/8, contract 20/20, `tsc` clean. `tutor prompts check` ok. Done-when
+  1–6 met. Extra check on real data (read-only, frozen copy): status gives 7 `passed` + 1
+  `failed_wrong_answer`, all `human_resubmit`, which matches the human's `verdicts.csv` for the
+  8 sessions. Cost: $0.
 
 ### T-011 · Deterministic pipeline: `tutor analyze`, `rebuild-timelines`, `check`
 **Milestone:** M1 · **Size:** M · **Owner:** build
