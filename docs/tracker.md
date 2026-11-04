@@ -630,6 +630,12 @@ and the time zone and DST date cases.
   Reason: the human set 2026-11-04 in T-001 and T-010 writes it (Done-when 5); the T-003
   checks were written before that decision. Result: 33 fail for the right reason (no
   `tutor.fields`, no enums, cutoff not yet in `tutor.toml`). Rest of the suite unchanged.
+- 2026-11-03 `/test write T-010` (fix). `test_t004_loader.py`'s `settings_for(since=None)` now
+  loads a copy of `tutor.toml` without `submits_reliable_since`. Reason: its "unset → never
+  reliable" case relied on the real file having no cutoff, which T-010 changes (Done-when 5).
+  An env var can't unset a key, so the copy is the only true "unset". A miss in this task's
+  first `/test write`, which updated the two T-003 checks but not this one. Nothing the test
+  checks was loosened.
 
 ### T-011 · Deterministic pipeline: `tutor analyze`, `rebuild-timelines`, `check`
 **Milestone:** M1 · **Size:** M · **Owner:** build
