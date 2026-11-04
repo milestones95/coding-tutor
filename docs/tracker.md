@@ -445,7 +445,7 @@ and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | ✅ 2026-11-03 `/test run` | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
-| T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | ⬜ | arch §3.2–3.3 |
+| T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | 🔄 built 2026-11-03, awaiting `/test run` | arch §3.2–3.3 |
 | T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ⬜ | arch §5; eval-plan condensing tests; D-006, D-013 |
 | T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ⬜ | arch §4.3, §5.1; D-014, D-019, D-020 |
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ⬜ | arch §5.6, §13; D-012 |
@@ -522,6 +522,14 @@ capture-path refusal, and acceptance tests for Done-when 2, 3 and 6.
   fake migrations didn't, so `migrate` failed before reaching the broken `0002`. Nothing the
   tests check was loosened: rollback to version 1, no partial table, no leftover rows, and
   the fixed migration then applies.
+- 2026-11-03 `/build T-008` → 🔄. `src/tutor/db/`: `migrations/0001_init.sql` (§3.2 DDL copied
+  programmatically from the architecture, plus a header on existing rows and rebuild cost),
+  `migrations/manifest.json`, `migrate.py` (`discover`, `current_version`, `migrate`,
+  `MigrationError`). `tutor migrate [--db]` added to `cli.py`. Each file runs as `BEGIN;` + file
+  via `executescript` on an autocommit connection, the version row is inserted with bound
+  params, then `COMMIT`; any error → `ROLLBACK` + `MigrationError` naming the file. Unit tests:
+  `tests/unit/test_migrate_internals.py` (12). Gate clean (ruff; mypy 18 files). Suite: 257
+  passed, 6 skipped, 1 deselected — T-008 contract 11/11, acceptance 17/17. D-033.
 
 ### T-009 · Condenser `c1`
 **Milestone:** M1 · **Size:** M · **Owner:** build

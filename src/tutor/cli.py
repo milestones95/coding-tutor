@@ -1,6 +1,6 @@
 """Command-line entry points: `tutor` and `tutor-eval` (architecture §2, §8.2).
 
-Subcommands so far: `tutor prompts check` (T-005), `tutor smoke` (T-007). Each task adds its own subcommand (`analyze`, `ask`, `migrate`,
+Subcommands so far: `tutor prompts check` (T-005), `tutor smoke` (T-007), `tutor migrate` (T-008). Each task adds its own subcommand (`analyze`, `ask`, `migrate`,
 `run`, `estimate`, …) when it is built. argparse keeps this dependency-free.
 """
 
@@ -28,6 +28,10 @@ def _tutor_parser() -> argparse.ArgumentParser:
     smoke.add_argument("--model", default=None, metavar="PROVIDER:MODEL",
                        help="override the configured model for this run, e.g. openai:gpt-5.5")
     smoke.set_defaults(handler=_smoke)
+
+    mig = sub.add_parser("migrate", help="apply pending analysis.db migrations (architecture §3.3)")
+    mig.add_argument("--db", type=Path, default=None, help="database to migrate (default: paths.analysis_db)")
+    mig.set_defaults(handler=_migrate)
     return p
 
 
@@ -61,6 +65,21 @@ def _smoke(args: argparse.Namespace) -> int:
         return 1
     print(json.dumps({"session_id": args.session, "output": result.output.model_dump(), "call_id": result.call_id,
                       "model": str(ref), "cost_usd": result.usage.cost_usd}))
+    return 0
+
+
+def _migrate(args: argparse.Namespace) -> int:
+    from tutor.config import ConfigError, load_settings
+    from tutor.db.migrate import MigrationError, migrate
+
+    try:
+        settings = load_settings()
+        target = args.db or settings.paths.analysis_db
+        applied = migrate(target, settings=settings)
+    except (MigrationError, ConfigError) as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"{target}: applied {applied}" if applied else f"{target}: up to date")
     return 0
 
 

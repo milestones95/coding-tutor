@@ -542,3 +542,20 @@ way to check the one-transaction rule. Comparing against the doc's own DDL means
 and the architecture can't drift apart unnoticed. The frozen copy is refused as well as the live
 DB because it must never change either (D-016).
 **Supersedes.** —
+
+## D-033 · Migration runner details left open by D-032 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. Each migration runs as `BEGIN;` + the file through `executescript`, on an autocommit
+   connection (`isolation_level=None`). The `schema_migrations` row is then inserted with bound
+   parameters and `COMMIT` sent. On any `sqlite3.Error` the runner sends `ROLLBACK` and raises
+   `MigrationError` naming the file.
+2. A migration file may not contain `BEGIN`, `COMMIT`, `ROLLBACK` or `END` statements; `migrate`
+   refuses such a file before running it.
+3. `migrate` doesn't check `migrations/manifest.json` at run time. The contract test enforces it.
+**Why.** (1) On its own, `executescript` commits before running and keeps whatever ran before a
+failure. Starting the script with `BEGIN` puts the file and its version row in one
+transaction. Splitting files into statements would need a SQL splitter, which is fragile around
+semicolons inside strings. (2) A transaction statement inside a file would silently break that
+rule. (3) A hash check at run time would block `tutor migrate` locally for a mismatch the
+contract test already reports.
+**Supersedes.** —
