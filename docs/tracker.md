@@ -17,7 +17,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 | # | Milestone | Status | Checkpoint |
 |---|---|---|---|
 | M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ✅ 2026-11-03 (T-007) | One captured session loads, validates, and one logged LLM call runs |
-| M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ⬜ | Unit tests green on real + hand-built sessions; token budget measured |
+| M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ✅ 2026-11-03 (T-012) | Unit tests green on real + hand-built sessions; token budget measured |
 | M2 | Dataset + eval runner: 30 cases (≈ 8 real + ≈ 22 Claude-generated, D-017), Anthropic adapter, split 20/10 | ⬜ | Runner writes a versioned result record for a trivial grader |
 | M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
 | M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
@@ -449,7 +449,7 @@ and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` 
 | T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ✅ 2026-11-03 `/test run` | arch §5; eval-plan condensing tests; D-006, D-013 |
 | T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.3, §5.1; D-014, D-019, D-020 |
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ✅ 2026-11-03 `/test run` | arch §5.6, §13; D-012 |
-| T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | ⬜ | M1 checkpoint; eval-plan condensing tests |
+| T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | ✅ 2026-11-03 `/test run` | M1 checkpoint; eval-plan condensing tests |
 
 ### T-013 · Python lint + type gate
 **Milestone:** M1 · **Size:** S · **Owner:** build
@@ -740,6 +740,12 @@ for each Done-when.
 - 2026-11-03 **Human confirmation (Done-when 3):** the human read both rendered timelines
   (`sort-colors` 81224169, `coin-change` be762faa) and confirmed: "these timelines look
   correct". Ready for `/test run`.
+- 2026-11-03 `/test run` → ✅. Since T-011's ✅, only tester commits (`1ed2b66`, `bf29755`).
+  Done-when 1, every gate green: lint + types clean (ruff; mypy 23 files); contract 49;
+  acceptance 218 (+10 `live_capture`: 10/10, including T-012's 4); unit 83; capture unit 8/8,
+  contract 20/20, `tsc` clean; `tutor prompts check` ok. Done-when 2: measured and recorded
+  above (c1: max 5,956, median 2,256 est. tokens, none truncated). Done-when 3: the human's
+  confirmation is in this log. **M1 checkpoint met.** Cost: $0.
 
 **Stuck periods → course correction (2026-11-03, D-026).** Measured on 26 real sessions
 (`scripts/discovery/18_stuck_periods.py`), the "no edits for 6+ min" rule never fired, so stuck
