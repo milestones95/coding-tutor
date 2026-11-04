@@ -437,9 +437,10 @@ fake OpenAI server from `tests/contract/test_openai_adapter.py`.
 
 ## Tasks — active milestone: M1
 
-M0 closed 2026-11-03. The rows below are the reserved M1 tasks. None has Done-when / Not
-included detail yet: `/pm plan` writes it before `/test write` on any of them. T-013 is new
-from this review and comes first.
+M0 closed 2026-11-03. Planned in detail 2026-11-03 (`/pm plan`). Order:
+**T-013 → T-008 → T-009 → T-010 → T-011 → T-012**. T-010 reuses T-009's time helper (§5.1),
+and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` → `/build` →
+`/test run`.
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
@@ -449,6 +450,132 @@ from this review and comes first.
 | T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ⬜ | arch §4.3, §5.1; D-014, D-019, D-020 |
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ⬜ | arch §5.6, §13; D-012 |
 | T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | ⬜ | M1 checkpoint; eval-plan condensing tests |
+
+### T-013 · Python lint + type gate
+**Milestone:** M1 · **Size:** S · **Owner:** build
+**Traces to:** the `/test run` gate table ("Lint + types", blocking). Skipped in every verdict
+from T-003 to T-007 because nothing was configured.
+**Done when:**
+1. A linter and a type checker, chosen with the human at `/build` and recorded in
+   `docs/decisions.md`, are dev dependencies configured in `pyproject.toml`.
+2. One command runs both over `src/` and `tests/` and exits 0 on the current code. The command
+   is written in this task's log, and `/test run` uses it from then on.
+3. The suite still passes (217 + 6 `live_capture`).
+**Not included:** TypeScript lint (the capture code already has `tsc`); pre-commit hooks;
+CI; rewriting code beyond what the tools flag.
+**Test assets:** none. The gate is the check.
+**Log**
+
+### T-008 · `analysis.db` migrations
+**Milestone:** M1 · **Size:** M · **Owner:** build
+**Traces to:** architecture §3.2, §3.3; §2 (`db/migrate.py`, `tutor migrate`).
+**Done when:**
+1. `src/tutor/db/migrations/0001_init.sql` holds the §3.2 DDL exactly, with a header comment
+   saying what happens to existing rows (§3.3). No migration file contains `IF NOT EXISTS`.
+2. `tutor migrate` on a missing file creates `paths.analysis_db` with every §3.2 table and
+   index, and records version 1 in `schema_migrations`. Running it again applies nothing and
+   changes nothing.
+3. Each migration runs in one transaction. A migration that fails partway leaves the database
+   at the previous version, with no partial tables.
+4. `migrate` refuses a target that resolves to `paths.capture_db` or `paths.eval_capture_db`,
+   and opens neither file.
+5. `src/tutor/db/migrations/manifest.json` records each migration's sha256. A contract test
+   fails when a file and its entry differ.
+6. The CHECK constraints reject bad values: an unknown `status`, `status_source`,
+   `failure_type` or algorithm label, and a `truncated` other than 0 or 1.
+**Not included:** writing any rows (T-011); the read-only connection for the Progress Agent
+(M5, Part 2); the fixture DB (M5).
+**Test assets:** required. `/test write T-008` writes the migration-manifest contract test, the
+capture-path refusal, and acceptance tests for Done-when 2, 3 and 6.
+**Log**
+
+### T-009 · Condenser `c1`
+**Milestone:** M1 · **Size:** M · **Owner:** build
+**Traces to:** architecture §5.1–§5.5, §4.1 (`ChangeSummary`, `Moment`, `CondensedSession`);
+eval-plan condensing step and its unit tests; D-006, D-013, D-026.
+**Done when:** `condense`, `render` and `change_summary` in `src/tutor/condense.py` meet §5,
+checked on hand-built sessions:
+1. **Every run and submit is kept, with its result** (eval plan). A backfilled submit
+   (`ts=None`) comes after `final` as "SUBMIT (time not captured)".
+2. **A snapshot every 2 minutes while the code changes, plus one at each run and submit**
+   (eval plan). A tick whose code equals the last kept code is skipped. A run or submit on
+   unchanged code gets `code=None` with `code_ref`. `opened` and `final` are always present.
+3. **Elapsed times match the raw timestamps** (eval plan): `t0`, `t_end` and `duration_min`
+   follow §5.1, and ties order `timed < run < submit < final`.
+4. `change_summary` follows §5.3. A rewrite (≥ 50% changed) sets `rewrite`.
+5. `render` follows §5.5. `error_detail` is cut at `condenser.error_max_chars` with
+   "… [truncated]".
+6. **A hand-built 60-minute session fits 16,000 estimated tokens** (eval plan). An
+   over-budget session drops `timed` code earliest first, keeps its change summary, and sets
+   `truncated`. If it's still over, `CondenseBudgetError` is raised.
+7. Pure: the same input gives byte-identical `render` output. No I/O, clock or randomness.
+**Not included:** storing timelines (T-011); measuring real sessions (T-012); stuck periods
+(deferred, D-026); any LLM field.
+**Test assets:** required. `/test write T-009` writes hand-built sessions with known
+timestamps. Each eval-plan condensing test is a named acceptance test.
+**Log**
+
+### T-010 · Deterministic fields: problem, time to finish, attempted at, status
+**Milestone:** M1 · **Size:** M · **Owner:** build
+**Traces to:** architecture §4.2, §4.3, §5.1; eval-plan field table; D-014, D-019, D-022, D-024.
+**Done when:** `src/tutor/fields/deterministic.py`:
+1. **Problem** returns the session's slug, title, difficulty and tags.
+2. **Time to finish** uses the same §5.1 helper as the condenser, so it equals
+   `duration_min`: first event to the last captured submit, else the last event. It is
+   rounded to 1 decimal.
+3. **Attempted at** gives the first event in UTC and the local date in `time.timezone`
+   (America/New_York). A session after 8 pm New York time gets the earlier local date, and a
+   session on 2026-11-01 (the DST change) gets the right date.
+4. **Status** follows every row of the §4.3 table, including `failed_output_limit` (D-022),
+   `not_submitted` versus `unknown` by `submit_capture_reliable`, and an unmapped verdict:
+   `unknown`, logged as `unmapped_verdict` without raising. `leetcode_verdict`, the test counts
+   and `status_source` come from the final submit.
+5. `tutor.toml` sets `capture.submits_reliable_since = "2026-11-04"` (D-024, the human's T-001
+   decision). `/test write T-010` updates the T-003 test that asserts it is unset, with a
+   written reason.
+6. Nothing in this module calls an LLM or imports `tutor.llm`.
+**Not included:** failure type or any LLM field (M3); writing rows (T-011).
+**Test assets:** required. `/test write T-010` writes one acceptance test per status-table row
+and the time zone and DST date cases.
+**Log**
+
+### T-011 · Deterministic pipeline: `tutor analyze`, `rebuild-timelines`, `check`
+**Milestone:** M1 · **Size:** M · **Owner:** build
+**Traces to:** architecture §5.6, §13, §2 (`analyzer/pipeline.py`, `cli.py`); D-012.
+**Done when:**
+1. `tutor analyze [--since DATE]` loads sessions from `paths.capture_db` (`mode=ro`). In one
+   transaction it upserts `problems`, `sessions` (T-010's facts, plus run and submit counts)
+   and `condensed_timelines` (T-009 output, `est_tokens`, `truncated`) into a migrated
+   `paths.analysis_db`. It refuses to run on an unmigrated DB.
+2. Running it twice on the same capture leaves identical rows, except `loaded_at` and
+   `built_at`.
+3. `pipeline.jsonl` gets one line per session: `loaded`, `excluded` with its reason, or
+   `condensed`.
+4. `tutor rebuild-timelines` re-condenses every loadable session in one transaction. A stored
+   timeline whose session no longer loads is kept and logged as `orphaned`.
+5. `tutor check` lists `session_analysis` rows whose `condenser_version` differs from their
+   timeline's, and exits non-zero when any exist.
+6. The capture DB file is byte-identical after any of these commands. No `session_analysis`
+   column is written.
+**Not included:** LLM fields (M3–M4); the eval runner (M2); `--since` beyond a start-date
+filter.
+**Test assets:** required. `/test write T-011` writes acceptance tests on a tiny capture DB
+for each Done-when.
+**Log**
+
+### T-012 · M1 checkpoint: real sessions condensed, token budget measured
+**Milestone:** M1 · **Size:** S · **Owner:** test
+**Traces to:** M1 checkpoint; eval-plan condensing tests and token budget.
+**Done when:**
+1. Every test is green: contract, acceptance, unit, `live_capture`, and lint/types (T-013).
+2. All 8 frozen sessions condense with every run and submit kept and within budget. Max and
+   median `est_tokens` are recorded in this task's log, against the ≈ 2,400 average in
+   `session-format.md`.
+3. The human reads the rendered timeline of 2 real sessions and confirms in this log that it
+   matches what happened. This is a tester-owned task, so it can't close without that.
+**Not included:** live-DB sessions beyond the frozen 8; any LLM call.
+**Test assets:** required. A `live_capture` acceptance test over the frozen copy.
+**Log**
 
 **Stuck periods → course correction (2026-11-03, D-026).** Measured on 26 real sessions
 (`scripts/discovery/18_stuck_periods.py`), the "no edits for 6+ min" rule never fired, so stuck
@@ -530,3 +657,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-02 | — | — | T-001, T-002 | `/pm idea`: submit capture fix added to M0 (eval-plan build order 1). T-001 finding written (`/v2/check/` regex miss). T-002 added (D-015, capture moves here; capture only). `/pm plan` not yet run. |
 | 2026-11-02 | — | — | T-003 – T-007 (M0); T-008 – T-012 reserved (M1) | `/pm plan` (first plan). M0 = 7 tasks, 2 of them capture. Baselines table: status rows removed (D-014). |
 | 2026-11-03 | T-001, T-004, T-005, T-006, T-007; **M0 ✅** | — | T-013 | `/pm review`, the first. Repo matches the tracker: every M0 task has `/test write` → `/build` → `/test run` with commits, and nothing is 🔄 or 👀. Unplanned work: one item, the human's extension rename (`c39c1c8`, 1 line in `manifest.json`), already noted in T-002's log; not a creep signal. Added since the plan: 1 (T-013). Deferred: 7 (+3 today: Part 2, stuck periods, `prompts lock`). Dropped: 1. Real LLM spend: ≈ $0.0045 (3 smoke calls); no eval runs yet. 10 commits on `m0-architecture-and-tests` not pushed. For `/architect`: §12 says "no test reads `data/`" but the `live_capture` tests and T-007's `llm` test do; §12 names no lint/type tools (T-013 decides them). |
+| 2026-11-03 | — | — | — | `/pm plan` for M1: Done-when / Not included / test assets written for T-008 – T-013. No new tasks. Order T-013 → T-008 → T-009 → T-010 → T-011 → T-012. Branch `m1-deterministic` off `main`. |
