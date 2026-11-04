@@ -640,3 +640,20 @@ than loaded inside, so the tests can pin the timezone and the log path.
 names, or what `--since` compares. A failed run must leave the database as it was, or a
 half-written `analysis.db` would read as complete.
 **Supersedes.** —
+
+## D-038 · Pipeline build details left open by D-037 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. `rebuild-timelines` covers sessions that already have a `sessions` row. A loadable session
+   that was never analyzed is skipped and counted in the summary.
+2. `check` treats an analysis row with no stored timeline as stale, as well as one with a
+   different `condenser_version`.
+3. Stored timestamps (`attempted_at_utc`, `loaded_at`, `built_at`) are ISO-8601 UTC with
+   milliseconds and `Z`, as capture writes them.
+4. Every command condenses everything in memory first, then writes it all in one transaction.
+5. `open_analysis_db` opens with `mode=rw`, so a missing file is an error and never created.
+   It refuses capture paths through `migrate.refuse_capture`, now public.
+**Why.** (1) Adding a session is `analyze`'s job; a rebuild that inserted timelines would leave
+rows with no `sessions` row. (2) Fields built from a timeline that's no longer stored are as
+untrustworthy as fields built from an old version. (4) A condense failure then happens before
+the first write, and a write lock isn't held while condensing.
+**Supersedes.** —

@@ -50,7 +50,7 @@ def discover(migrations_dir: Path) -> list[Migration]:
     return found
 
 
-def _refuse_capture(target: Path, settings: Settings) -> None:
+def refuse_capture(target: Path, settings: Settings) -> None:
     resolved = target.resolve()
     for key, capture in (("paths.capture_db", settings.paths.capture_db),
                          ("paths.eval_capture_db", settings.paths.eval_capture_db)):
@@ -85,7 +85,7 @@ def _apply(con: sqlite3.Connection, m: Migration) -> None:
 def migrate(db_path: Path | str, *, settings: Settings, migrations_dir: Path | None = None) -> list[int]:
     """Apply pending migrations to `db_path`. Returns the versions applied by this run."""
     target = Path(db_path)
-    _refuse_capture(target, settings)
+    refuse_capture(target, settings)
     pending_all = discover(migrations_dir or MIGRATIONS_DIR)
     target.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(target, isolation_level=None)  # autocommit: transactions are explicit
