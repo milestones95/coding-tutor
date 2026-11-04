@@ -25,7 +25,6 @@ Code first condenses each captured session. Then it produces seven fields: four 
 - Every run and submit with its result and error message
 - A change summary for each kept snapshot (lines added/removed, fraction changed, rewrite flag), so big rewrites (new approaches) stand out (D-013)
 - Timestamps and elapsed minutes
-- Stuck periods, flagged by rule: 3+ failing runs in a row with the same error, or 3+ snapshots in a row (6+ minutes) with under ~5 lines changed and no passing run. Each period gets a start and end time. Tune the thresholds on real sessions
 
 Every LLM field reads this condensed version. It is stored in the analysis database, where Part 2 reads it with `run_sql` (D-012). How much condensing is needed depends on what the capture tool records (every keystroke vs. periodic snapshots). The raw events stay stored; condensing only decides what the LLM sees.
 
@@ -37,7 +36,7 @@ Every LLM field reads this condensed version. It is stored in the analysis datab
 | Status | LeetCode verdict of the final submit, read by code (D-014); `unknown` when no verdict was captured | One of: Passed · Failed – wrong answer · Failed – too slow · Failed – output limit exceeded · Failed – runtime error · Not submitted · Unknown. The verdict text is mapped by a fixed table (D-019) and also kept verbatim |
 | Failure reason | LLM reads the condensed events | One failure type (list below) + a 1–2 sentence explanation |
 | Algorithm type | LLM reads the final code | Up to 2 labels from the fixed list below |
-| Timeline summary | LLM reads the condensed events | 3–5 sentences: approaches tried, where I got stuck, pivots, final outcome |
+| Timeline summary | LLM reads the condensed events | 3–5 sentences: approaches tried, whether the first approach was on the right track and whether I course-corrected, final outcome |
 
 **Failure types:** edge case missed · wrong approach · too slow (complexity) · implementation bug · didn't finish · none (passed).
 
@@ -47,7 +46,7 @@ Every LLM field reads this condensed version. It is stored in the analysis datab
 
 Start with 30 labeled sessions, measure a baseline, then set targets. The targets below are starting points, not commitments.
 
-**Dataset:** 30 sessions, split 20 dev / 10 test. Mix real sessions from the capture tool with synthetic ones. Cover every failure type and the common algorithms. Real captured data supplies about 8 cases; the rest are synthetic. Include a few clean sessions with no stuck periods, to catch invented struggles. For each session, I write the algorithm label, the failure type, and a short list of key facts about the timeline.
+**Dataset:** 30 sessions, split 20 dev / 10 test. Mix real sessions from the capture tool with synthetic ones. Cover every failure type and the common algorithms. Real captured data supplies about 8 cases; the rest are synthetic. Include a few sessions where the first approach was already right, to catch invented course corrections. For each session, I write the algorithm label, the failure type, whether the first approach was on the right track (and if not, whether and at about what minute I course-corrected), and a short list of key facts about the timeline.
 
 | Field | Grader | Metric | Starting target |
 | --- | --- | --- | --- |
@@ -60,8 +59,8 @@ Start with 30 labeled sessions, measure a baseline, then set targets. The target
 **Summary checklist:**
 
 - Mentions every approach I tried
-- Says where I got stuck: mentions every stuck period the condensing step flagged, with its rough time, and what was going wrong
-- Doesn't claim I got stuck outside the flagged periods. If none were flagged, it doesn't mention getting stuck at all
+- Says whether my first approach was on the right track, and if it wasn't, whether and roughly when I course-corrected
+- Doesn't invent a course correction: if my approach never changed, it says so
 - Names the final approach and outcome
 - No invented events
 - 5 sentences or fewer
@@ -72,7 +71,6 @@ Start with 30 labeled sessions, measure a baseline, then set targets. The target
 - There's a snapshot every 2 minutes while the code changes, plus one at each run and each submit
 - Elapsed times match the raw timestamps
 - A 60-minute session fits a token budget of 16,000 estimated tokens, from the worst measured rate of 253 tokens/min
-- Flagged stuck periods match the ones I hand-label on dev sessions (roughly the same start and end times)
 
 **Checking the judge:** I hand-grade 20 outputs and measure how often the LLM judge agrees with me. Don't trust judge scores until agreement is at least 85%.
 

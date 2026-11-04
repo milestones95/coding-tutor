@@ -385,14 +385,11 @@ Starts when M0 is ✅. IDs are reserved; detail is final but may be re-sized at 
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | arch §5.6, §13; D-012 |
 | T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | M1 checkpoint; eval-plan condensing tests |
 
-**Pending `/architect` (eval plan updated 2026-11-03): stuck periods.** The condensing step now
-flags stuck periods by rule (3+ failing runs in a row with the same error, or 3+ snapshots /
-6+ min with under ~5 lines changed and no passing run), each with a start and end. Not yet in
-architecture §5: the model (`CondensedSession` / `Moment`), the exact rule and its thresholds
-(config), the render line, `CONDENSER_VERSION`, the hand-label format for dev sessions, and the
-"roughly the same start and end" tolerance. T-009 is re-sized or split once that is written.
-Also new for M2/M4: a few clean sessions with no stuck periods in the dataset, and two timeline
-checklist items (every flagged period mentioned; no stuck claims outside them).
+**Stuck periods → course correction (2026-11-03, D-026).** Measured on 26 real sessions
+(`scripts/discovery/18_stuck_periods.py`), the "no edits for 6+ min" rule never fired, so stuck
+periods are deferred. The timeline summary instead says whether the first approach was on the
+right track and whether / when the user course-corrected. No condenser change (rewrite flags,
+D-013, already show new approaches); M2 labels gain `course_correction`; M4's checklist checks it.
 
 **Later milestones (one line each until M1 closes):** M2: specs + Claude generator
 + review loop, Anthropic adapter, dataset split, runner and result record with real/synthetic
@@ -450,6 +447,7 @@ Every item has a trigger: the condition that would make it worth doing.
 | Per-session planning / coding / debugging minutes | Open question in eval plan | After M6, if aggregate questions fail for lack of data |
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
+| Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
 ## Dropped
 

@@ -719,8 +719,10 @@ contract tests, not eval suites.)
 - Synthetic: `"session": {"synthetic_path": "evals/data/sessions/synthetic/<id>.json"}`,
   including its own verdict in a `SubmitEvent`.
 - `expected` per suite: `failure` → `{failure_type, key_facts[]}`; `algorithm` →
-  `{labels[]}`; `timeline` → `{checklist: {approaches[], stuck_point, final_approach,
-  outcome}, key_facts[]}`; `agent` → `{kind: "factual"|"judgment", answer_set[] |
+  `{labels[]}`; `timeline` → `{checklist: {approaches[], course_correction, final_approach,
+  outcome}, key_facts[]}`, where `course_correction` = `{first_approach_on_track: bool,
+  corrected: bool | null, at_min: float | null}` (`corrected`/`at_min` null when the first
+  approach was on track; D-026); `agent` → `{kind: "factual"|"judgment", answer_set[] |
   expected_findings[]}`.
 - Failure-type accuracy is reported separately for rule-decided and LLM-decided cases, so
   the rules can't inflate the LLM's number. The runner never passes `expected` to a field
@@ -776,7 +778,7 @@ Every number printed by the runner is printed with its version string, e.g.
 
 ```python
 class Grade(BaseModel):
-    metric: str                  # 'failure_type_exact', 'algorithm_overlap', 'checklist.stuck_point', …
+    metric: str                  # 'failure_type_exact', 'algorithm_overlap', 'checklist.course_correction', …
     value: float                 # 0..1
     detail: str | None = None
 
@@ -815,7 +817,8 @@ approved by the human (rule 11):
  "verdict": {"status": "Time Limit Exceeded", "tests_passed": 41, "tests_total": 63},
  "labels": {"failure_type": "too_slow", "algorithms": ["dynamic_programming"]},
  "story": {"approaches": ["brute force recursion", "memoised recursion"],
-           "stuck_point": "…", "final_approach": "…"},
+           "course_correction": {"first_approach_on_track": false, "corrected": true, "at_min": 9},
+           "final_approach": "…"},
  "key_facts": ["…"]}
 ```
 

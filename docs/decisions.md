@@ -403,3 +403,23 @@ The loader is the validation boundary: a row it can't represent faithfully stops
 rather than becoming a guessed default that later reads as a fact. (3) Log lines without a run
 id can't be tied back to the run that wrote them (§13).
 **Supersedes.** —
+
+## D-026 · Stuck periods deferred; the timeline reports course correction instead · 2026-11-03 · human
+**Decision.** The condensing step does not flag stuck periods. The timeline summary says
+whether the first approach was on the right track and, if not, whether and roughly when the
+user course-corrected; its checklist checks that, and that it doesn't invent a correction.
+The human labels each dataset session with `course_correction = {first_approach_on_track,
+corrected, at_min}`. The condenser is unchanged: rewrite flags (D-013) already mark new
+approaches. Rule-based stuck periods go to Deferred.
+**Why.** Measured on all 26 real sessions (8 frozen + 18 live,
+`scripts/discovery/18_stuck_periods.py`): "3+ ticks / 6+ min with < 5 lines changed" never
+fired; even < 10 lines, and net change instead of churn, found nothing. Snapshots are saved
+on every change (~5 s) and no real session has a 4-minute gap, so the only hit was one page
+left open. "3+ failing runs with the same error" found 3 periods only when "same" meant the
+same status; with the error text it found 1, because output/expected values change as code
+is edited. A rule that never fires can't be tuned on real sessions, as the plan requires.
+Whether an approach was wrong is a judgment, which belongs to the LLM field and a human label.
+**Rejected.** (a) Keep rule B and exercise it only with synthetic sessions: tests a behaviour
+real data never shows. (b) Rule A alone with "same status": catches repeated wrong answers but
+not wrong approaches, and its 3 periods were not yet confirmed by the human.
+**Supersedes.** — (reverses the eval plan's 2026-11-03 stuck-period additions)
