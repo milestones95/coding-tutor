@@ -724,6 +724,19 @@ for each Done-when.
 **Not included:** live-DB sessions beyond the frozen 8; any LLM call.
 **Test assets:** required. A `live_capture` acceptance test over the frozen copy.
 **Log**
+- 2026-11-03 `/test write T-012`. Written: `tests/acceptance/test_t012_m1_checkpoint.py`
+  (4 tests, `live_capture`, frozen copy opened immutable): all 8 condense; every run and submit
+  is in its timeline; each fits the budget untruncated; the stored JSON re-renders identically.
+  These check code that already exists, so they pass now: 4/4.
+  **Token budget measured (Done-when 2), c1, default settings:** est. tokens per session
+  484 / 773 / 1,209 / 1,352 / 3,160 / 3,419 / 4,952 / 5,956. **Max 5,956, median 2,256**,
+  vs the ≈ 2,400 average in `session-format.md` and the 16,000 budget; none truncated.
+  Two rendered timelines written locally (scratchpad, not committed: they hold the human's
+  code) for the human's Done-when 3 review: `sort-colors` 81224169 (the Wrong Answer
+  59/90 session, 24.3 min, 5 runs, 18 moments) and `coin-change` be762faa (6 runs, the most).
+  Note: architecture §5.5's example of this sort-colors session says 24.4 min; the real
+  duration is 24 min 20 s = 24.3, so the example was approximate. **Waiting on the human's
+  confirmation.**
 
 **Stuck periods → course correction (2026-11-03, D-026).** Measured on 26 real sessions
 (`scripts/discovery/18_stuck_periods.py`), the "no edits for 6+ min" rule never fired, so stuck
