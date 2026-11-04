@@ -82,7 +82,8 @@ class FakeOpenAI:
 
             def do_POST(self):
                 raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
-                outer.requests.append({"path": self.path, "headers": dict(self.headers),
+                # Header names are case-insensitive (RFC 9110); store them lower-cased so lookups are too.
+                outer.requests.append({"path": self.path, "headers": {k.lower(): v for k, v in self.headers.items()},
                                        "body": json.loads(raw or b"{}")})
                 kind, arg = outer.replies.pop(0) if outer.replies else ("ok", None)
                 try:
@@ -247,7 +248,7 @@ def test_the_key_comes_from_the_environment_and_is_never_logged(tmp_path, server
     server.replies = [(401, None)]
     with pytest.raises(LLMProviderError) as err:
         call(c, prompt)
-    assert server.requests[0]["headers"].get("Authorization") == f"Bearer {KEY}"
+    assert server.requests[0]["headers"].get("authorization") == f"Bearer {KEY}"
     assert KEY not in str(err.value) and KEY not in repr(err.value)
     logged = _everything_logged(tmp_path)
     assert "llm_calls.jsonl" in str(list((tmp_path / "logs").rglob("*"))) and logged

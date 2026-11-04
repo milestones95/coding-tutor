@@ -372,6 +372,10 @@ log-line schema, the retry table, and config errors.
   Done-when 1, 3, 4). Result: 45 fail, all `ModuleNotFoundError: tutor.llm` (right reason); the
   2 fence tests pass. Rest of the suite unchanged (144 passed, 6 skipped). The builder adds the
   `openai` dependency.
+- 2026-11-03 `/test write T-006` (fix). `test_openai_adapter.py`: the fake server now stores
+  header names lower-cased, and the key check reads `authorization`. Reason: HTTP header names
+  are case-insensitive (RFC 9110). The SDK sends `authorization`, and the test wrongly assumed
+  `Authorization`. The request did carry the right key; nothing the test checks was loosened.
 
 ### T-007 · M0 checkpoint: load one session, make one logged call
 **Milestone:** M0 · **Size:** S · **Owner:** build
