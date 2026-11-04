@@ -445,7 +445,7 @@ and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | ✅ 2026-11-03 `/test run` | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
-| T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | 🔄 built 2026-11-03, awaiting `/test run` | arch §3.2–3.3 |
+| T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | ✅ 2026-11-03 `/test run` | arch §3.2–3.3 |
 | T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ⬜ | arch §5; eval-plan condensing tests; D-006, D-013 |
 | T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ⬜ | arch §4.3, §5.1; D-014, D-019, D-020 |
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ⬜ | arch §5.6, §13; D-012 |
@@ -530,6 +530,11 @@ capture-path refusal, and acceptance tests for Done-when 2, 3 and 6.
   params, then `COMMIT`; any error → `ROLLBACK` + `MigrationError` naming the file. Unit tests:
   `tests/unit/test_migrate_internals.py` (12). Gate clean (ruff; mypy 18 files). Suite: 257
   passed, 6 skipped, 1 deselected — T-008 contract 11/11, acceptance 17/17. D-033.
+- 2026-11-03 `/test run` → ✅. The builder's diff (`6f1a31b`) touches no judging files; the one
+  test change (`2fff4df`) came through `/test write` with a written reason. Lint + types clean
+  (ruff; mypy 18 files). Python: contract 49, acceptance 141 (+6 `live_capture`: 6/6), unit 67.
+  Capture: unit 8/8, contract 20/20, `tsc` clean. `tutor prompts check` ok. Done-when 1–6 met;
+  also checked that the body of `0001_init.sql` is byte-identical to the §3.2 SQL block. Cost: $0.
 
 ### T-009 · Condenser `c1`
 **Milestone:** M1 · **Size:** M · **Owner:** build
