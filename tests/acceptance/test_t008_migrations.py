@@ -137,13 +137,18 @@ def test_dw2_cli_migrate_refusal_exits_1_with_a_message(tmp_path, monkeypatch, c
 
 # ---------------------------------------------------------------- Done-when 3: one transaction per migration
 
+# Test migrations follow the §3.2 convention: 0001 creates schema_migrations itself.
+SCHEMA_MIGRATIONS = ("CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL,"
+                     " applied_at TEXT NOT NULL);\n")
+
 
 def test_dw3_a_failing_migration_rolls_back_to_the_previous_version(tmp_path, settings):
     from tutor.db.migrate import MigrationError
 
     mig = tmp_path / "migs"
     mig.mkdir()
-    (mig / "0001_first.sql").write_text("-- test migration; no existing rows\nCREATE TABLE a (x INTEGER);\n")
+    (mig / "0001_first.sql").write_text("-- test migration; no existing rows\n" + SCHEMA_MIGRATIONS
+                                         + "CREATE TABLE a (x INTEGER);\n")
     (mig / "0002_broken.sql").write_text(
         "-- test migration; no existing rows\n"
         "CREATE TABLE b (y INTEGER);\n"
@@ -164,7 +169,7 @@ def test_dw3_after_fixing_the_migration_it_applies(tmp_path, settings):
 
     mig = tmp_path / "migs"
     mig.mkdir()
-    (mig / "0001_first.sql").write_text("CREATE TABLE a (x INTEGER);\n")
+    (mig / "0001_first.sql").write_text(SCHEMA_MIGRATIONS + "CREATE TABLE a (x INTEGER);\n")
     (mig / "0002_next.sql").write_text("CREATE TABLE b (y INTEGER);\nNOT SQL;\n")
     path = tmp_path / "t.db"
     with pytest.raises(MigrationError):

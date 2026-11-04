@@ -517,6 +517,11 @@ capture-path refusal, and acceptance tests for Done-when 2, 3 and 6.
   tests against the §3.2 DDL directly: they pass on it. Result: 26 fail for the right reason
   (no `tutor.db`, no `migrate` command, no `0001_init.sql`); 2 contract tests pass vacuously
   while there are no files, and the at-least-one test covers that. Rest of the suite unchanged.
+- 2026-11-03 `/test write T-008` (fix). The two Done-when 3 tests' hand-built `0001` now creates
+  `schema_migrations`. Reason: in §3.2, `0001` creates `schema_migrations` itself; the tests'
+  fake migrations didn't, so `migrate` failed before reaching the broken `0002`. Nothing the
+  tests check was loosened: rollback to version 1, no partial table, no leftover rows, and
+  the fixed migration then applies.
 
 ### T-009 · Condenser `c1`
 **Milestone:** M1 · **Size:** M · **Owner:** build
