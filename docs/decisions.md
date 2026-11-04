@@ -452,3 +452,27 @@ logging logic, so the builder doesn't write it (rule 11). The loopback server te
 path, so hidden SDK retries or a key in a log would be caught. (5): the failed attempt was paid
 for, so eval-run cost totals stay honest.
 **Supersedes.** —
+
+## D-028 · LLM client details left open by D-027 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. The OpenAI adapter uses the Responses API, with `text.format` set to a strict
+   `json_schema`, and `store=False`.
+2. The strict-schema rewrite is our own `strict_schema()` in `adapters/openai.py`. It applies
+   OpenAI's documented rules: every object has `additionalProperties: false` and all of its
+   properties required, `default` is dropped, and a `$ref` with sibling keys is inlined. It does
+   not use the SDK's private `openai.lib._pydantic` helper or `responses.parse()`.
+3. An invalid-output retry appends two messages: the bad output as `assistant`, then the
+   validation error (`field: problem` lines) as `user`.
+4. `call_id` is 16 random hex characters. The body file is `{"call_id", "exchanges": [{attempt,
+   request, response | error}]}`, rewritten after each attempt. The key is `exchanges`, not
+   `attempts`, because the extension-analysis fence (§4.3 #3) reserves a quoted `"attempts"`.
+5. Prices are read from `pricing.toml` on every call, so an edited price takes effect on the
+   next call without a restart.
+**Why.** (1) The Responses API is OpenAI's current API for new work. With `store=False`, OpenAI
+doesn't keep the session code; `llm_bodies/` already holds it. (2) A private helper can change in
+any SDK release. `responses.parse()` validates inside the SDK and raises before token counts are
+returned, which breaks per-attempt cost logging and the client's own validation (§6.1). Our
+rewrite depends only on the documented rules. If those change, the API rejects the schema with
+a 400 error, so the failure is loud. (3) The model sees what it got wrong, not only that it was
+wrong.
+**Supersedes.** —

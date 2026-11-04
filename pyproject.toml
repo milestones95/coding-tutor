@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "LeetCode Tutor Agent: session analyzer (Part 1) and progress agent (Part 2). A learning project."
 requires-python = ">=3.13"
 dependencies = [
+    "openai>=1.66",
     "pydantic>=2.7",
     "python-dotenv>=1.0",
 ]

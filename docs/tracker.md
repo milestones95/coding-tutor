@@ -42,7 +42,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ✅ 2026-11-03 `/test run` | arch §7; rule 6 |
-| T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⬜ test assets written 2026-11-03 | arch §6; rule 5; D-008, D-018 |
+| T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | 🔄 built 2026-11-03, awaiting `/test run` | arch §6; rule 5; D-008, D-018 |
 | T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ⬜ after T-004, T-006 | M0 checkpoint |
 
 ### T-002 · Move capture (extension + ingest server) into this repo
@@ -376,6 +376,13 @@ log-line schema, the retry table, and config errors.
   header names lower-cased, and the key check reads `authorization`. Reason: HTTP header names
   are case-insensitive (RFC 9110). The SDK sends `authorization`, and the test wrongly assumed
   `Authorization`. The request did carry the right key; nothing the test checks was loosened.
+- 2026-11-03 `/build T-006`. Built `src/tutor/llm/`: `errors.py`, `messages.py` (§6.2),
+  `pricing.py`, `client.py` (`ModelRef`, `Usage`, `LLMResult`, `LLMClient.structured()` with the
+  §6.4 retry loop and §6.5 logging), `adapters/__init__.py` (`AdapterResponse`, `Adapter`),
+  `adapters/openai.py` (Responses API, strict `json_schema`, SDK retries off, `store=False`).
+  Added dependency `openai` 3.44.0 (on `httpx2`). Unit tests: `tests/unit/test_llm_internals.py`
+  (18). Suite: 205 passed, 6 skipped (`live_capture`) — T-006 contract 12/12, acceptance 35/35.
+  Decisions: D-028. Eval: n/a (no field uses the client yet). Cost: $0.
 
 ### T-007 · M0 checkpoint: load one session, make one logged call
 **Milestone:** M0 · **Size:** S · **Owner:** build
