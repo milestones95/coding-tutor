@@ -618,3 +618,25 @@ to see as one at a tick. (5) `render` stays a function of `c` alone, so a stored
 **Why.** Architecture §2 names the module but not its functions. `settings` is passed in rather
 than loaded inside, so the tests can pin the timezone and the log path.
 **Supersedes.** —
+
+## D-037 · Pipeline interfaces the T-011 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+- `tutor analyze [--since YYYY-MM-DD]` reads `paths.capture_db` (`mode=ro`) and upserts `problems`,
+  `sessions` and `condensed_timelines` in one transaction. `--since` is a date in `time.timezone`:
+  sessions that started on or after its local midnight.
+- `tutor rebuild-timelines` re-condenses every loadable session in one transaction. A stored
+  timeline whose session no longer loads is kept and logged as `timeline_orphaned`.
+- `tutor check` exits 1, naming each stale session, when a `session_analysis` row's
+  `condenser_version` differs from its timeline's.
+- All three exit 0 on success and 1 on error (D-030). `analyze` refuses a missing or unmigrated
+  `analysis.db` without creating it, and its message points to `tutor migrate`.
+- `pipeline.jsonl` gets `session_loaded` and `session_condensed` for each kept session, plus the
+  loader's `session_excluded` with its `reason`. Each line has `session_id` and `run_id`, and one
+  command run uses one `run_id`.
+- The condenser's `interval_s`, `error_max_chars` and `token_budget` come from
+  `settings.condenser`.
+- `submit_count` counts captured submits only (§3.2).
+**Why.** §5.6 and §13 give the behaviour but not the command names' exit codes, the log event
+names, or what `--since` compares. A failed run must leave the database as it was, or a
+half-written `analysis.db` would read as complete.
+**Supersedes.** —

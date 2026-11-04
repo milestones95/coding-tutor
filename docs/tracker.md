@@ -676,6 +676,23 @@ filter.
 **Test assets:** required. `/test write T-011` writes acceptance tests on a tiny capture DB
 for each Done-when.
 **Log**
+- 2026-11-03 `/test write T-011`. Interfaces pinned with the human (D-037). Written:
+  `tests/acceptance/test_t011_pipeline.py` (18 tests, run in-process on a 4-session capture DB:
+  passed, runs-only before the cutoff, excluded, and a later session for `--since`):
+  - Done-when 1: hand-worked `sessions`, `problems` and `condensed_timelines` rows; the stored
+    JSON re-renders to the stored text; refuses a missing or unmigrated DB without creating it;
+    one transaction, with a config budget that fails on the 3rd session and leaves nothing
+    written.
+  - Done-when 2: a second run gives identical rows; a new submit updates in place.
+  - Done-when 3: one log outcome per session, one run id.
+  - Done-when 4: rebuild rewrites every timeline; orphan kept and logged; a failed rebuild
+    changes nothing.
+  - Done-when 5: `check` passes, passes when versions match, fails and names a stale session.
+  - Done-when 6: capture DB byte-identical; no analysis rows written.
+  - `--since` local date.
+  Checked the expected values against the already-verified loader, condenser and fields
+  first: all 3 sessions match, and the 600-token budget fails only on the 3rd. Result: 18 fail
+  for the right reason (`analyze` is not a command yet). Rest of the suite unchanged.
 
 ### T-012 · M1 checkpoint: real sessions condensed, token budget measured
 **Milestone:** M1 · **Size:** S · **Owner:** test
