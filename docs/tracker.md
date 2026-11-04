@@ -411,6 +411,15 @@ fake OpenAI server from `tests/contract/test_openai_adapter.py`.
 **Log**
 - 2026-11-03 `/pm idea` — Done-when 2 added: the `--model` flag, moved from T-006 because no
   command called an LLM there (D-027). Not new scope: it was already in M0. Size stays S.
+- 2026-11-03 `/test write T-007`. Interface pinned with the human (D-029). Written:
+  `tests/acceptance/test_t007_smoke.py`: 9 default tests (Done-when 1: the load, the call, one
+  complete log line with cost, the frozen copy read and unchanged, the smoke prompt in the
+  manifest, an unknown or excluded session failing before any call; Done-when 2: `--model`
+  overrides config, and a bad value fails before any call), plus 1 `llm` test, the real call
+  (≈ $0.001, `uv run pytest -m llm tests/acceptance/test_t007_smoke.py`, for the human to run).
+  The fake OpenAI server moved to the shared `tests/_fake_openai.py`; the T-006 contract test's
+  checks are unchanged (10/10). Result: 9 fail for the right reason (`smoke` isn't a command
+  yet, and there's no `prompts/smoke/v1.md`). Rest of the suite unchanged (205 passed).
 
 ## Next milestone — M1 (planned, not started)
 

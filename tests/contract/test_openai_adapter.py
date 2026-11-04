@@ -19,12 +19,11 @@ What this protects:
 """
 
 import json
-import threading
-import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 from pydantic import BaseModel
+
+from _fake_openai import start_fake_openai
 
 KEY = "sk-SENTINEL-t006-must-never-be-logged-5c1e"
 FILLED = "Name the algorithm for Two Sum."
@@ -45,90 +44,11 @@ class AlgoOut(BaseModel):
     confidence: float
 
 
-# ---------------------------------------------------------------- the fake OpenAI server
-
-
-def _responses_body(text):
-    return {
-        "id": "resp_t006", "object": "response", "created_at": 0, "status": "completed", "model": "gpt-5.5",
-        "output": [{"type": "message", "id": "msg_t006", "status": "completed", "role": "assistant",
-                    "content": [{"type": "output_text", "text": text, "annotations": []}]}],
-        "parallel_tool_calls": False, "tool_choice": "auto", "tools": [],
-        "usage": {"input_tokens": 1200, "output_tokens": 300, "total_tokens": 1500,
-                  "input_tokens_details": {"cached_tokens": 0}, "output_tokens_details": {"reasoning_tokens": 0}},
-    }
-
-
-def _chat_body(text):
-    return {
-        "id": "chatcmpl-t006", "object": "chat.completion", "created": 0, "model": "gpt-5.5",
-        "choices": [{"index": 0, "finish_reason": "stop",
-                     "message": {"role": "assistant", "content": text, "refusal": None}}],
-        "usage": {"prompt_tokens": 1200, "completion_tokens": 300, "total_tokens": 1500},
-    }
-
-
-class FakeOpenAI:
-    """Replies are queued as ("ok", None) | (status_code, None) | ("slow", seconds); default "ok"."""
-
-    def __init__(self):
-        self.requests: list[dict] = []
-        self.replies: list[tuple] = []
-        outer = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def log_message(self, *a):
-                pass
-
-            def do_POST(self):
-                raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
-                # Header names are case-insensitive (RFC 9110); store them lower-cased so lookups are too.
-                outer.requests.append({"path": self.path, "headers": {k.lower(): v for k, v in self.headers.items()},
-                                       "body": json.loads(raw or b"{}")})
-                kind, arg = outer.replies.pop(0) if outer.replies else ("ok", None)
-                try:
-                    if kind == "slow":
-                        time.sleep(arg)
-                        kind = "ok"
-                    if kind == "ok":
-                        text = json.dumps(OUTPUT)
-                        body = _chat_body(text) if self.path.endswith("/chat/completions") else _responses_body(text)
-                        self._send(200, body)
-                    else:
-                        self._send(kind, {"error": {"message": f"simulated {kind}", "type": "simulated",
-                                                    "param": None, "code": None}})
-                except (BrokenPipeError, ConnectionResetError):
-                    pass  # the client gave up (timeout test)
-
-            def _send(self, status, body):
-                data = json.dumps(body).encode()
-                self.send_response(status)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(data)))
-                self.end_headers()
-                self.wfile.write(data)
-
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        self.url = f"http://127.0.0.1:{self.server.server_address[1]}/v1"
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
-
-    def close(self):
-        self.server.shutdown()
-        self.server.server_close()
-
-
 @pytest.fixture
 def server(monkeypatch):
-    s = FakeOpenAI()
-    monkeypatch.setenv("OPENAI_BASE_URL", s.url)
-    monkeypatch.setenv("OPENAI_API_KEY", KEY)
-    for proxy in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
-        monkeypatch.delenv(proxy, raising=False)
-    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
+    s = start_fake_openai(monkeypatch, key=KEY, output=OUTPUT)
     yield s
     s.close()
-
-
 @pytest.fixture
 def prompt(tmp_path):
     from tutor.prompts import load_prompt

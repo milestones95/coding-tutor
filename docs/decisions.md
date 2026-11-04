@@ -476,3 +476,20 @@ rewrite depends only on the documented rules. If those change, the API rejects t
 a 400 error, so the failure is loud. (3) The model sees what it got wrong, not only that it was
 wrong.
 **Supersedes.** —
+
+## D-029 · `tutor smoke` interface the T-007 tests pin · 2026-11-03 · tester (human approved)
+**Decision.** `tutor smoke --session <id> [--model provider:model]`:
+- loads the session from `paths.eval_capture_db` (the frozen copy, `immutable`);
+- fills `prompts/smoke/v1.md` with the problem title;
+- makes one `structured()` call, field `smoke`, output `{problem_slug: str}`;
+- prints one JSON line to stdout: `{"session_id", "output", "call_id", "model": "provider:model",
+  "cost_usd"}`, and exits 0.
+
+Any error goes to stderr with a non-zero exit. An unknown or excluded session, or a bad
+`--model`, sends no request. `prompts/smoke/v1.md` gets a manifest entry like any prompt. The
+fake OpenAI server moves to `tests/_fake_openai.py`, shared by the T-006 contract test and the
+T-007 tests.
+**Why.** One machine-readable line lets the test, and you, check the output, the call id and the
+cost without parsing prose. Reading the frozen copy keeps the checkpoint reproducible: the
+live DB changes every time you practise.
+**Supersedes.** —
