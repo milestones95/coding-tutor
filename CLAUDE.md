@@ -36,15 +36,18 @@ Loop 3 → 5 for each task until the milestone closes. Run `/pm review` at the e
 
 ## Non-negotiables
 
-1. **The LeetCode verdict is an eval label, never a model input.** It is saved at capture
-   time and used only by graders. No prompt builder, tool, or agent context may read it.
-   A test enforces this. If a task seems to need the verdict at inference time, the task
-   is wrong — stop and raise it.
+1. **Facts come from data; models infer only what data can't answer.** Where the captured
+   data answers a question — status, verdict, test counts, timing — code reads it and no
+   model guesses it. LLMs are used only for failure type when the verdict doesn't decide
+   it, failure explanation, algorithm type, timeline summary, and Part 2's judgment
+   questions. **Human-written eval labels** (failure type, algorithm labels, key facts,
+   expected answers) are never model inputs; a test enforces this. (D-014)
 2. **The test split is sealed.** Only `/test` reads `evals/data/*/test/`, and only at a
    milestone the human has approved. Builders tune on dev. If anyone looks at a test case's
    failure details, that case moves to dev and gets a replacement.
-3. **Condensed events are defined once.** Every LLM field and Part 2's `get_session` read
-   the same condensing function. No field gets its own private view of raw events.
+3. **Condensed events are defined once.** Every LLM field reads the same condensing
+   function, and Part 2 reads its stored output from the analysis database (D-012). No
+   field gets its own private view of raw events.
 4. **The Progress Agent's database access is read-only**, enforced by the connection, not
    by the prompt. Query timeout and row cap are enforced in code.
 5. **Every LLM call goes through one client wrapper** that logs model, prompt version,
@@ -63,7 +66,8 @@ Loop 3 → 5 for each task until the milestone closes. Run `/pm review` at the e
     failing eval pass defeats the eval.
 11. **No agent marks its own work done, and no agent writes the tests that judge it.**
     `/test write` owns `tests/contract/`, `tests/acceptance/`, `evals/data/`,
-    `evals/graders/`, `evals/fixtures/` and `prompts/judges/`; the builder only writes
+    `evals/graders/`, `evals/fixtures/`, `evals/generate/`, `prompts/judges/` and
+    `prompts/generators/`; the builder only writes
     `tests/unit/`. Only `/test run` sets ✅. Labels, hand grades and expected findings are
     the human's call — agents propose, the human confirms.
 12. **Scope is guarded.** Anything not in the tracker goes through `/pm idea` first. Small

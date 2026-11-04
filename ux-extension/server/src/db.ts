@@ -1,0 +1,306 @@
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+import { config } from "./config.js";
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS problems (
+  slug         TEXT PRIMARY KEY,
+  frontend_id  TEXT,
+  title        TEXT NOT NULL,
+  difficulty   TEXT,
+  tags         TEXT NOT NULL DEFAULT '[]',   -- JSON array of LeetCode topic tag slugs
+  category     TEXT,                          -- taxonomy hint derived from tags
+  description  TEXT,                          -- plain text, filled when you open the problem
+  paid_only    INTEGER NOT NULL DEFAULT 0,
+  ac_rate      REAL,
+  updated_at   TEXT NOT NULL
+);
+
+-- One sitting on one problem.
+CREATE TABLE IF NOT EXISTS sessions (
+  id               TEXT PRIMARY KEY,
+  slug             TEXT NOT NULL,
+  started_at       TEXT NOT NULL,
+  last_activity_at TEXT NOT NULL,
+  ended_at         TEXT,
+  end_reason       TEXT,                         -- accepted | ended | idle
+  analysis_status  TEXT NOT NULL DEFAULT 'open', -- open | pending | running | done | skipped | error
+  analysis_error   TEXT
+);
+CREATE INDEX IF NOT EXISTS sessions_slug ON sessions(slug, ended_at);
+
+CREATE TABLE IF NOT EXISTS snapshots (
+  id         INTEGER PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES sessions(id),
+  ts         TEXT NOT NULL,
+  language   TEXT,
+  code       TEXT NOT NULL,
+  partial    INTEGER NOT NULL DEFAULT 0  -- 1 if read from the DOM fallback (may miss off-screen lines)
+);
+CREATE INDEX IF NOT EXISTS snapshots_session ON snapshots(session_id, ts);
+
+-- A single Run or Submit result from LeetCode's judge.
+CREATE TABLE IF NOT EXISTS judge_events (
+  id           INTEGER PRIMARY KEY,
+  session_id   TEXT NOT NULL REFERENCES sessions(id),
+  ts           TEXT NOT NULL,
+  kind         TEXT NOT NULL,   -- run | submit
+  status       TEXT NOT NULL,   -- Accepted, Wrong Answer, Time Limit Exceeded, ...
+  tests_passed INTEGER,
+  tests_total  INTEGER,
+  runtime      TEXT,
+  memory       TEXT,
+  error_detail TEXT,
+  language     TEXT,
+  submission_id TEXT             -- LeetCode's id; dedupes a result seen both live and via backfill
+);
+CREATE INDEX IF NOT EXISTS judge_session ON judge_events(session_id, ts);
+
+-- Legacy: written by the old analyzer, which was removed (D-015). Kept in the schema so existing
+-- files stay valid; nothing writes or reads these tables now.
+CREATE TABLE IF NOT EXISTS attempts (
+  id               INTEGER PRIMARY KEY,
+  session_id       TEXT UNIQUE REFERENCES sessions(id),
+  slug             TEXT NOT NULL,
+  date             TEXT NOT NULL,      -- YYYY-MM-DD local
+  status           TEXT NOT NULL,      -- passed | failed
+  time_taken_min   REAL,
+  category         TEXT NOT NULL,
+  approach_pattern TEXT,
+  approach_summary TEXT,
+  verdict_reason   TEXT,               -- why the final code would or wouldn't pass LeetCode's judge
+  strengths        TEXT NOT NULL DEFAULT '[]',
+  optimal_approach TEXT,
+  time_complexity  TEXT,
+  space_complexity TEXT,
+  confidence       REAL,
+  source           TEXT NOT NULL DEFAULT 'extension',
+  created_at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS attempts_slug ON attempts(slug, date);
+CREATE INDEX IF NOT EXISTS attempts_category ON attempts(category, date);
+
+CREATE TABLE IF NOT EXISTS attempt_gaps (
+  id         INTEGER PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES attempts(id) ON DELETE CASCADE,
+  tag        TEXT NOT NULL,
+  detail     TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS gaps_attempt ON attempt_gaps(attempt_id);
+`;
+
+export type DB = Database.Database;
+
+export function openDb(dbPath = config.dbPath): DB {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  const db = new Database(dbPath);
+  // WAL lets the ingest server and the MCP server process read and write the same file concurrently.
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  db.pragma("busy_timeout = 5000");
+  db.exec(SCHEMA);
+  migrate(db);
+  return db;
+}
+
+/** Bring databases created before a schema change up to date. */
+function migrate(db: DB): void {
+  const judgeCols = db.prepare(`PRAGMA table_info(judge_events)`).all() as Array<{ name: string }>;
+  if (!judgeCols.some((c) => c.name === "submission_id")) db.exec(`ALTER TABLE judge_events ADD COLUMN submission_id TEXT`);
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS judge_submission ON judge_events(session_id, submission_id)`);
+  const attemptCols = db.prepare(`PRAGMA table_info(attempts)`).all() as Array<{ name: string }>;
+  if (!attemptCols.some((c) => c.name === "verdict_reason")) db.exec(`ALTER TABLE attempts ADD COLUMN verdict_reason TEXT`);
+  // Give up was folded into End session: a give-up is a failed attempt ended normally.
+  db.exec(`UPDATE attempts SET status = 'failed' WHERE status = 'gave_up'`);
+  db.exec(`UPDATE sessions SET end_reason = 'ended' WHERE end_reason = 'gave_up'`);
+  db.exec(`DELETE FROM attempt_gaps WHERE tag = 'gave-up-early'`);
+}
+
+let shared: DB | undefined;
+export function getDb(): DB {
+  shared ??= openDb();
+  return shared;
+}
+
+// ---- Row types ----
+
+export interface ProblemRow {
+  slug: string;
+  frontend_id: string | null;
+  title: string;
+  difficulty: string | null;
+  tags: string;
+  category: string | null;
+  description: string | null;
+  paid_only: number;
+  ac_rate: number | null;
+  updated_at: string;
+}
+
+export interface SessionRow {
+  id: string;
+  slug: string;
+  started_at: string;
+  last_activity_at: string;
+  ended_at: string | null;
+  end_reason: string | null;
+  analysis_status: string;
+  analysis_error: string | null;
+}
+
+export interface SnapshotRow {
+  id: number;
+  session_id: string;
+  ts: string;
+  language: string | null;
+  code: string;
+  partial: number;
+}
+
+export interface JudgeEventRow {
+  id: number;
+  session_id: string;
+  ts: string;
+  kind: "run" | "submit";
+  status: string;
+  tests_passed: number | null;
+  tests_total: number | null;
+  runtime: string | null;
+  memory: string | null;
+  error_detail: string | null;
+  language: string | null;
+  submission_id: string | null;
+}
+
+// ---- Problems ----
+
+export interface ProblemInput {
+  slug: string;
+  title: string;
+  frontend_id?: string | null;
+  difficulty?: string | null;
+  tags?: string[];
+  category?: string | null;
+  description?: string | null;
+  paid_only?: boolean;
+  ac_rate?: number | null;
+}
+
+/** Insert or update a problem. Fields left undefined keep their stored value. */
+export function upsertProblem(db: DB, p: ProblemInput): void {
+  db.prepare(
+    `INSERT INTO problems (slug, frontend_id, title, difficulty, tags, category, description, paid_only, ac_rate, updated_at)
+     VALUES (@slug, @frontend_id, @title, @difficulty, @tags, @category, @description, @paid_only, @ac_rate, @updated_at)
+     ON CONFLICT(slug) DO UPDATE SET
+       frontend_id = COALESCE(excluded.frontend_id, frontend_id),
+       title       = excluded.title,
+       difficulty  = COALESCE(excluded.difficulty, difficulty),
+       tags        = CASE WHEN excluded.tags = '[]' THEN tags ELSE excluded.tags END,
+       category    = COALESCE(excluded.category, category),
+       description = COALESCE(excluded.description, description),
+       paid_only   = excluded.paid_only,
+       ac_rate     = COALESCE(excluded.ac_rate, ac_rate),
+       updated_at  = excluded.updated_at`,
+  ).run({
+    slug: p.slug,
+    frontend_id: p.frontend_id ?? null,
+    title: p.title,
+    difficulty: p.difficulty ?? null,
+    tags: JSON.stringify(p.tags ?? []),
+    category: p.category ?? null,
+    description: p.description ?? null,
+    paid_only: p.paid_only ? 1 : 0,
+    ac_rate: p.ac_rate ?? null,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+export function getProblem(db: DB, slug: string): ProblemRow | undefined {
+  return db.prepare(`SELECT * FROM problems WHERE slug = ?`).get(slug) as ProblemRow | undefined;
+}
+
+// ---- Sessions ----
+
+export function getSession(db: DB, id: string): SessionRow | undefined {
+  return db.prepare(`SELECT * FROM sessions WHERE id = ?`).get(id) as SessionRow | undefined;
+}
+
+export function findOpenSession(db: DB, slug: string): SessionRow | undefined {
+  return db
+    .prepare(`SELECT * FROM sessions WHERE slug = ? AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1`)
+    .get(slug) as SessionRow | undefined;
+}
+
+/** The most recent session for a slug, open or ended. */
+export function latestSession(db: DB, slug: string): SessionRow | undefined {
+  return db.prepare(`SELECT * FROM sessions WHERE slug = ? ORDER BY started_at DESC LIMIT 1`).get(slug) as SessionRow | undefined;
+}
+
+export function createSession(db: DB, id: string, slug: string, ts: string): SessionRow {
+  db.prepare(`INSERT INTO sessions (id, slug, started_at, last_activity_at) VALUES (?, ?, ?, ?)`).run(id, slug, ts, ts);
+  return getSession(db, id)!;
+}
+
+export function touchSession(db: DB, id: string, ts: string): void {
+  db.prepare(`UPDATE sessions SET last_activity_at = MAX(last_activity_at, ?) WHERE id = ?`).run(ts, id);
+}
+
+export function endSession(db: DB, id: string, ts: string, reason: string): void {
+  db.prepare(
+    `UPDATE sessions SET ended_at = ?, end_reason = ? WHERE id = ? AND ended_at IS NULL`,
+  ).run(ts, reason, id);
+}
+
+export function listSnapshots(db: DB, sessionId: string): SnapshotRow[] {
+  return db.prepare(`SELECT * FROM snapshots WHERE session_id = ? ORDER BY ts, id`).all(sessionId) as SnapshotRow[];
+}
+
+export function lastSnapshot(db: DB, sessionId: string): SnapshotRow | undefined {
+  return db
+    .prepare(`SELECT * FROM snapshots WHERE session_id = ? ORDER BY ts DESC, id DESC LIMIT 1`)
+    .get(sessionId) as SnapshotRow | undefined;
+}
+
+export function insertSnapshot(
+  db: DB,
+  s: { session_id: string; ts: string; language: string | null; code: string; partial?: boolean },
+): void {
+  db.prepare(`INSERT INTO snapshots (session_id, ts, language, code, partial) VALUES (?, ?, ?, ?, ?)`).run(
+    s.session_id,
+    s.ts,
+    s.language,
+    s.code,
+    s.partial ? 1 : 0,
+  );
+}
+
+export function listJudgeEvents(db: DB, sessionId: string): JudgeEventRow[] {
+  return db.prepare(`SELECT * FROM judge_events WHERE session_id = ? ORDER BY ts, id`).all(sessionId) as JudgeEventRow[];
+}
+
+export function insertJudgeEvent(db: DB, e: Omit<JudgeEventRow, "id" | "submission_id"> & { submission_id?: string | null }): void {
+  db.prepare(
+    `INSERT INTO judge_events (session_id, ts, kind, status, tests_passed, tests_total, runtime, memory, error_detail, language, submission_id)
+     VALUES (@session_id, @ts, @kind, @status, @tests_passed, @tests_total, @runtime, @memory, @error_detail, @language, @submission_id)`,
+  ).run({ ...e, submission_id: e.submission_id ?? null });
+}
+
+/**
+ * The session that already holds this LeetCode result for this problem, if any. LeetCode ids are
+ * unique per submission, so a second arrival is a repeat, whichever session is open now (T-001).
+ */
+export function sessionWithJudgeEvent(db: DB, slug: string, submissionId: string): string | undefined {
+  const row = db
+    .prepare(
+      `SELECT j.session_id FROM judge_events j JOIN sessions s ON s.id = j.session_id
+       WHERE s.slug = ? AND j.submission_id = ? LIMIT 1`,
+    )
+    .get(slug, submissionId) as { session_id: string } | undefined;
+  return row?.session_id;
+}
+
+/** Mark an ended session as Accepted after the fact (an Accepted result arrived after it ended). */
+export function markAccepted(db: DB, id: string): void {
+  db.prepare(`UPDATE sessions SET end_reason = 'accepted' WHERE id = ?`).run(id);
+}
