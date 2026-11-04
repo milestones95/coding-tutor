@@ -42,7 +42,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ✅ 2026-11-03 `/test run` | arch §7; rule 6 |
-| T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | 🔄 built 2026-11-03, awaiting `/test run` | arch §6; rule 5; D-008, D-018 |
+| T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ✅ 2026-11-03 `/test run` | arch §6; rule 5; D-008, D-018 |
 | T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ⬜ after T-004, T-006 | M0 checkpoint |
 
 ### T-002 · Move capture (extension + ingest server) into this repo
@@ -383,6 +383,13 @@ log-line schema, the retry table, and config errors.
   Added dependency `openai` 3.44.0 (on `httpx2`). Unit tests: `tests/unit/test_llm_internals.py`
   (18). Suite: 205 passed, 6 skipped (`live_capture`) — T-006 contract 12/12, acceptance 35/35.
   Decisions: D-028. Eval: n/a (no field uses the client yet). Cost: $0.
+- 2026-11-03 `/test run` → ✅. The builder's diff (`5a0ba0f`) touches no judging files.
+  Python: contract 38, acceptance 115 (+6 `live_capture` skipped; run with `-m live_capture`:
+  6/6), unit 52; total 205 passed. Capture: unit 8/8, contract 20/20, `tsc` clean.
+  `tutor prompts check` ok. Done-when 1–4 met (model choice, pydantic validation, SDK fence,
+  §6.4 retry table, config errors before any call, §6.5 log lines, bodies, cost from
+  `pricing.toml`). Skipped gate: Python lint/types, not set up yet (open `/pm` follow-up).
+  Evals: none apply. Cost: $0.
 
 ### T-007 · M0 checkpoint: load one session, make one logged call
 **Milestone:** M0 · **Size:** S · **Owner:** build
