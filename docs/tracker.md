@@ -16,7 +16,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 
 | # | Milestone | Status | Checkpoint |
 |---|---|---|---|
-| M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ⬜ | One captured session loads, validates, and one logged LLM call runs |
+| M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ✅ 2026-11-03 (T-007) | One captured session loads, validates, and one logged LLM call runs |
 | M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ⬜ | Unit tests green on real + hand-built sessions; token budget measured |
 | M2 | Dataset + eval runner: 30 cases (≈ 8 real + ≈ 22 Claude-generated, D-017), Anthropic adapter, split 20/10 | ⬜ | Runner writes a versioned result record for a trivial grader |
 | M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
@@ -43,7 +43,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ✅ 2026-11-03 `/test run` | arch §7; rule 6 |
 | T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ✅ 2026-11-03 `/test run` | arch §6; rule 5; D-008, D-018 |
-| T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | 🔄 built 2026-11-03, awaiting `/test run` | M0 checkpoint |
+| T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ✅ 2026-11-03 `/test run` | M0 checkpoint |
 
 ### T-002 · Move capture (extension + ingest server) into this repo
 **Milestone:** M0 · **Size:** M · **Owner:** build
@@ -427,6 +427,13 @@ fake OpenAI server from `tests/contract/test_openai_adapter.py`.
   call, run with the human's OK:** the `llm` test passed; `tutor smoke --session ebd80323…` →
   `{"problem_slug": "two-sum"}`, call `a78fa7f3e49a78b2`, 88 in / 37 out tokens, $0.00155,
   1.7 s, one complete `llm_calls.jsonl` line. Cost this session: ≈ $0.003 (2 calls). D-030.
+- 2026-11-03 `/test run` → ✅. The builder's diff (`fd193a4`) touches no judging files. Python:
+  contract 38, acceptance 124 (+6 `live_capture` skipped; run with `-m live_capture`: 6/6), unit
+  55. The `llm` real-call test, rerun by the tester: 1/1 (≈ $0.0015). Capture: unit 8/8,
+  contract 20/20, `tsc` clean. `tutor prompts check` ok. Done-when 1 and 2 met. Scope: the
+  change making `LLMClient.model_for()` public is small and serves Done-when 2 (D-030); not
+  scope creep. Skipped gate: Python lint/types, not set up (open `/pm` follow-up). **M0
+  checkpoint met:** one captured session loads and validates, and one logged LLM call runs.
 
 ## Next milestone — M1 (planned, not started)
 
