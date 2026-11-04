@@ -344,7 +344,8 @@ templating errors.
 **Traces to:** architecture §6.1, §6.4, §6.5; rule 5; D-008 as amended by D-018.
 **Done when:**
 1. `LLMClient.structured()` works per §6.1, always validating the output with pydantic.
-   The model comes from config, and a `--model` override is honoured.
+   The model comes from config, and a `model=` argument overrides it (`model=` >
+   `llm.fields.<field>` > `llm.default`). The `--model` CLI flag moved to T-007 (D-027).
 2. `adapters/openai.py` uses OpenAI's native structured output. Nothing outside
    `tutor/llm/` imports a provider SDK (SDK fence, §4.3 #2).
 3. The retry and error table in §6.4 is implemented and unit-tested with `FakeAdapter`.
@@ -375,13 +376,23 @@ log-line schema, the retry table, and config errors.
 ### T-007 · M0 checkpoint: load one session, make one logged call
 **Milestone:** M0 · **Size:** S · **Owner:** build
 **Traces to:** M0 checkpoint.
-**Done when:** `tutor smoke --session <id>` loads one real session from the frozen copy,
+**Done when:**
+1. `tutor smoke --session <id>` loads one real session from the frozen copy,
 validates it, and makes one `structured()` call through the wrapper with a throwaway
 prompt `prompts/smoke/v1.md` (returning `{problem_slug}` from the problem title). One
 complete line appears in `llm_calls.jsonl` with a non-zero `cost_usd`.
-**Not included:** any real field; the smoke prompt is never used by a field.
+2. `tutor smoke --model provider:model` overrides the configured model for that run: the
+   call and its log line use the given model. A malformed value, or a provider with no
+   adapter, exits non-zero with the `LLMConfigError` message before any call. (Moved from
+   T-006 Done-when 1, D-027.)
+**Not included:** any real field; the smoke prompt is never used by a field; `--model` on
+other commands (each adds it when it is built, e.g. the eval runner for M7).
 **Test assets:** required. `/test write T-007` writes an acceptance test marked `llm` that
-checks the log line and the validated output.
+checks the log line and the validated output, and non-`llm` tests for `--model` using the
+fake OpenAI server from `tests/contract/test_openai_adapter.py`.
+**Log**
+- 2026-11-03 `/pm idea` — Done-when 2 added: the `--model` flag, moved from T-006 because no
+  command called an LLM there (D-027). Not new scope: it was already in M0. Size stays S.
 
 ## Next milestone — M1 (planned, not started)
 
