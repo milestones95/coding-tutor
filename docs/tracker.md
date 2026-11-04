@@ -43,7 +43,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ✅ 2026-11-03 `/test run` | arch §7; rule 6 |
 | T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ✅ 2026-11-03 `/test run` | arch §6; rule 5; D-008, D-018 |
-| T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ⬜ after T-004, T-006 | M0 checkpoint |
+| T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | 🔄 built 2026-11-03, awaiting `/test run` | M0 checkpoint |
 
 ### T-002 · Move capture (extension + ingest server) into this repo
 **Milestone:** M0 · **Size:** M · **Owner:** build
@@ -420,6 +420,13 @@ fake OpenAI server from `tests/contract/test_openai_adapter.py`.
   The fake OpenAI server moved to the shared `tests/_fake_openai.py`; the T-006 contract test's
   checks are unchanged (10/10). Result: 9 fail for the right reason (`smoke` isn't a command
   yet, and there's no `prompts/smoke/v1.md`). Rest of the suite unchanged (205 passed).
+- 2026-11-03 `/build T-007` → 🔄. `src/tutor/smoke.py` (`SmokeOutput`, `run_smoke`), `tutor smoke`
+  in `cli.py`, `prompts/smoke/v1.md` + its manifest entry (by hand), and `LLMClient.model_for()`
+  made public so smoke reports the model without repeating the lookup order. Unit tests:
+  `tests/unit/test_smoke_internals.py` (3). Suite: 217 passed, 6 skipped, 1 deselected. **Real
+  call, run with the human's OK:** the `llm` test passed; `tutor smoke --session ebd80323…` →
+  `{"problem_slug": "two-sum"}`, call `a78fa7f3e49a78b2`, 88 in / 37 out tokens, $0.00155,
+  1.7 s, one complete `llm_calls.jsonl` line. Cost this session: ≈ $0.003 (2 calls). D-030.
 
 ## Next milestone — M1 (planned, not started)
 

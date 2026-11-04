@@ -104,7 +104,8 @@ class LLMClient:
 
     # ------------------------------------------------------------ setup checks
 
-    def _model_for(self, field: str, model: ModelRef | None) -> ModelRef:
+    def model_for(self, field: str, model: ModelRef | None = None) -> ModelRef:
+        """The model a call for `field` will use: `model`, else `llm.fields.<field>`, else `llm.default`."""
         if model is not None:
             return model
         llm = self._settings.llm
@@ -123,7 +124,7 @@ class LLMClient:
 
     def structured(self, *, field: str, prompt: LoadedPrompt, variables: dict[str, str],
                    output: type[T], run_id: str, model: ModelRef | None = None) -> LLMResult[T]:
-        ref = self._model_for(field, model)
+        ref = self.model_for(field, model)
         price = price_for(self._pricing_path, str(ref))
         adapter = self._adapter(ref.provider)
         cfg = self._settings.llm

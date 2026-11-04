@@ -493,3 +493,16 @@ T-007 tests.
 cost without parsing prose. Reading the frozen copy keeps the checkpoint reproducible: the
 live DB changes every time you practise.
 **Supersedes.** —
+
+## D-030 · CLI error exit code; manifest entries by hand for now · 2026-11-03 · builder (human approved)
+**Decision.** (1) A `tutor` command exits 1 on any error it handles: unknown or excluded session,
+`LLMError`, `ConfigError`, `CaptureFormatError` or `PromptError`. The message goes to stderr
+as `error: …`. argparse's own usage errors keep exit 2. (2) `LLMClient.model_for(field, model=None)`
+is public, so callers that report the model they used (`smoke`, later the eval runner) use the
+client's own lookup order rather than repeating it. (3) A new prompt's `prompts/manifest.json`
+entry is written by hand: its sha256, keys sorted. A `tutor prompts lock` command is still an
+open `/pm` follow-up.
+**Why.** (1) Callers and tests need one exit code for "it ran and failed", separate from
+"you called it wrong". (2) A second copy of the lookup order could drift, and then the reported
+model would differ from the one called. (3) Building a lock command is outside T-007's scope.
+**Supersedes.** —
