@@ -506,3 +506,19 @@ open `/pm` follow-up.
 "you called it wrong". (2) A second copy of the lookup order could drift, and then the reported
 model would differ from the one called. (3) Building a lock command is outside T-007's scope.
 **Supersedes.** —
+
+## D-031 · Lint + type gate: ruff (narrow rule set) + mypy on src/ · 2026-11-03 · human
+**Decision.** The `/test run` "Lint + types" gate is `uv run ruff check src tests && uv run mypy`.
+- **Ruff** checks `src/` and `tests/` with exactly `E4, E7, E9, F`: undefined names, unused
+  imports and variables, import placement, statement and syntax errors.
+- **mypy** checks `src/` only, with the pydantic plugin.
+- Both are dev dependencies.
+**Why.** The human chose the lean gate. It catches real bugs and is clean today without editing
+tester-owned files. The wider sets (I, B, UP and others) and type-checking `tests/` would mean
+about 40 mostly cosmetic edits to test files only `/test write` may touch. The rules are named,
+not left to ruff's defaults, because ruff 0.17's defaults are much wider than 0.8's: the same
+config would have gone from 0 findings to 24 on an upgrade. mypy over pyright: a plain Python
+dev dependency, with no Node download.
+**Rejected.** The strict gate (wider ruff sets, plus types over `tests/`): about one extra session,
+for little bug-catching value.
+**Supersedes.** —

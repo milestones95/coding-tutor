@@ -15,6 +15,7 @@ import os
 import re
 
 import openai
+from openai.types.responses import EasyInputMessageParam, ResponseTextConfigParam
 
 from tutor.llm.adapters import AdapterResponse
 from tutor.llm.errors import LLMConfigError, LLMProviderError
@@ -33,15 +34,14 @@ class OpenAIAdapter:
 
     def structured(self, *, model: str, messages: list[Message], schema: dict, schema_name: str,
                    timeout_s: float) -> AdapterResponse:
-        request = {
-            "model": model,
-            "input": [{"role": m.role, "content": m.content} for m in messages],
-            "text": {"format": {"type": "json_schema", "name": _schema_name(schema_name),
-                                "schema": strict_schema(schema), "strict": True}},
-            "store": False,
-        }
+        # Typed with the SDK's own request types, so the type checker catches a malformed request.
+        input_items = [_input_item(m) for m in messages]
+        text: ResponseTextConfigParam = {"format": {"type": "json_schema", "name": _schema_name(schema_name),
+                                                    "schema": strict_schema(schema), "strict": True}}
+        request = {"model": model, "input": input_items, "text": text, "store": False}  # kept in llm_bodies/
         try:
-            resp = self._client.responses.create(**request, timeout=timeout_s)
+            resp = self._client.responses.create(model=model, input=list(input_items), text=text, store=False,
+                                                 timeout=timeout_s)
         except openai.APIStatusError as e:
             status = e.status_code
             raise LLMProviderError(self._scrub(f"OpenAI HTTP {status}: {e.message}"),
@@ -60,6 +60,13 @@ class OpenAIAdapter:
     def _scrub(self, text: str) -> str:
         """Provider error messages can quote the key back; never let it travel further."""
         return text.replace(self._key, "***")
+
+
+def _input_item(m: Message) -> EasyInputMessageParam:
+    # structured() only sends user/assistant/system text. Tool messages belong to chat() (M5).
+    if m.role == "tool":
+        raise ValueError("a tool message can't be sent through structured()")
+    return {"role": m.role, "content": m.content}
 
 
 def _schema_name(name: str) -> str:

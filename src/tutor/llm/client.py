@@ -177,8 +177,8 @@ class LLMClient:
                 raise LLMOutputInvalid(f"{field}: output still invalid after {attempt} attempts:\n{error}") from None
 
             self._log(run_id, common, attempt, started, resp.input_tokens, resp.output_tokens, cost, "ok", None)
-            return LLMResult[output](output=parsed, call_id=call_id, attempts=attempt, usage=totals,
-                                     latency_ms=int((time.monotonic() - call_start) * 1000))
+            return LLMResult(output=parsed, call_id=call_id, attempts=attempt, usage=totals,
+                             latency_ms=int((time.monotonic() - call_start) * 1000))
 
     # ------------------------------------------------------------ logging
 

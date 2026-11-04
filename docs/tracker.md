@@ -444,7 +444,7 @@ and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` 
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | ⬜ | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
+| T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | 🔄 built 2026-11-03, awaiting `/test run` | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
 | T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | ⬜ | arch §3.2–3.3 |
 | T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ⬜ | arch §5; eval-plan condensing tests; D-006, D-013 |
 | T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ⬜ | arch §4.3, §5.1; D-014, D-019, D-020 |
@@ -458,13 +458,22 @@ from T-003 to T-007 because nothing was configured.
 **Done when:**
 1. A linter and a type checker, chosen with the human at `/build` and recorded in
    `docs/decisions.md`, are dev dependencies configured in `pyproject.toml`.
-2. One command runs both over `src/` and `tests/` and exits 0 on the current code. The command
-   is written in this task's log, and `/test run` uses it from then on.
+2. One command runs both and exits 0 on the current code: lint over `src/` and `tests/`, types
+   over `src/` only (narrowed by the human at `/build`, D-031). The command is written in this
+   task's log, and `/test run` uses it from then on.
 3. The suite still passes (217 + 6 `live_capture`).
 **Not included:** TypeScript lint (the capture code already has `tsc`); pre-commit hooks;
 CI; rewriting code beyond what the tools flag.
 **Test assets:** none. The gate is the check.
 **Log**
+- 2026-11-03 `/build T-013` → 🔄. The human chose the lean gate with mypy (D-031). Dev deps:
+  ruff 0.17.3, mypy 2.4.1. `pyproject.toml`: `[tool.ruff.lint] select = ["E4","E7","E9","F"]`
+  (named explicitly: ruff 0.17's default set is wider and flagged 24), and `[tool.mypy]` on
+  `src/` with the pydantic plugin. Fixed the 2 mypy findings in builder code: the OpenAI adapter
+  now builds its request with the SDK's typed params (a `tool` message raises), and
+  `LLMResult(...)` is no longer subscripted at runtime. **Gate command:**
+  `uv run ruff check src tests && uv run mypy` → all checks passed; no issues in 16 files.
+  Suite: 217 passed, 6 skipped, 1 deselected.
 
 ### T-008 · `analysis.db` migrations
 **Milestone:** M1 · **Size:** M · **Owner:** build
