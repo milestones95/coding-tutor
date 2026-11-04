@@ -42,7 +42,7 @@ needs T-004 and T-006; it does not need T-001 (it reads the frozen copy).
 | T-003 | Python project skeleton, config, JSON-lines logging, test harness | build | M | required | ✅ 2026-11-02 | arch §2, §11, §12, §13 |
 | T-004 | Inference-side data models + read-only capture loader | build | M | required | ✅ 2026-11-03 `/test run` | arch §4.1, §4.4; D-005, D-011, D-016 |
 | T-005 | Prompt loader + manifest | build | S | required | ✅ 2026-11-03 `/test run` | arch §7; rule 6 |
-| T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⏸ after T-005; human: confirm model id + enter prices | arch §6; rule 5; D-008, D-018 |
+| T-006 | LLM client wrapper (`structured()`), OpenAI adapter, pricing, call log | build | M | required | ⬜ test assets written 2026-11-03 | arch §6; rule 5; D-008, D-018 |
 | T-007 | M0 checkpoint: load one session, make one logged call | build | S | required | ⬜ after T-004, T-006 | M0 checkpoint |
 
 ### T-002 · Move capture (extension + ingest server) into this repo
@@ -361,6 +361,16 @@ log-line schema, the retry table, and config errors.
   page screenshot), prices entered in `config/pricing.toml` — input $5.00 / 1M, output
   $30.00 / 1M, `as_of = 2026-11-03` (cached input $0.50 / 1M noted, not used). Ready for
   `/test write T-006`.
+- 2026-11-03 `/test write T-006`. Interfaces agreed with the human (D-027): `model=` arg >
+  `llm.fields` > `llm.default` (the `--model` flag moves to T-007); tester-owned FakeAdapter plus a
+  fake OpenAI server on loopback; usage sums all attempts. Written: `tests/_llm_fake.py`;
+  `tests/contract/test_llm_sdk_fence.py` (2: the fence, and grading the fence);
+  `tests/contract/test_openai_adapter.py` (10: native JSON-schema output, tokens/cost, client-only
+  retries on 5xx/429/timeout, no retry on 400/401, key from env and never logged, missing key and
+  no-adapter provider fail before any request); `tests/acceptance/test_t006_llm_client.py` (35:
+  Done-when 1, 3, 4). Result: 45 fail, all `ModuleNotFoundError: tutor.llm` (right reason); the
+  2 fence tests pass. Rest of the suite unchanged (144 passed, 6 skipped). The builder adds the
+  `openai` dependency.
 
 ### T-007 · M0 checkpoint: load one session, make one logged call
 **Milestone:** M0 · **Size:** S · **Owner:** build

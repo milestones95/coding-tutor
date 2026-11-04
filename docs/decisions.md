@@ -423,3 +423,32 @@ Whether an approach was wrong is a judgment, which belongs to the LLM field and 
 real data never shows. (b) Rule A alone with "same status": catches repeated wrong answers but
 not wrong approaches, and its 3 periods were not yet confirmed by the human.
 **Supersedes.** — (reverses the eval plan's 2026-11-03 stuck-period additions)
+
+## D-027 · LLM client interfaces the T-006 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+1. `tutor.llm` exports `LLMClient`, `ModelRef`, `LLMResult`, `Usage`, `LLMError` and its
+   subclasses `LLMConfigError`, `LLMOutputInvalid`, `LLMProviderError`.
+   `LLMClient(settings, *, adapters=None, pricing_path=None, sleep=time.sleep)`: `adapters` maps
+   provider → adapter (None = the real ones), `pricing_path` defaults to `config/pricing.toml`.
+2. Adapter interface: `structured(*, model, messages: list[Message], schema: dict, schema_name,
+   timeout_s) -> tutor.llm.adapters.AdapterResponse(text, input_tokens, output_tokens, request,
+   response)`. The client passes `output.model_json_schema()` unchanged; strict-mode rewriting is
+   the adapter's job. Adapters raise `LLMProviderError(message, *, retryable, status_code=None)`
+   and the client retries only when `retryable`. The OpenAI adapter turns off the SDK's own
+   retries and honours the SDK's `OPENAI_BASE_URL`.
+3. Model choice: `model=` argument > `llm.fields.<field>` > `llm.default`.
+   `ModelRef.parse("provider:model")`; a malformed ref, or a provider with no adapter yet, is
+   `LLMConfigError`. The `--model` CLI flag arrives with T-007's `tutor smoke`, the first
+   command that calls an LLM.
+4. Backoff before transient retry k: 2^k s + jitter in [0, 1). Invalid-output retries append the
+   validation error as a `user` message after the original conversation.
+5. `LLMResult.usage` sums tokens and cost over every attempt. A provider-error attempt logs 0
+   tokens and $0. Bodies: `<paths.logs>/llm_bodies/<call_id>.json`, one JSON file per call.
+6. The scripted `FakeAdapter` is tester-owned (`tests/_llm_fake.py`). The real adapter is
+   checked against a fake OpenAI server on loopback.
+**Why.** §6 gives the client's interface, not the seam the tests need to inject a provider, the
+jitter range, or what usage means across retries. (6): the fake grades the client's retry and
+logging logic, so the builder doesn't write it (rule 11). The loopback server tests the real SDK
+path, so hidden SDK retries or a key in a log would be caught. (5): the failed attempt was paid
+for, so eval-run cost totals stay honest.
+**Supersedes.** —
