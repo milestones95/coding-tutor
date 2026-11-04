@@ -3,8 +3,8 @@
 > **The only place work status lives.** Owned by `/pm`. `/build` moves its own task to 🔄;
 > only `/test` moves a task to ✅. Every status change gets a dated log line with evidence.
 
-**Last reviewed:** —
-**Active milestone:** M0
+**Last reviewed:** 2026-11-03 (`/pm review`, M0 close)
+**Active milestone:** M1, with task detail pending `/pm plan`
 **Cost of one full dev eval run:** — *(fill in after the first run)*
 
 Status: ⬜ Not started · 🔄 In progress · ⏸ Blocked (name who/what) · ✅ Done (by `/test` only)
@@ -27,7 +27,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 
 ---
 
-## Tasks — active milestone
+## Tasks — M0 (✅ done 2026-11-03)
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
@@ -435,17 +435,20 @@ fake OpenAI server from `tests/contract/test_openai_adapter.py`.
   scope creep. Skipped gate: Python lint/types, not set up (open `/pm` follow-up). **M0
   checkpoint met:** one captured session loads and validates, and one logged LLM call runs.
 
-## Next milestone — M1 (planned, not started)
+## Tasks — active milestone: M1
 
-Starts when M0 is ✅. IDs are reserved; detail is final but may be re-sized at the M0 review.
+M0 closed 2026-11-03. The rows below are the reserved M1 tasks. None has Done-when / Not
+included detail yet: `/pm plan` writes it before `/test write` on any of them. T-013 is new
+from this review and comes first.
 
-| ID | Task | Owner | Size | Test assets | Traces to |
-|---|---|---|---|---|---|
-| T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | arch §3.2–3.3 |
-| T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | arch §5; eval-plan condensing tests; D-006, D-013 |
-| T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source` | build | M | required | arch §4.3, §5.1; D-014, D-019, D-020 |
-| T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | arch §5.6, §13; D-012 |
-| T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | M1 checkpoint; eval-plan condensing tests |
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | ⬜ | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
+| T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | ⬜ | arch §3.2–3.3 |
+| T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ⬜ | arch §5; eval-plan condensing tests; D-006, D-013 |
+| T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ⬜ | arch §4.3, §5.1; D-014, D-019, D-020 |
+| T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ⬜ | arch §5.6, §13; D-012 |
+| T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | ⬜ | M1 checkpoint; eval-plan condensing tests |
 
 **Stuck periods → course correction (2026-11-03, D-026).** Measured on 26 real sessions
 (`scripts/discovery/18_stuck_periods.py`), the "no edits for 6+ min" rule never fired, so stuck
@@ -509,12 +512,14 @@ Every item has a trigger: the condition that would make it worth doing.
 | Per-session planning / coding / debugging minutes | Open question in eval plan | After M6, if aggregate questions fail for lack of data |
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
+| `tutor prompts lock` (write manifest entries by command) | Two prompts so far, one hash entered by hand (D-030); the contract test catches any mismatch | M3 adds the field prompts, or a hand-entered hash causes a wrong commit |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
 ## Dropped
 
 | Idea | Why | Date |
 |---|---|---|
+| Reword T-003 Done-when 1 | T-003 is ✅; rewording a closed task changes nothing | 2026-11-03 |
 
 ---
 
@@ -524,3 +529,4 @@ Every item has a trigger: the condition that would make it worth doing.
 |---|---|---|---|---|
 | 2026-11-02 | — | — | T-001, T-002 | `/pm idea`: submit capture fix added to M0 (eval-plan build order 1). T-001 finding written (`/v2/check/` regex miss). T-002 added (D-015, capture moves here; capture only). `/pm plan` not yet run. |
 | 2026-11-02 | — | — | T-003 – T-007 (M0); T-008 – T-012 reserved (M1) | `/pm plan` (first plan). M0 = 7 tasks, 2 of them capture. Baselines table: status rows removed (D-014). |
+| 2026-11-03 | T-001, T-004, T-005, T-006, T-007; **M0 ✅** | — | T-013 | `/pm review`, the first. Repo matches the tracker: every M0 task has `/test write` → `/build` → `/test run` with commits, and nothing is 🔄 or 👀. Unplanned work: one item, the human's extension rename (`c39c1c8`, 1 line in `manifest.json`), already noted in T-002's log; not a creep signal. Added since the plan: 1 (T-013). Deferred: 7 (+3 today: Part 2, stuck periods, `prompts lock`). Dropped: 1. Real LLM spend: ≈ $0.0045 (3 smoke calls); no eval runs yet. 10 commits on `m0-architecture-and-tests` not pushed. For `/architect`: §12 says "no test reads `data/`" but the `live_capture` tests and T-007's `llm` test do; §12 names no lint/type tools (T-013 decides them). |
