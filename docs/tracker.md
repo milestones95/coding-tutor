@@ -446,7 +446,7 @@ and T-011 needs T-008, T-009 and T-010. Each `required` task goes `/test write` 
 |---|---|---|---|---|---|---|
 | T-013 | Python lint + type gate: choose the tools with the human, configure them, make the current code pass, and give `/test run` the command | build | S | none | ✅ 2026-11-03 `/test run` | `/test run` gate table ("Lint + types", blocking); skipped in every verdict T-003 – T-007 |
 | T-008 | `analysis.db` migrations: `0001_init.sql` + `migrate.py` (refuses the capture path) | build | M | required | ✅ 2026-11-03 `/test run` | arch §3.2–3.3 |
-| T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | ⬜ | arch §5; eval-plan condensing tests; D-006, D-013 |
+| T-009 | Condenser `c1`: `condense` / `render` / `change_summary`, `CondensedSession`, `Moment`, budget truncation | build | M | required | 🔄 built 2026-11-03, awaiting `/test run` | arch §5; eval-plan condensing tests; D-006, D-013 |
 | T-010 | Deterministic fields: problem, time to finish, attempted at (UTC + local date), status table + `status_source`; set `capture.submits_reliable_since = 2026-11-04` in `tutor.toml` (D-024), whose T-003 test `/test write T-010` updates | build | M | required | ⬜ | arch §4.3, §5.1; D-014, D-019, D-020 |
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | ⬜ | arch §5.6, §13; D-012 |
 | T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | ⬜ | M1 checkpoint; eval-plan condensing tests |
@@ -573,6 +573,15 @@ timestamps. Each eval-plan condensing test is a named acceptance test.
   truncation (earliest timed first) and `CondenseBudgetError`; determinism. Result: 28 fail
   for the right reason (`No module named 'tutor.condense'`). Rest of the suite unchanged
   (257 passed).
+- 2026-11-03 `/build T-009` → 🔄. `src/tutor/condense.py`: `CONDENSER_VERSION = "c1"`,
+  `CondenseBudgetError`, `session_times` (the §5.1 helper T-010 reuses), `change_summary`,
+  `condense` (one sorted walk over opened / ticks / events / final candidates, then backfilled
+  submits, then budget truncation), `render`. `models.py`: `ChangeSummary`, `Moment` (with
+  `submit`), `CondensedSession` (plus `language`, D-035). Unit tests:
+  `tests/unit/test_condense_internals.py` (6). Gate clean (mypy, 19 files). Suite: 291 passed,
+  6 skipped, 1 deselected; T-009 acceptance 28/28. Builder smoke run on the 8 frozen sessions
+  (read-only): every run and submit kept, none truncated, est. tokens max 5,956 / median
+  2,256. T-012 records these officially. D-035.
 
 ### T-010 · Deterministic fields: problem, time to finish, attempted at, status
 **Milestone:** M1 · **Size:** M · **Owner:** build

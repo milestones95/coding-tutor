@@ -581,3 +581,22 @@ literally, "the last snapshot, ordered by ts" puts FINAL in the middle of the ti
 the user keeps typing or runs after the last submit. (3) D-026 relies on rewrite flags to show
 new approaches to the timeline model. A percentage leaves that for the model to infer.
 **Supersedes.** — (amends architecture §4.1, §5.2 and §5.5)
+
+## D-035 · Condenser build details left open by §5 and D-034 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. `CondensedSession.language`: the last snapshot's language, used to fence code in the render.
+2. Every Moment that shows new code puts its change summary on its header line, runs and
+   submits included: `RUN · <status> · 0/2 passed · code as of 30.0 s earlier · +1 −0 lines ·
+   20% changed`.
+3. Each Moment renders as: a header, then the error line if there is one, then either the code
+   block or a placeholder line. The placeholders are "(code unchanged since X min)", "(code
+   omitted to fit the token budget)" for dropped timed code, and "(no code captured yet)" for an
+   event before the first snapshot.
+4. "N runs · M submits" is always plural, exactly as §5.5 writes it.
+5. `error_detail` is cut inside `condense`, on the Moment's copy of the event, so `render` takes
+   no settings. `session_times()` is the one §5.1 helper. T-010's time to finish must call it.
+**Why.** (1) §5.5 asks for code fenced in the session language, but `render(c)` receives only the
+condensed session, which had no field for it. (2) A rewrite just before a run is as important
+to see as one at a tick. (5) `render` stays a function of `c` alone, so a stored
+`rendered_text` can always be regenerated from `timeline_json`.
+**Supersedes.** — (adds one field to §4.1's `CondensedSession`)

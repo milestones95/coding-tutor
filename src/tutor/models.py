@@ -86,3 +86,42 @@ class Session(_Model):
     def final_submit(self) -> SubmitEvent | None:
         """The last submit in event order, or None if the session has none."""
         return next((e for e in reversed(self.events) if isinstance(e, SubmitEvent)), None)
+
+
+# ---------------------------------------------------------------- condensed timeline (§4.1, §5, D-034)
+
+
+class ChangeSummary(_Model):
+    """How a kept snapshot's code differs from the previous one shown (§5.3)."""
+
+    lines_added: int
+    lines_removed: int
+    changed_fraction: float  # 0..1, rounded to 2 decimals
+    rewrite: bool  # changed_fraction >= 0.5
+
+
+class Moment(_Model):
+    """One line of the condensed timeline: a point worth showing a model."""
+
+    elapsed_min: float  # from session start, 1 decimal
+    ts: UtcDatetime | None  # None only for a backfilled submit (time not captured)
+    kind: Literal["opened", "timed", "run", "submit", "final"]
+    code: str | None  # None when unchanged since the Moment at code_ref, or dropped for the budget
+    code_ref: int | None  # index into CondensedSession.moments of the Moment whose code applies
+    change: ChangeSummary | None  # vs the previous Moment that showed code; None for 'opened'
+    run: RunEvent | None = None  # kind='run'
+    submit: SubmitEvent | None = None  # kind='submit' (D-034)
+    snapshot_lag_s: float | None = None  # run/submit: seconds from the snapshot shown to the event
+
+
+class CondensedSession(_Model):
+    """What every LLM field reads (rule 3): the output of the one condenser."""
+
+    session_id: str
+    condenser_version: str
+    problem: Problem
+    language: str  # the session's language, for fencing code in the render (D-035)
+    duration_min: float  # = time to finish (§5.1)
+    moments: list[Moment]
+    truncated: bool  # True when timed code was dropped to fit the token budget
+    est_tokens: int  # len(render(...)) // 4 — an estimate, labelled as one
