@@ -21,9 +21,9 @@ Size: S (under an hour) · M (one session) · no L — split it
 | M2 | Dataset + eval runner: 30 cases (≈ 8 real + ≈ 22 Claude-generated, D-017), Anthropic adapter, split 20/10 | ⬜ | Runner writes a versioned result record for a trivial grader |
 | M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
 | M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
-| M5 | Progress Agent + `run_sql` | ⬜ | One fixture question answered with a logged trajectory |
-| M6 | Part 2 evals | ⬜ | All five graders produce a baseline |
-| M7 | Model comparison + test split | ⬜ | Comparison table below |
+| M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
+| M6 | Part 2 evals | ⏸ Part 2, after Part 1 (2026-11-03) | All five graders produce a baseline |
+| M7 | Model comparison + test split — **Part 1 only** for now | ⬜ | Comparison table below |
 
 ---
 
@@ -385,11 +385,20 @@ Starts when M0 is ✅. IDs are reserved; detail is final but may be re-sized at 
 | T-011 | Deterministic pipeline: `tutor analyze` writes `sessions` + `condensed_timelines`; `tutor rebuild-timelines`; `tutor check` | build | M | required | arch §5.6, §13; D-012 |
 | T-012 | M1 checkpoint: all unit/contract tests green on the 8 real + hand-built sessions; token budget measured (max / median est. tokens recorded here) | test | S | required | M1 checkpoint; eval-plan condensing tests |
 
+**Pending `/architect` (eval plan updated 2026-11-03): stuck periods.** The condensing step now
+flags stuck periods by rule (3+ failing runs in a row with the same error, or 3+ snapshots /
+6+ min with under ~5 lines changed and no passing run), each with a start and end. Not yet in
+architecture §5: the model (`CondensedSession` / `Moment`), the exact rule and its thresholds
+(config), the render line, `CONDENSER_VERSION`, the hand-label format for dev sessions, and the
+"roughly the same start and end" tolerance. T-009 is re-sized or split once that is written.
+Also new for M2/M4: a few clean sessions with no stuck periods in the dataset, and two timeline
+checklist items (every flagged period mentioned; no stuck claims outside them).
+
 **Later milestones (one line each until M1 closes):** M2: specs + Claude generator
 + review loop, Anthropic adapter, dataset split, runner and result record with real/synthetic
 breakdown. M3: algorithm and failure-reason fields with dev baselines. M4: timeline +
-judge calibration. M5: fixture DB, `chat()`, loop, `run_sql`. M6: five Part 2 graders.
-M7: Gemini adapter, model comparison, first test-split run.
+judge calibration. M5–M6 (Part 2) deferred until Part 1 is done (human, 2026-11-03).
+M7: Gemini adapter, Part 1 model comparison, first test-split run.
 
 ---
 
@@ -440,6 +449,7 @@ Every item has a trigger: the condition that would make it worth doing.
 | Running code via LeetCode API | Out of scope; verdict already comes from capture | — |
 | Per-session planning / coding / debugging minutes | Open question in eval plan | After M6, if aggregate questions fail for lack of data |
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
+| Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
 
 ## Dropped
 

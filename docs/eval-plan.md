@@ -11,6 +11,8 @@ This is a learning project for building an agent harness and evals, not a produc
 
 **Out of scope for now:** an "expected approach" with a code snippet, calling LeetCode's API to run code, multiple users, and UI polish.
 
+**Order (2026-11-03):** Part 1 is built and evaluated first. No Part 2 work starts until Part 1's evals are done (build order steps 1–5, and the model comparison for Part 1).
+
 ## Part 1: Session Analyzer
 
 Code first condenses each captured session. Then it produces seven fields: four come straight from the data, including pass/fail, and three come from the LLM.
@@ -23,6 +25,7 @@ Code first condenses each captured session. Then it produces seven fields: four 
 - Every run and submit with its result and error message
 - A change summary for each kept snapshot (lines added/removed, fraction changed, rewrite flag), so big rewrites (new approaches) stand out (D-013)
 - Timestamps and elapsed minutes
+- Stuck periods, flagged by rule: 3+ failing runs in a row with the same error, or 3+ snapshots in a row (6+ minutes) with under ~5 lines changed and no passing run. Each period gets a start and end time. Tune the thresholds on real sessions
 
 Every LLM field reads this condensed version. It is stored in the analysis database, where Part 2 reads it with `run_sql` (D-012). How much condensing is needed depends on what the capture tool records (every keystroke vs. periodic snapshots). The raw events stay stored; condensing only decides what the LLM sees.
 
@@ -44,7 +47,7 @@ Every LLM field reads this condensed version. It is stored in the analysis datab
 
 Start with 30 labeled sessions, measure a baseline, then set targets. The targets below are starting points, not commitments.
 
-**Dataset:** 30 sessions, split 20 dev / 10 test. Mix real sessions from the capture tool with synthetic ones. Cover every failure type and the common algorithms. Real captured data supplies about 8 cases; the rest are synthetic. For each session, I write the algorithm label, the failure type, and a short list of key facts about the timeline.
+**Dataset:** 30 sessions, split 20 dev / 10 test. Mix real sessions from the capture tool with synthetic ones. Cover every failure type and the common algorithms. Real captured data supplies about 8 cases; the rest are synthetic. Include a few clean sessions with no stuck periods, to catch invented struggles. For each session, I write the algorithm label, the failure type, and a short list of key facts about the timeline.
 
 | Field | Grader | Metric | Starting target |
 | --- | --- | --- | --- |
@@ -57,7 +60,8 @@ Start with 30 labeled sessions, measure a baseline, then set targets. The target
 **Summary checklist:**
 
 - Mentions every approach I tried
-- Says where I got stuck
+- Says where I got stuck: mentions every stuck period the condensing step flagged, with its rough time, and what was going wrong
+- Doesn't claim I got stuck outside the flagged periods. If none were flagged, it doesn't mention getting stuck at all
 - Names the final approach and outcome
 - No invented events
 - 5 sentences or fewer
@@ -68,6 +72,7 @@ Start with 30 labeled sessions, measure a baseline, then set targets. The target
 - There's a snapshot every 2 minutes while the code changes, plus one at each run and each submit
 - Elapsed times match the raw timestamps
 - A 60-minute session fits a token budget of 16,000 estimated tokens, from the worst measured rate of 253 tokens/min
+- Flagged stuck periods match the ones I hand-label on dev sessions (roughly the same start and end times)
 
 **Checking the judge:** I hand-grade 20 outputs and measure how often the LLM judge agrees with me. Don't trust judge scores until agreement is at least 85%.
 
@@ -147,8 +152,8 @@ Build the easy, deterministic pieces first and the timeline last, because it's t
 3. Label 30 sessions and split them into dev and test.
 4. Build algorithm type and failure reason, each with its eval. (Status is read from the verdict in step 2.)
 5. Build the timeline summary, its judge checklist, and the judge-vs-me agreement check.
-6. Seed the fixture database and build the Part 2 agent, harness, and evals.
-7. Run the model comparison across both parts.
+6. Run the model comparison for Part 1.
+7. *(Part 2, after Part 1 is done)* Seed the fixture database and build the Part 2 agent, harness, and evals, then compare models on Part 2.
 
 ## Open questions
 
