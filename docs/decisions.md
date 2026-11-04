@@ -600,3 +600,21 @@ condensed session, which had no field for it. (2) A rewrite just before a run is
 to see as one at a tick. (5) `render` stays a function of `c` alone, so a stored
 `rendered_text` can always be regenerated from `timeline_json`.
 **Supersedes.** — (adds one field to §4.1's `CondensedSession`)
+
+## D-036 · Deterministic-field interfaces the T-010 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+- `tutor.models` gains `Status` and `StatusSource`, StrEnums whose values are exactly the §3.2
+  CHECK lists.
+- `tutor.fields.deterministic` provides:
+  - `problem(session) -> Problem`;
+  - `time_to_finish(session) -> float`, equal to `condense(session).duration_min` through
+    `session_times()` (D-035);
+  - `attempted_at(session, *, settings) -> (datetime UTC, date)`: the first event in UTC, and its
+    date in `time.timezone`;
+  - `status(session, *, settings, run_id) -> StatusResult(status, status_source,
+    leetcode_verdict, tests_passed, tests_total)`.
+- An unmapped verdict gives `unknown` and writes one `unmapped_verdict` line, with `session_id`
+  and `verdict`, to `<paths.logs>/pipeline.jsonl`. It never raises.
+**Why.** Architecture §2 names the module but not its functions. `settings` is passed in rather
+than loaded inside, so the tests can pin the timezone and the log path.
+**Supersedes.** —

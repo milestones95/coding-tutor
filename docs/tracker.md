@@ -613,6 +613,23 @@ timestamps. Each eval-plan condensing test is a named acceptance test.
 **Test assets:** required. `/test write T-010` writes one acceptance test per status-table row
 and the time zone and DST date cases.
 **Log**
+- 2026-11-03 `/test write T-010`. Interfaces pinned with the human (D-036). Written:
+  `tests/acceptance/test_t010_deterministic.py` (31 tests):
+  - Done-when 1: problem.
+  - Done-when 2: time to finish ends at the last captured submit, or the last event; equals
+    `condense().duration_min` on 4 sessions.
+  - Done-when 3: 5 New York date cases checked against the IANA tz database (the day before in
+    New York; 01:30 EDT and 01:30 EST across the DST change; 22:30 EST; after 8 pm), plus
+    first event before the first snapshot, and the timezone read from settings.
+  - Done-when 4: all 7 table rows, an unmapped verdict logged, `not_submitted` vs `unknown` by
+    reliability, the final submit decides, runs aren't submits, backfill is `human_resubmit`,
+    and the enum values.
+  - Done-when 5: `submits_reliable_since` loads as 2026-11-04.
+  - Done-when 6: no `tutor.llm` import.
+  Also updated two asserts in `test_t003_skeleton.py` that required the cutoff to be unset.
+  Reason: the human set 2026-11-04 in T-001 and T-010 writes it (Done-when 5); the T-003
+  checks were written before that decision. Result: 33 fail for the right reason (no
+  `tutor.fields`, no enums, cutoff not yet in `tutor.toml`). Rest of the suite unchanged.
 
 ### T-011 · Deterministic pipeline: `tutor analyze`, `rebuild-timelines`, `check`
 **Milestone:** M1 · **Size:** M · **Owner:** build
