@@ -561,6 +561,18 @@ checked on hand-built sessions:
 **Test assets:** required. `/test write T-009` writes hand-built sessions with known
 timestamps. Each eval-plan condensing test is a named acceptance test.
 **Log**
+- 2026-11-03 `/test write T-009`. Three spec gaps settled by the human (D-034, architecture
+  §4.1/§5.2/§5.5 updated): `Moment.submit`, FINAL always last, and ` · REWRITE` in the render.
+  Written: `tests/acceptance/test_t009_condenser.py` (28 tests): two hand-worked sessions
+  checked moment by moment (captured submit, backfilled submit); the 4 eval-plan condensing
+  tests by name (every run and submit kept; a snapshot every 2 min while code changes, plus
+  each run and submit; elapsed times match; a 60-min worst-rate session fits 16k untruncated);
+  opened and final always present; snapshot lag; `code_ref` targets; t0 and t_end; tie order;
+  `change_summary` on 5 hand-worked cases (checked against `difflib` directly); render
+  header, moment lines, backfilled line, REWRITE, error truncation, `est_tokens`; budget
+  truncation (earliest timed first) and `CondenseBudgetError`; determinism. Result: 28 fail
+  for the right reason (`No module named 'tutor.condense'`). Rest of the suite unchanged
+  (257 passed).
 
 ### T-010 · Deterministic fields: problem, time to finish, attempted at, status
 **Milestone:** M1 · **Size:** M · **Owner:** build

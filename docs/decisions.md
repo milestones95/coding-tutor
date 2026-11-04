@@ -559,3 +559,25 @@ semicolons inside strings. (2) A transaction statement inside a file would silen
 rule. (3) A hash check at run time would block `tutor migrate` locally for a mismatch the
 contract test already reports.
 **Supersedes.** —
+
+## D-034 · Condenser gaps settled for the T-009 tests · 2026-11-03 · human
+**Decision.**
+1. `Moment.submit: SubmitEvent | None` carries a submit's verdict, test counts and error
+   (kind='submit'), alongside the existing `run` field. Architecture §4.1 updated.
+2. FINAL is the last timed Moment. Its `ts` is the latest snapshot or event timestamp, and its
+   code is the last snapshot's. Only backfilled submits (`ts=None`) follow it: they take FINAL's
+   `elapsed_min` and point at the final code. Time to finish is unchanged: it still ends at the
+   last captured submit (§5.1).
+3. A rewrite renders as ` · REWRITE` at the end of the change line.
+4. Smaller pins, chosen by the tester without a separate question:
+   - a timed Moment's `ts` is its tick (`t0 + k·interval_s`, k ≥ 1, ticks up to and including
+     `t_end`);
+   - `code_ref` is an index into `moments`;
+   - a Moment with `code=None` has `change=None`, except a timed Moment whose code was dropped
+     for the budget, which keeps its change;
+   - the render's "N runs · M submits" counts captured submits only, as the §5.5 example does.
+**Why.** (1) The render needs a submit's verdict, and `Moment` had nowhere to keep it. (2) Read
+literally, "the last snapshot, ordered by ts" puts FINAL in the middle of the timeline whenever
+the user keeps typing or runs after the last submit. (3) D-026 relies on rewrite flags to show
+new approaches to the timeline model. A percentage leaves that for the model to infer.
+**Supersedes.** — (amends architecture §4.1, §5.2 and §5.5)
