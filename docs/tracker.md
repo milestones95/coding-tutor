@@ -737,6 +737,9 @@ for each Done-when.
   Note: architecture §5.5's example of this sort-colors session says 24.4 min; the real
   duration is 24 min 20 s = 24.3, so the example was approximate. **Waiting on the human's
   confirmation.**
+- 2026-11-03 **Human confirmation (Done-when 3):** the human read both rendered timelines
+  (`sort-colors` 81224169, `coin-change` be762faa) and confirmed: "these timelines look
+  correct". Ready for `/test run`.
 
 **Stuck periods → course correction (2026-11-03, D-026).** Measured on 26 real sessions
 (`scripts/discovery/18_stuck_periods.py`), the "no edits for 6+ min" rule never fired, so stuck
