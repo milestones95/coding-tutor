@@ -724,3 +724,16 @@ Comments that state the answer would let the failure-reason and algorithm evals 
 reading them, and real practice code doesn't annotate its own bugs. The generator's leak check
 (§8.5) still runs on everything.
 **Supersedes.** D-017 in part: the model no longer writes the final snapshot.
+
+## D-044 · `prefix_sum` joins the algorithm labels · 2026-11-07 · human
+**Decision.** The fixed algorithm list gains a 19th label, `prefix_sum`, covering prefix sums and
+products. The eval plan, architecture §4.2, the spec checker and the skill already list it.
+`analysis.db` gets it through migration `0002_add_prefix_sum.sql`, which recreates
+`session_algorithms` with the longer `label` CHECK and copies existing rows. It is a tracker task
+(T-014), because applied migrations are never edited (§3.3). syn-021 is labelled `prefix_sum`, and
+syn-011's on-track algorithms become `prefix_sum, hash_map`.
+**Why.** The human: it is "the category that is more accurate". Product of Array Except Self and
+Subarray Sum Equals K are prefix-sum problems, and no existing label fit (`math` was a stand-in).
+The CHECK keeps an off-list label out of the database, so it must list every valid label. The
+table is empty everywhere today, which makes this the cheapest moment to change it.
+**Supersedes.** — (extends the eval plan's label list)

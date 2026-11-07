@@ -753,6 +753,12 @@ periods are deferred. The timeline summary instead says whether the first approa
 right track and whether / when the user course-corrected. No condenser change (rewrite flags,
 D-013, already show new approaches); M2 labels gain `course_correction`; M4's checklist checks it.
 
+**M2 tasks so far (full plan pending `/pm plan`):**
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ⬜ | D-044; arch §3.3 |
+
 **Later milestones (one line each until M1 closes):** M2: specs + Claude generator
 + review loop, Anthropic adapter, dataset split, runner and result record with real/synthetic
 breakdown. M3: algorithm and failure-reason fields with dev baselines. M4: timeline +
@@ -833,3 +839,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | — | — | — | Dataset variety rule (D-040, the human's request). `check_specs.py` reports balance over real + synthetic (`--with-real`) and prints skew lines; the skill drafts batches against them. Today, with 8 real + 3 synthetic: 73% Accepted (max 35%), no Hard, 73% in 10–25 min, nothing over 25 min. The next specs should be mostly failing, include Hard problems, and run 25–60 min. Branch `m2-dataset` off `main`. |
 | 2026-11-07 | — | — | — | D-041 (the human): difficulty is reported, not balanced; time spent is mostly 10–30 min, with at least one session under 10 and one over 30. Current skew: 73% Accepted (max 35%), and no session over 30 min. |
 | 2026-11-07 | — | — | — | Spec batch 2: **15 specs approved by the human** (syn-004 – syn-007, syn-009 – syn-014, syn-016 – syn-020). syn-008 and syn-015 were dropped by the human and their ids retired. syn-019 and syn-020 (Memory Limit Exceeded) were added by the human, and syn-019's verdict was seen on LeetCode. syn-012 was relabelled `edge_case_missed`, 1/35, to match the human's code (crashes only on an empty tree). Python only (D-042). The human wrote the final code for 14 specs: in `synthetic/final_code/`, giveaway comments removed (D-043). Specs approved: 18. Still without final code: syn-001 – syn-003 and syn-014. Coverage: no skew except `two_pointers` 4/18 = 22% (max 20%); Output Limit Exceeded is uncovered. The next 4 specs should include an OLE case and no two-pointer problem. |
+| 2026-11-07 | — | — | T-014 | syn-021 (Product of Array Except Self, Output Limit Exceeded, the human's code with debug prints) **approved**, so all statuses are now covered. The human added `prefix_sum` as the 19th algorithm label (D-044): syn-021 is labelled `prefix_sum`, and syn-011's on-track algorithms become `prefix_sum, hash_map`. The `analysis.db` CHECK change is T-014 (migration 0002). `evals/data/` is excluded from ruff, because dataset code is buggy on purpose. Approved specs: 19, 15 with final code. Skew: `two_pointers` 4/19 = 21%. |

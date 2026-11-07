@@ -40,7 +40,7 @@ Every LLM field reads this condensed version. It is stored in the analysis datab
 
 **Failure types:** edge case missed · wrong approach · too slow (complexity) · implementation bug · didn't finish · none (passed).
 
-**Algorithm labels:** hash map · two pointers · sliding window · binary search · stack / monotonic stack · heap · BFS · DFS / backtracking · dynamic programming · greedy · intervals · linked list · tree traversal · trie · union find · graph / topological sort · bit manipulation · math.
+**Algorithm labels:** hash map · two pointers · sliding window · binary search · stack / monotonic stack · heap · BFS · DFS / backtracking · dynamic programming · greedy · intervals · linked list · tree traversal · trie · union find · graph / topological sort · bit manipulation · math · prefix sum.
 
 ## Part 1 evals
 

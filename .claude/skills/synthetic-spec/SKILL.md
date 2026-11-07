@@ -64,7 +64,7 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    ideally needs. A wrong greedy attempt at a DP problem is labelled `greedy`. Use labels from:
    `hash_map` `two_pointers` `sliding_window` `binary_search` `stack` `heap` `bfs` `dfs_backtracking`
    `dynamic_programming` `greedy` `intervals` `linked_list` `tree_traversal` `trie` `union_find`
-   `graph_topological_sort` `bit_manipulation` `math`.
+   `graph_topological_sort` `bit_manipulation` `math` `prefix_sum` (prefix sums or products, D-044).
 5. **Approaches**: every distinct approach, in the order tried, in plain words. A refinement
    (fixing a bug in the same idea) is not a new approach.
 6. **Course correction** (D-026):
