@@ -985,6 +985,88 @@ breakdown. M3: algorithm and failure-reason fields with dev baselines. M4: timel
 judge calibration. M5–M6 (Part 2) deferred until Part 1 is done (human, 2026-11-03).
 M7: Gemini adapter, Part 1 model comparison, first test-split run.
 
+## Tasks — active milestone: M3
+
+Planned 2026-11-07. Order: **T-024 → T-025 → T-026 → T-027 → T-028**. Algorithm first, because it
+already has a bar to beat (keyword baseline 0.83). Model: `openai:gpt-5.5` (D-018). Estimated dev
+cost at $5/$30 per 1M tokens: algorithm ≈ $0.30 per run, failure ≈ $0.65 per run; a 3-repeat run
+(for the noise band) ≈ $1 and ≈ $2. `tutor-eval estimate` gives the real figure before each run.
+The failure explanation is stored but not scored in M3: it needs the judge built in M4 (D-052).
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-024 | Algorithm field: `prompts/algorithm/v1.md` + `fields/algorithm.py`; runner predictor `algorithm` with `--model` | build | M | required | ⬜ | eval plan "Algorithm type"; arch §2, §6.3, §7, §8.2 |
+| T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ⬜ | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
+| T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ⬜ | eval plan "Failure reason"; arch §6.3, §7 |
+| T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ⬜ | arch §1, §3.2, analyzer pipeline |
+| T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | ⬜ | M3 checkpoint |
+
+### T-024 · Algorithm field
+**Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Algorithm type"; arch §6.3, §7, §8.2; D-051.
+**Done when:**
+1. `algorithm(session, *, client) -> AlgorithmOutput` returns 1–2 `AlgorithmLabel`s from one
+   `LLMClient.structured` call. The input is the final code plus the problem's title and tags (as
+   hints, §6.3), never the verdict, run results or any `evals/data/` file.
+2. `prompts/algorithm/v1.md` follows §7: front matter, `$` variables, a manifest entry; its
+   version is pinned in `tutor.toml [prompts]`.
+3. `tutor-eval run --suite algorithm --split dev --predictor algorithm --model openai:gpt-5.5`
+   writes a result record that names the prompt version and sha, the model and the dataset, with
+   real and synthetic accuracy listed separately.
+4. Contract: a verdict sentinel never reaches the algorithm prompt; the label and SDK fences still
+   pass. Acceptance tests use the fake LLM client, with no network.
+5. One dev run (repeats 1) is recorded in the task log with versions, next to 0.83 @ keyword-v1.
+**Not included:** tuning past v1 (that comes after the baseline); the noise band (T-028); writing
+to `analysis.db` (T-027).
+
+### T-025 · Failure type rules + grader
+**Milestone:** M3 · **Size:** S · **Owner:** build · **Traces to:** arch §6.3 rule table, §8.3 `by_decider`.
+**Done when:**
+1. `FailureType` (`StrEnum`, the six values in §3.2's CHECK) is in `models.py`.
+2. `failure_rule(status) -> FailureType | None`: `passed` → `none`, `failed_too_slow` → `too_slow`,
+   anything else → `None` (meaning the LLM decides).
+3. The tester's `failure_type_exact` grader scores exact match. The runner reports `by_decider.rule`
+   and `by_decider.llm` separately, so rules can't inflate the LLM number.
+4. A dev run with a rules-only predictor (the LLM cases scored as errors) records rule-decided
+   accuracy with versions.
+**Not included:** the LLM call (T-026).
+
+### T-026 · Failure field (LLM part)
+**Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Failure reason"; arch §6.3, §7.
+**Done when:**
+1. `failure(session, *, client) -> FailureOutput(type, source, explanation)`. The rule from T-025
+   runs first; otherwise one structured call reads the rendered condensed timeline (`condense` +
+   `render`, rule 3) plus the verdict, test counts and error.
+2. When status is `not_submitted` or `unknown`, `none` is not allowed, and the prompt says the
+   outcome was unknown or not submitted. When status is `passed`, the explanation is NULL.
+3. `prompts/failure/v1.md` follows §7 and is pinned.
+4. A dev run records failure type accuracy, LLM-decided and rule-decided, with versions.
+   Explanations are kept in the record, unscored (D-052).
+5. Contract: the human's labels (`expected`) never reach the prompt; one condenser.
+**Not included:** judging the explanation (M4).
+
+### T-027 · Pipeline writes the LLM fields
+**Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** arch §1, §3.2 (`session_analysis.failure_*`, `session_algorithms`).
+**Done when:**
+1. `tutor analyze [--model]` fills `failure_type`, `failure_type_source`, `failure_explanation` and
+   `session_algorithms` rows, through the same field functions the runner calls (§8.2).
+2. Re-running is idempotent: there are no duplicate algorithm rows, and `field_provenance` records the prompt
+   version and model per field.
+3. An LLM error on one session is logged and leaves that session's LLM fields NULL; the run goes
+   on to the other sessions.
+4. Acceptance tests run on a hand-built session with the fake client; no network.
+**Not included:** the timeline summary (M4); re-analysis triggers.
+
+### T-028 · M3 checkpoint
+**Milestone:** M3 · **Size:** S · **Owner:** test · **Traces to:** M3 checkpoint "dev baseline recorded per field".
+**Done when:**
+1. Algorithm and failure dev runs with `--repeats 3`: value, noise band and consistency recorded
+   in Baselines with versions.
+2. A written finding in the task log: which dev cases the model misses, which the keyword baseline
+   misses, and whether the model beats it where there is no code cue (e.g. DP, backtracking; the
+   human's note, 2026-11-07).
+3. The human confirms the finding.
+**Not included:** prompt v2 (a new task, after the finding); the test split (M7).
+
 ---
 
 ## Eval baselines (dev)
@@ -1035,7 +1117,7 @@ Every item has a trigger: the condition that would make it worth doing.
 | Per-session planning / coding / debugging minutes | Open question in eval plan | After M6, if aggregate questions fail for lack of data |
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
-| `tutor prompts lock` (write manifest entries by command) | Two prompts so far, one hash entered by hand (D-030); the contract test catches any mismatch | M3 adds the field prompts, or a hand-entered hash causes a wrong commit |
+| `tutor prompts lock` (write manifest entries by command) | M3 adds only two prompts; the contract test catches any wrong hash (re-checked 2026-11-07, D-053) | A hand-entered hash causes a wrong commit, or more than 5 prompt versions exist |
 | `algorithm_labels` table instead of the label CHECK (D-050) | One label gap so far ("sorting"), handled with no label | A second label needs adding: do this migration instead, then labels are rows |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
@@ -1074,3 +1156,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | T-016, T-022 | T-017, T-019, T-021, T-023 (each awaiting the human's confirmation) | — | **M2 checkpoint run (T-023):** `tutor-eval run --suite algorithm --split dev --predictor keyword_baseline` → `algorithm algorithm_overlap 0.83 @ predictor keyword_baseline@keyword-v1, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.77 (n=13) | errors 0 | consistency 1.00 | $0.0000`. The versioned record is in `evals/results/algorithm/` (gitignored), and the Baselines row is added. `--split test` without a milestone was refused. **Finding:** the keyword baseline is a high bar (0.83). The real sessions hit 1.00 partly because their natural comments name the technique, so the M3 algorithm field must beat 0.83, especially on synthetic cases. |
 | 2026-11-07 | — | T-021 | — | **The human approved the 19 dev / 9 test split** ("it's fine to use the sessions i gave you for test"). Their note for M3: keyword cues can't reliably show DP or backtracking, so the 0.83 baseline is inflated by algorithms with obvious code signatures. The per-label scores should be read alongside it. |
 | 2026-11-07 | T-017, T-019, T-021, T-023; **M2 ✅** | — | — | **`/test run`, M2 close.** The human confirmed T-017 (checker rules), T-019 (the 20 session files as final), T-021 (the split) and T-023 (the 0.83 keyword baseline). Gates: 434 passed / 23 skipped (T-015 deferred), ruff clean, mypy clean, `checks.py` 20/20. The judging files in the branch diff are the tester's own (tester-owned tasks), not the builder's. M3 is next: `/pm plan`. |
+| 2026-11-07 | — | — | T-024 – T-028 | `/pm plan` M3: 5 tasks, algorithm first (it has a 0.83 bar to beat). Failure explanation stored but unscored until the M4 judge (D-052). `tutor prompts lock` stays deferred (D-053). Estimated dev cost: about $0.30 (algorithm) and $0.65 (failure) per run. Not planned: prompt v2s (after T-028's finding), the timeline (M4), the test split (M7). |

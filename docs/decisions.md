@@ -833,3 +833,16 @@ interface lets M3's LLM fields and the keyword baseline run through the same run
 is tester-owned because it is the bar the model must beat.
 **Supersedes.** — (architecture §2 put the keyword baseline in `fields/algorithm.py`; it now lives
 with the graders)
+
+## D-052 · Failure explanation is stored but not scored in M3 · 2026-11-07 · pm
+The eval plan grades the explanation with an LLM judge, and rule 8 says no judge score counts until
+the judge is calibrated (≥ 85%). The judge and the calibration work are M4's. M3 stores each
+explanation in the result record and `analysis.db`, so M4 can grade the same outputs.
+**Why.** A judge built in passing inside M3 would be uncalibrated, and its number couldn't count.
+
+## D-053 · `tutor prompts lock` stays deferred · 2026-11-07 · pm
+Its trigger ("M3 adds the field prompts") has arrived. M3 adds two prompts, so two hashes get
+entered by hand, and the manifest contract test fails on any mismatch. The cost of a mistake is
+one failed test.
+**Why.** It's tooling that teaches nothing about harnesses or evals. New trigger: a hand-entered
+hash causes a wrong commit, or there are more than 5 prompt versions.
