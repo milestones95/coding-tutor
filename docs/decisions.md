@@ -748,3 +748,12 @@ refreshing the frozen copy, can be added later as a dataset-version change.
 every failure type and 18 of 19 algorithm labels, with no skew. Two more specs would only fill
 Compile Error, a status that never needs an LLM call.
 **Supersedes.** — (the eval plan's "30 sessions" becomes 28 for dev-v1)
+
+## D-046 · The session generator runs as the tester's module, not a `tutor-eval` subcommand · 2026-11-07 · pm (human approved the M2 plan)
+**Decision.** The synthetic-session generator lives in `evals/generate/` (tester-owned, D-017) and
+runs as `uv run python -m evals.generate.sessions …`, rather than the `tutor-eval
+generate-sessions` that §8.5 names.
+**Why.** A `tutor-eval` subcommand would put generator wiring in `src/tutor/cli.py`, which is
+builder code, while the generator itself is tester-owned. That splits one tool across two owners
+for no gain. The generator still calls the LLM only through `LLMClient` (rule 5).
+**Supersedes.** — (amends §8.5's command name)

@@ -4,7 +4,7 @@
 > only `/test` moves a task to ✅. Every status change gets a dated log line with evidence.
 
 **Last reviewed:** 2026-11-03 (`/pm review`, M1 close)
-**Active milestone:** M2, with task detail pending `/pm plan`
+**Active milestone:** M2 (planned 2026-11-07)
 **Cost of one full dev eval run:** — *(fill in after the first run)*
 
 Status: ⬜ Not started · 🔄 In progress · ⏸ Blocked (name who/what) · ✅ Done (by `/test` only)
@@ -18,7 +18,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 |---|---|---|---|
 | M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ✅ 2026-11-03 (T-007) | One captured session loads, validates, and one logged LLM call runs |
 | M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ✅ 2026-11-03 (T-012) | Unit tests green on real + hand-built sessions; token budget measured |
-| M2 | Dataset + eval runner: 30 cases (≈ 8 real + ≈ 22 Claude-generated, D-017), Anthropic adapter, split 20/10 | ⬜ | Runner writes a versioned result record for a trivial grader |
+| M2 | Dataset + eval runner: 28 cases (8 real + 20 synthetic, D-045), Anthropic adapter, generator, split | ⬜ | Runner writes a versioned result record for a trivial grader |
 | M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
 | M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
@@ -753,11 +753,166 @@ periods are deferred. The timeline summary instead says whether the first approa
 right track and whether / when the user course-corrected. No condenser change (rewrite flags,
 D-013, already show new approaches); M2 labels gain `course_correction`; M4's checklist checks it.
 
-**M2 tasks so far (full plan pending `/pm plan`):**
+## Tasks — active milestone: M2
+
+Planned 2026-11-07. Already done ahead of the plan (in the session log): the `synthetic-spec`
+skill, the spec checker, and 20 human-approved specs, each with LeetCode-checked final code
+(D-039 – D-045). Order: **T-014 → T-015 → T-016 → T-017 → T-018 → T-019 → T-021 → T-022 → T-023**.
+T-020 (labelling the real sessions) is human work and can happen any time before T-021.
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ⬜ | D-044; arch §3.3 |
+| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ human: confirm the generator model id + enter its price | arch §6; D-008, D-018 |
+| T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ⬜ | arch §8.1, §8.2, §4.3 #1 |
+| T-017 | Session checks (`evals/generate/checks.py`) | test | M | required | ⬜ | arch §8.5; D-043 |
+| T-018 | Session generator + prompt `generators/session/v1` | test | M | required | ⬜ | arch §8.5; D-017, D-043 |
+| T-019 | Generate the 20 sessions; human reviews each | test | M | required | ⬜ | arch §8.5; D-017 |
+| T-020 | Label the 8 real sessions | test | M | required | ⬜ | eval plan "Dataset"; D-026, D-039 |
+| T-021 | Assemble `dev-v1` + test split, `cases.jsonl` per suite | test | S | required | ⬜ | arch §8.1; eval plan "Dataset" |
+| T-022 | Eval runner, result record, `estimate`; overlap grader + keyword baseline | build | M | required | ⬜ | arch §8.2 – §8.4; eval plan algorithm metric |
+| T-023 | M2 checkpoint: keyword baseline on `algorithm` dev-v1 → versioned record + baseline row | test | S | required | ⬜ | M2 checkpoint |
+
+### T-014 · Migration 0002: `prefix_sum` label
+**Milestone:** M2 · **Size:** S · **Owner:** build · **Traces to:** D-044; arch §3.3.
+**Done when:**
+1. `0002_add_prefix_sum.sql` recreates `session_algorithms` with `'prefix_sum'` added to the
+   CHECK, in one transaction, copying existing rows. Its header says what happens to them.
+2. The manifest gets 0002's hash. `tutor migrate` takes a version-1 DB to 2, and a fresh DB to 2.
+3. Rows present before 0002 are still present after it. `prefix_sum` is accepted, an off-list
+   label is still rejected, and `AlgorithmLabel` includes `prefix_sum`.
+**Not included:** any other schema change.
+**Test assets:** required (upgrade-with-rows and CHECK tests).
+**Log**
+
+### T-015 · Anthropic adapter
+**Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §6.1, §6.4, §6.5; D-008, D-018.
+**Done when:**
+1. `adapters/anthropic.py` implements the D-027 adapter interface with native structured output
+   (JSON schema). The SDK's own retries are off, the key is read from `ANTHROPIC_API_KEY`, and a
+   missing key is `LLMConfigError`.
+2. The same contract tests as OpenAI pass against a loopback fake Anthropic server: the
+   schema is sent, 429, 5xx and timeouts are retried by the client only, 4xx is not retried, and
+   the key is never logged.
+3. `config/pricing.toml` has the generator model's price, entered by the human. One `llm`-marked
+   real call succeeds and is logged with its cost.
+**Not included:** `chat()` / tool use (M5); using Claude for any Part 1 field.
+**Blocked on the human:** confirm `llm.generator` (`anthropic:claude-opus-5-5`) and its prices.
+**Test assets:** required.
+**Log**
+
+### T-016 · Eval cases + split guard
+**Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §8.1, §8.2 (split guard), §4.3 #1 (label fence).
+**Done when:**
+1. `tutor/evals/cases.py` loads `evals/data/<suite>/<split>/cases.jsonl` into a `Case` model.
+   Real cases load their `Session` from the frozen copy, opened immutable. Synthetic cases load
+   theirs from `synthetic_path`, and are refused unless `<id>.meta.json` says
+   `"verdict": "accepted"`.
+2. **Split guard:** reading `test` is refused unless `--split test --milestone <id>` is given and
+   `<id>` is listed in `evals/test_approvals.json`. Paths are checked after resolving.
+3. **Label fence (contract):** no module under `src/tutor/` outside `tutor/evals/` reads
+   `evals/data/`, and the runner hands field functions a `Session`, never a `Case` or `expected`.
+**Not included:** running fields or grading (T-022); writing cases (T-021).
+**Test assets:** required (split-lock and label-fence contract tests).
+**Log**
+
+### T-017 · Session checks
+**Milestone:** M2 · **Size:** M · **Owner:** test · **Traces to:** arch §8.5 checks; D-043.
+**Done when:** `evals/generate/checks.py` rejects a generated session, with a logged reason, if:
+1. it doesn't validate as `Session`, offsets don't increase, snapshots are under 5 s apart, or two
+   snapshots in a row are identical;
+2. its duration or run count is more than ±20% off the spec;
+3. its final snapshot differs from `final_code/<id>.py`, or its submit verdict and counts differ
+   from the spec;
+4. **leak check:** a comment or any run output names a label (failure type, an algorithm label or
+   its display name) or quotes a key fact. Code identifiers like `stack` or `heapq` are allowed,
+   because real code has them;
+5. it doesn't condense within the token budget.
+
+Each rule is graded on hand-made passing and failing sessions.
+**Not included:** generation (T-018).
+**Test assets:** required (the check's own tests). Closes with the human's confirmation in the log.
+**Log**
+
+### T-018 · Session generator
+**Milestone:** M2 · **Size:** M · **Owner:** test · **Traces to:** arch §8.5; D-017, D-043.
+**Done when:**
+1. `uv run python -m evals.generate.sessions --spec <id> | --all [--estimate]` calls
+   `llm.generator` through `LLMClient.structured` with `prompts/generators/session/v1.md`. It
+   refuses to run when the generator and `llm.default` share a provider.
+2. The model writes only the lead-up snapshots (offsets plus code) and each Run's status and
+   output. Code assembles the `Session`: a fixed base time, problem metadata, the human's final
+   code as the last snapshot, and the submit copied from the spec.
+3. Each session passes T-017's checks, or is rejected and logged. `<id>.json` and an unreviewed
+   `<id>.meta.json` are written with their provenance. `--estimate` prints the cost and makes
+   no calls.
+4. One spec is generated end to end, with a real call (`llm` marker), and its cost recorded.
+**Not included:** reviewing (T-019); a `tutor-eval` subcommand (the entry point is the tester's
+module; D-046 amends §8.5).
+**Test assets:** required (a fake-adapter run, the provider refusal, the estimate). Closes with
+the human's confirmation.
+**Log**
+
+### T-019 · Generate and review the 20 sessions
+**Milestone:** M2 · **Size:** M · **Owner:** test · **Traces to:** arch §8.5 human review; D-017.
+**Done when:**
+1. `--estimate` is shown to the human and approved before the `--all` run. The actual cost is
+   recorded here.
+2. All 20 sessions pass the checks. The human reads each rendered timeline, and `meta.json`
+   records `accepted` or `rejected`. A rejected session is regenerated after a *general*
+   prompt fix (rule 9), and the prompt version is bumped.
+3. 20 are accepted, with the human's confirmation in this log.
+**Not included:** splitting (T-021).
+**Test assets:** required (the reviewed sessions are the asset). Closes with the human's
+confirmation.
+**Log**
+
+### T-020 · Label the 8 real sessions
+**Milestone:** M2 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Dataset" (the human
+labels algorithm, failure type, course correction, key facts); D-026, D-039.
+**Done when:** for each frozen session the tester proposes `failure_type`, `algorithms`,
+`course_correction`, `on_track_algorithms` and 2–4 key facts, each with a one-line reason read off
+the rendered timeline. The human confirms or corrects every one, and they are stored as label
+records for T-021. `check_specs.py --with-real` then counts their failure types and algorithms in
+the balance.
+**Not included:** new real sessions (a frozen-copy refresh is a later dataset version).
+**Test assets:** required (the labels are the asset). Closes with the human's confirmation.
+**Log**
+
+### T-021 · Assemble dev-v1 and the test split
+**Milestone:** M2 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1; eval plan "Dataset".
+**Done when:**
+1. The 28 cases split **19 dev / 9 test** (D-045 re-proportions 20/10), balanced by status and
+   by real vs synthetic. The human approves the split.
+2. `evals/data/{failure,algorithm,timeline}/{dev,test}/cases.jsonl` are written in the §8.1
+   format, with provenance and `dataset_version: dev-v1`, and their hashes are committed.
+3. Test cases are reported by count only, anywhere a builder reads.
+**Not included:** the `agent` suite (Part 2).
+**Test assets:** required. Closes with the human's confirmation.
+**Log**
+
+### T-022 · Eval runner, result record, estimate
+**Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §8.2 – §8.4; eval plan
+algorithm metric ("any overlap counts", keyword baseline).
+**Done when:**
+1. `tutor-eval estimate` and `tutor-eval run --suite <s> --split dev [--model] [--repeats]` call
+   the same field functions as the pipeline. They write `evals/results/<suite>/<run_id>.json`
+   plus an `index.jsonl` line in the §8.3 format: every version, per-case outputs, cost, and
+   aggregates overall / real / synthetic.
+2. Every printed number carries its versions.
+3. Tester-owned: `evals/graders/` with the §8.4 `Grader` interface, an algorithm overlap grader,
+   and the keyword-matching baseline, each graded on hand-made outputs.
+**Not included:** LLM fields (M3); judges (M4).
+**Test assets:** required (grader tests, the result-record schema, the split lock through the runner).
+**Log**
+
+### T-023 · M2 checkpoint
+**Milestone:** M2 · **Size:** S · **Owner:** test · **Traces to:** M2 checkpoint.
+**Done when:** `tutor-eval run --suite algorithm --split dev` with the keyword baseline as the
+"model" writes a versioned result record ($0). The number goes in the Baselines table as
+`algorithm — keyword baseline @ dataset dev-v1`, with its real-only and synthetic-only values.
+**Test assets:** required.
+**Log**
 
 **Later milestones (one line each until M1 closes):** M2: specs + Claude generator
 + review loop, Anthropic adapter, dataset split, runner and result record with real/synthetic
@@ -844,3 +999,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | — | — | — | The human wrote the final code for syn-001 – syn-003; all three verdicts were checked on LeetCode, with screenshots. syn-002: Wrong Answer **83/88**; the first failing test is nums = [1], target = 0 → [0,0] vs [-1,-1], caused by a first == last shortcut that skips the target check. The story was updated, and `return [first, last]` restored, because the paste had been truncated. syn-003: the code solves **#673 Number of Longest Increasing Subsequence**, not #300; Wrong Answer **19/223**; [1,3,5,4,7] → 4 (a length) vs 2 (a count). The problem, story and counts were updated. **syn-014 removed by the human** and its id retired, so Compile Error is uncovered. Approved specs: 20, all with final code. With the real sessions: 28, no skew. |
 | 2026-11-07 | — | — | — | **The human closed the synthetic spec set at 20** (D-045): 20 approved specs, all with LeetCode-checked final code; 28 sessions with the real 8; no skew; known gap: Compile Error. Next: `/pm plan` M2, covering the Anthropic adapter, T-014, the generator and its checks, generation and human review, labelling the real sessions, the split, and the runner. |
 | 2026-11-07 | — | — | — | syn-003's on-track algorithms changed to `dynamic_programming` only. The human approved it: for #673, the standard fix is DP over length and count, and the binary-search entry was left over from the #300 version. |
+| 2026-11-07 | — | — | T-015 – T-023 | `/pm plan` M2: 10 tasks (T-014 already reserved). The dataset groundwork done ahead of the plan sits in the session log, not as tasks. 28 cases split 19/9. The generator's entry point is the tester's own module, not a `tutor-eval` subcommand (D-046). Blocked on the human: the generator's model id and price (T-015). Not planned: the frozen-copy refresh (later dataset version) and the agent suite (Part 2). |
