@@ -762,7 +762,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ⬜ | D-044; arch §3.3 |
+| T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | 🔄 built 2026-11-07, awaiting `/test run` | D-044; arch §3.3 |
 | T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ human: confirm the generator model id + enter its price | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ⬜ | arch §8.1, §8.2, §4.3 #1 |
 | T-017 | Session checks (`evals/generate/checks.py`) | test | M | required | ⬜ | arch §8.5; D-043 |
@@ -794,6 +794,11 @@ T-020 (labelling the real sessions) is human work and can happen any time before
   [1, 2] and rows (1, init), (2, add_prefix_sum). Result: 6 fail for the right reason (no 0002,
   CHECK rejects `prefix_sum`, no `AlgorithmLabel`, T-008's [1, 2]); the rows and key/index tests
   pass vacuously until 0002 exists. Rest of the suite unchanged.
+- 2026-11-07 `/build T-014` → 🔄. `0002_add_prefix_sum.sql`: the standard SQLite rebuild (new table
+  with a 19-label CHECK, copy rows, drop, rename, recreate `algorithms_label`), with a header on
+  rows and cost; manifest updated. `models.AlgorithmLabel` (19 values). Unit test: the enum
+  equals the CHECK list of the newest migration that defines it. Gate clean. Suite: 358 passed,
+  10 skipped, 1 deselected; `live_capture` 10/10; T-014 7/7, T-008 17/17.
 
 ### T-015 · Anthropic adapter
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §6.1, §6.4, §6.5; D-008, D-018.

@@ -52,6 +52,31 @@ class StatusSource(StrEnum):
     NOT_CAPTURED = "not_captured"
 
 
+class AlgorithmLabel(StrEnum):
+    """The fixed algorithm labels (eval plan; D-044 added PREFIX_SUM). Values equal the
+    session_algorithms CHECK list in the latest migration; a unit test keeps them in step."""
+
+    HASH_MAP = "hash_map"
+    TWO_POINTERS = "two_pointers"
+    SLIDING_WINDOW = "sliding_window"
+    BINARY_SEARCH = "binary_search"
+    STACK = "stack"
+    HEAP = "heap"
+    BFS = "bfs"
+    DFS_BACKTRACKING = "dfs_backtracking"
+    DYNAMIC_PROGRAMMING = "dynamic_programming"
+    GREEDY = "greedy"
+    INTERVALS = "intervals"
+    LINKED_LIST = "linked_list"
+    TREE_TRAVERSAL = "tree_traversal"
+    TRIE = "trie"
+    UNION_FIND = "union_find"
+    GRAPH_TOPOLOGICAL_SORT = "graph_topological_sort"
+    BIT_MANIPULATION = "bit_manipulation"
+    MATH = "math"
+    PREFIX_SUM = "prefix_sum"
+
+
 class _Model(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
