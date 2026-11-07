@@ -85,11 +85,37 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
 10. **Split**: leave `"unassigned"`. Specs are split 20 dev / 10 test, balanced by status, only
     when the dataset is assembled.
 
+## Variety: don't let the dataset lean one way (D-040)
+
+A metric measured on a lopsided dataset measures the common case. Mostly-Accepted sessions let a
+model score well by always saying "passed"; all-short sessions never test long timelines. Spread
+the specs across every dimension, and lean **away** from where the real sessions already sit.
+
+| Dimension | Rule (over the whole dataset, real + synthetic) |
+|---|---|
+| Verdict / status | no one status above 35%; cover every status, including never-submitted |
+| Failure type | no one type above 30%; cover all six |
+| Difficulty | none above 50%; Easy, Medium and Hard each at least 15% |
+| Time spent | none of under 10 / 10–25 / 25–45 / 45–60 min above 40%; each at least 10% |
+| Algorithm | no one label on more than 20% of sessions |
+| Problem | a synthetic spec never reuses a problem, real or synthetic |
+| First approach | a mix of on track, corrected and not corrected |
+
+**The real sessions skew hard** (frozen copy, 8 sessions): 7 Accepted, no Hard, nothing over 25
+minutes, two problems seen twice. So synthetic specs should be mostly failing verdicts, include
+Hard problems, and include long sessions (25–60 min).
+
+Always check balance with the real sessions counted:
+`uv run python evals/generate/check_specs.py --with-real evals/data/sessions/synthetic/specs*.jsonl`
+It prints the distribution with percentages and a `skew` line for each rule broken, from 8
+sessions on. Before drafting the next batch, read the skew lines and aim the new specs at them.
+When proposing a batch, say which skew lines it fixes.
+
 ## Workflow
 
 1. **Plan coverage first** when drafting a batch. Run the checker over what exists and fill the
    reported gaps:
-   `uv run python evals/generate/check_specs.py evals/data/sessions/synthetic/specs*.jsonl`
+   `uv run python evals/generate/check_specs.py --with-real evals/data/sessions/synthetic/specs*.jsonl`
    Across the whole dataset (real plus synthetic, about 30 cases), aim for:
    - every failure type;
    - every status, including runtime error, output limit and never-submitted;
@@ -99,8 +125,8 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    - corrected and not-corrected sessions;
    - a spread of algorithms and difficulties.
 2. **Draft** each spec, appending it to `specs.draft.jsonl`.
-3. **Check**: run the checker on the draft file. Fix every ERROR before showing the human.
-   Mention any warnings.
+3. **Check**: run the checker (with `--with-real`) on the draft and approved files. Fix every
+   ERROR before showing the human. Mention warnings, and say how the batch moved the skew lines.
 4. **Show the human** each spec as a short table (problem · verdict · failure type · algorithms
    · approaches → final · course correction · key facts), with a one-line reason for each label.
    Ask them to confirm or correct each one.

@@ -672,3 +672,21 @@ by the human, gives the generator a target for course corrections, and lets the
 failure-explanation judge check a suggested alternative. Labels rather than prose or code, because
 the eval plan rules out an expected approach with code.
 **Supersedes.** — (adds one field to the §8.5 spec)
+
+## D-040 · The dataset must stay balanced; the spec checker measures it · 2026-11-07 · human
+**Decision.** Variety is a checked requirement. `check_specs.py` reports the distribution over
+the whole dataset (with `--with-real`, the frozen copy's sessions count too) and prints a `skew`
+line, from 8 sessions on, when any of these rules breaks:
+- no single status above 35%;
+- no single failure type above 30%;
+- no difficulty above 50%, and Easy, Medium and Hard each at least 15%;
+- across the time buckets under 10, 10–25, 25–45 and 45–60 min, none above 40% and each at least 10%;
+- no algorithm label on more than 20% of sessions;
+- no synthetic spec reusing a problem.
+
+The `synthetic-spec` skill drafts each batch against those skew lines.
+**Why.** The human: variety of problems, verdicts and time spent, without skewing one way. The real
+sessions already lean hard: 7 of 8 Accepted, no Hard problems, none over 25 minutes. Left alone,
+a model could score well by always saying "passed", and long timelines would never be tested.
+Thresholds are starting points, and a change to them is a recorded decision.
+**Supersedes.** —
