@@ -764,7 +764,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 |---|---|---|---|---|---|---|
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
 | T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ deferred to M7 (D-048); test assets written | arch §6; D-008, D-018 |
-| T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ⬜ | arch §8.1, §8.2, §4.3 #1 |
+| T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ✅ 2026-11-07 `/test run` | arch §8.1, §8.2, §4.3 #1 |
 | T-017 | Session checks (`evals/generate/checks.py`): validate the human's session files | test | M | required | 🔄 built 2026-11-07; needs the human's confirmation | arch §8.5; D-043 |
 | ~~T-018~~ | ~~Session generator~~: dropped, the human writes the sessions (D-048) | — | — | — | dropped | arch §8.5; D-017, D-043 |
 | T-019 | The human writes the 20 session files; each passes T-017's checks | test | M | required | 🔄 20 files in; T-017 not built yet | arch §8.5; D-017 |
@@ -860,6 +860,12 @@ T-020 (labelling the real sessions) is human work and can happen any time before
   synthetic session loads; unaccepted or missing meta refused; path escape refused; a real case
   from the frozen copy, unchanged, live DB untouched; missing file). Result: 24 fail on
   `No module named 'tutor.evals'`, and the label fence passes already.
+- 2026-11-07 `/build T-016` → 🔄. `src/tutor/evals/cases.py`: `Case`, `SessionRef`, `load_cases` (the split
+  lock in the loader, on resolved paths), `load_case_session` (frozen copy for real cases; a
+  synthetic session is confined to its folder and needs an accepted meta), `CaseError`,
+  `SplitLockedError`. Unit tests: 2. Gate clean.
+- 2026-11-07 `/test run` → ✅. The builder's diff touches no judging files. T-016: contract 10/10,
+  acceptance 15/15. Full suite green (T-015's tests skipped, deferred). Done-when 1–3 met. $0.
 
 ### T-017 · Session checks
 **Milestone:** M2 · **Size:** M · **Owner:** test · **Traces to:** arch §8.5 checks; D-043.
