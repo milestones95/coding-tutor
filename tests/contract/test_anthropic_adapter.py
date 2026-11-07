@@ -23,6 +23,10 @@ from pydantic import BaseModel
 
 from _fake_anthropic import start_fake_anthropic
 
+# T-015 is deferred to M7 (D-048): the human writes the synthetic sessions, so no in-repo caller
+# needs Claude until the model comparison. Kept, not deleted; remove this mark when T-015 resumes.
+pytestmark = pytest.mark.skip(reason="T-015 Anthropic adapter deferred to M7 (D-048)")
+
 KEY = "sk-ant-SENTINEL-t015-never-logged-77c2"
 MODEL = "anthropic:claude-opus-5-5"
 FILLED = "Name the algorithm for Two Sum."
