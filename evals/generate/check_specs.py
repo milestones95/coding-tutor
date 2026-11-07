@@ -30,7 +30,8 @@ FAILURE_TYPES = {"edge_case_missed", "wrong_approach", "too_slow", "implementati
 ALGORITHMS = {"hash_map", "two_pointers", "sliding_window", "binary_search", "stack", "heap", "bfs",
               "dfs_backtracking", "dynamic_programming", "greedy", "intervals", "linked_list",
               "tree_traversal", "trie", "union_find", "graph_topological_sort", "bit_manipulation", "math"}
-LANGUAGES = {"python3", "java", "cpp", "javascript", "typescript", "golang"}
+# Python only for now (human, 2026-11-07, D-042). Widening this is a recorded decision.
+LANGUAGES = {"python3"}
 SPLITS = {"dev", "test", "unassigned"}
 KEYS = {"id", "split", "problem", "language", "duration_min", "runs", "verdict", "labels", "story", "key_facts"}
 
@@ -142,8 +143,9 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
             elif on is False and not (isinstance(ota, list) and 1 <= len(ota) <= 2 and len(set(ota)) == len(ota)
                                       and set(ota) <= ALGORITHMS):
                 err.append("first approach off track ⇒ on_track_algorithms is 1–2 labels from the algorithm list")
-            elif on is False and isinstance(algos, list) and set(ota) == set(algos):
-                warn.append("off track, yet the final code's algorithms equal the on-track ones: is one label wrong?")
+            elif on is False and corr is False and isinstance(algos, list) and set(ota) == set(algos):
+                # Never switched, yet the final code already does what would have worked.
+                warn.append("off track and never corrected, yet the final code's algorithms equal the on-track ones")
             if ft == "wrong_approach" and not (on is False and corr is False):
                 err.append("wrong_approach ⇒ the first approach was off track and never corrected")
             if on is True and isinstance(ap, list) and len(ap) > 1:

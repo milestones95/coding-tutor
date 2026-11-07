@@ -699,3 +699,28 @@ least one under 10 and at least one over 30. Every other D-040 rule stands.
 10-30 minutes. but at least have 1 that is under 10 and one that is over 30." A dataset forced to
 15% Hard and spread across 45–60 minutes wouldn't look like the practice it's meant to evaluate.
 **Supersedes.** D-040 (the difficulty and time-spent rules only)
+
+## D-042 · Synthetic sessions are Python only, for now · 2026-11-07 · human
+**Decision.** Every synthetic spec uses `python3`, and the spec checker enforces it. A Python
+Compile Error spec means a `SyntaxError` or `IndentationError`. A misspelt name or field fails at
+runtime (Runtime Error), not at compile time.
+**Why.** The human: "i want to keep everything python right now". Every real session is Python
+too, so a second language would add a variable the evals aren't trying to measure.
+**Supersedes.** —
+
+## D-043 · Synthetic final code is human-written; giveaway comments are removed · 2026-11-07 · human
+**Decision.**
+1. The human writes each synthetic session's **final code** (generated with Claude, then checked on
+   LeetCode itself). It lives in `evals/data/sessions/synthetic/final_code/<id>.py`, one file per
+   spec, with the class named as LeetCode's editor names it.
+2. The session generator writes only the **earlier** snapshots leading up to that code, plus each
+   Run's output. The final snapshot is the human's file, unchanged.
+3. Comments that state the bug or name the algorithm used or needed are removed before code goes
+   into the dataset. Examples: "should be max(…)", "no overflow check", "bug: …",
+   "AttributeError on empty tree". Ordinary comments stay: TODOs, notes on what a variable holds,
+   and step notes like "# delete word1[i]".
+**Why.** Final code checked on LeetCode makes the verdict and the story real rather than imagined.
+Comments that state the answer would let the failure-reason and algorithm evals be passed by
+reading them, and real practice code doesn't annotate its own bugs. The generator's leak check
+(§8.5) still runs on everything.
+**Supersedes.** D-017 in part: the model no longer writes the final snapshot.

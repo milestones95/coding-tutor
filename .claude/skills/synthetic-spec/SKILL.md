@@ -77,7 +77,9 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    `null` when the first approach was on track. Labels only, never code: the eval plan rules out an
    expected approach with code. It is never shown to a model. `wrong_approach` always means off
    track and never corrected.
-8. **Shape**: `duration_min` (2–60, usually 10–30) and `runs` (0–20), consistent with the story. A course
+8. **Language**: `python3` only for now (D-042). A Python *Compile Error* on LeetCode means a
+   `SyntaxError`/`IndentationError`; a misspelt name is a Runtime Error.
+   **Shape**: `duration_min` (2–60, usually 10–30) and `runs` (0–20), consistent with the story. A course
    correction needs time before and after it; a near-miss usually has several runs.
 9. **Key facts**: 2–4 things a correct timeline summary must mention, each **visible in the
    session's behaviour** (a run result, when code changed shape, the final verdict). They should
