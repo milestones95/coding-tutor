@@ -737,3 +737,14 @@ Subarray Sum Equals K are prefix-sum problems, and no existing label fit (`math`
 The CHECK keeps an off-list label out of the database, so it must list every valid label. The
 table is empty everywhere today, which makes this the cheapest moment to change it.
 **Supersedes.** — (extends the eval plan's label list)
+
+## D-045 · The synthetic spec set closes at 20 for now · 2026-11-07 · human
+**Decision.** Synthetic specs stop at 20 (syn-001 – syn-023, with syn-008, syn-014 and syn-015
+retired), each with human-written final code checked on LeetCode. With the 8 frozen real sessions
+the dataset is 28, not 30. Known gap: no Compile Error session. The 20/10 dev/test split is
+re-proportioned when the dataset is assembled (M2). More specs, or more real sessions after
+refreshing the frozen copy, can be added later as a dataset-version change.
+**Why.** The human: "i think this is good enough for now". The set covers every other status,
+every failure type and 18 of 19 algorithm labels, with no skew. Two more specs would only fill
+Compile Error, a status that never needs an LLM call.
+**Supersedes.** — (the eval plan's "30 sessions" becomes 28 for dev-v1)
