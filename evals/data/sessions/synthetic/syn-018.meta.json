@@ -1,0 +1,12 @@
+{
+  "id": "syn-018",
+  "source": "synthetic",
+  "written_by": "human",
+  "written_at": "2026-11-07",
+  "final_code": "final_code/syn-018.py (human, checked on LeetCode)",
+  "ai_assistance": "pending the human's answer (D-048)",
+  "normalised": "last snapshot set to final_code, problem block from the spec, repeated snapshots dropped (2026-11-07)",
+  "reviewed_by": "human",
+  "verdict": "accepted",
+  "waivers": []
+}
