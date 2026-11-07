@@ -811,3 +811,25 @@ references (one migration), so that adding a label afterwards is a row insert, n
 **Why.** The human: "don't do another migration for the sort category". The label table removes
 the recurring cost, but only pays off once a second label is needed.
 **Supersedes.** —
+
+## D-051 · Eval runner interfaces the T-022 tests pin · 2026-11-07 · tester (the human asked to finish M2 without stopping)
+**Decision.** The module is `tutor.evals.runner`.
+- `run(suite, split, *, predictor, settings, repeats=1, milestone=None, root=None,
+  results_dir=None)` returns the §8.3 record and writes it to `<results>/<suite>/<run_id>.json`,
+  plus a summary line, without per-case data, to `<results>/index.jsonl`. The test split is
+  locked by `load_cases`, and a test run saves aggregates only (`cases: []`).
+- `estimate(...)` counts cases and calls, prices them, and makes no calls.
+- `summary_line(record)` names every version.
+- A **predictor** is a callable `Session -> dict` with `.name` and `.version`. The runner hands it
+  the `Session` only; graders see the case. `model` in the record is `name@version`.
+- Aggregates are `accuracy`, `by_source.{real, synthetic}.{accuracy, n}`, `consistency` (the share
+  of cases whose output is identical across repeats) and `errors`. An error counts as wrong, and is
+  also counted separately (§6.4).
+- `evals/graders/` (tester) holds the §8.4 `Grade` / `Grader`, `AlgorithmOverlap` (any overlap
+  counts; an empty output scores 0) and `KeywordBaseline` (`keyword-v1`, the final code only).
+  The runner imports them from the repo's `evals/` directory.
+**Why.** §8.2 and §8.3 give the commands and the record but not the Python seam. A predictor
+interface lets M3's LLM fields and the keyword baseline run through the same runner. The baseline
+is tester-owned because it is the bar the model must beat.
+**Supersedes.** — (architecture §2 put the keyword baseline in `fields/algorithm.py`; it now lives
+with the graders)

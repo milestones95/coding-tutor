@@ -956,6 +956,13 @@ algorithm metric ("any overlap counts", keyword baseline).
 **Not included:** LLM fields (M3); judges (M4).
 **Test assets:** required (grader tests, the result-record schema, the split lock through the runner).
 **Log**
+- 2026-11-07 `/test write T-022` (D-051). `evals/graders/{base,algorithm_overlap,keyword_baseline}.py`;
+  `tests/acceptance/test_t022_graders.py` (16: the overlap rule including "nothing is not a hit",
+  9 keyword cues; this caught a wrong bit-trick cue, now fixed); `tests/contract/test_eval_runner.py`
+  (9: split lock through the runner, writing nothing; §8.3 fields; Session-only predictors;
+  accuracy overall, real and synthetic; errors count as wrong; repeats and consistency; summary
+  versions; estimate makes no calls; approved test run saves aggregates only). Result: the runner
+  tests fail on `No module named 'tutor.evals.runner'`.
 
 ### T-023 · M2 checkpoint
 **Milestone:** M2 · **Size:** S · **Owner:** test · **Traces to:** M2 checkpoint.
