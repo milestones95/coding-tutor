@@ -768,3 +768,16 @@ time. Treating it as invalid output would spend the output retry on a request th
 A fallback model would quietly change which model produced an eval number, which breaks rule 7's
 "every number names its model".
 **Supersedes.** —
+
+## D-048 · The human writes the 20 synthetic session files; no in-repo generator · 2026-11-07 · human
+**Decision.** The human writes each synthetic session's full event file
+(`evals/data/sessions/synthetic/<id>.json`, `Session`-shaped) from the approved spec, ending in
+their LeetCode-checked final code. There is no in-repo generator: T-018 is dropped. T-015, the
+Anthropic adapter, is deferred until M7's model comparison needs Claude; its test assets stay
+committed. T-017's checks stay, now validating the human's files. If an AI helps draft them, it is
+Claude, never the model being evaluated (D-018), and the file's `meta.json` names it.
+**Why.** The human: "i will generate the session events myself". Human-written sessions remove
+generator bias at its source and make every snapshot the human's call. It also drops two tasks
+and an LLM spend from M2.
+**Supersedes.** D-017 (generation by an in-repo Claude generator); D-043's point 2 (the
+generator writes the lead-up); D-046 (the generator's entry point).

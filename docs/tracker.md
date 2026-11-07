@@ -757,17 +757,17 @@ D-013, already show new approaches); M2 labels gain `course_correction`; M4's ch
 
 Planned 2026-11-07. Already done ahead of the plan (in the session log): the `synthetic-spec`
 skill, the spec checker, and 20 human-approved specs, each with LeetCode-checked final code
-(D-039 – D-045). Order: **T-014 → T-015 → T-016 → T-017 → T-018 → T-019 → T-021 → T-022 → T-023**.
+(D-039 – D-045). Order (after D-048): **T-016 → T-017 → T-019 (the human writes sessions; can start now) → T-021 → T-022 → T-023**; T-014 ✅; T-015 deferred to M7.
 T-020 (labelling the real sessions) is human work and can happen any time before T-021.
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
-| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⬜ unblocked 2026-11-07 | arch §6; D-008, D-018 |
+| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ deferred to M7 (D-048); test assets written | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ⬜ | arch §8.1, §8.2, §4.3 #1 |
-| T-017 | Session checks (`evals/generate/checks.py`) | test | M | required | ⬜ | arch §8.5; D-043 |
-| T-018 | Session generator + prompt `generators/session/v1` | test | M | required | ⬜ | arch §8.5; D-017, D-043 |
-| T-019 | Generate the 20 sessions; human reviews each | test | M | required | ⬜ | arch §8.5; D-017 |
+| T-017 | Session checks (`evals/generate/checks.py`): validate the human's session files | test | M | required | ⬜ | arch §8.5; D-043 |
+| ~~T-018~~ | ~~Session generator~~: dropped, the human writes the sessions (D-048) | — | — | — | dropped | arch §8.5; D-017, D-043 |
+| T-019 | The human writes the 20 session files; each passes T-017's checks | test | M | required | ⬜ (human) | arch §8.5; D-017 |
 | T-020 | Label the 8 real sessions | test | M | required | ⬜ | eval plan "Dataset"; D-026, D-039 |
 | T-021 | Assemble `dev-v1` + test split, `cases.jsonl` per suite | test | S | required | ⬜ | arch §8.1; eval plan "Dataset" |
 | T-022 | Eval runner, result record, `estimate`; overlap grader + keyword baseline | build | M | required | ⬜ | arch §8.2 – §8.4; eval plan algorithm metric |
@@ -1038,3 +1038,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | — | — | — | **The human closed the synthetic spec set at 20** (D-045): 20 approved specs, all with LeetCode-checked final code; 28 sessions with the real 8; no skew; known gap: Compile Error. Next: `/pm plan` M2, covering the Anthropic adapter, T-014, the generator and its checks, generation and human review, labelling the real sessions, the split, and the runner. |
 | 2026-11-07 | — | — | — | syn-003's on-track algorithms changed to `dynamic_programming` only. The human approved it: for #673, the standard fix is DP over length and count, and the binary-search entry was left over from the #300 version. |
 | 2026-11-07 | — | — | T-015 – T-023 | `/pm plan` M2: 10 tasks (T-014 already reserved). The dataset groundwork done ahead of the plan sits in the session log, not as tasks. 28 cases split 19/9. The generator's entry point is the tester's own module, not a `tutor-eval` subcommand (D-046). Blocked on the human: the generator's model id and price (T-015). Not planned: the frozen-copy refresh (later dataset version) and the agent suite (Part 2). |
+| 2026-11-07 | — | — | — | **D-048 (the human):** the human writes the 20 synthetic session files. T-018 (generator) dropped; T-015 (Anthropic adapter) deferred to M7 with its test assets kept; T-017 now checks the human's files; T-019 is the human's writing. The 20 session briefs and the file format went to the human. M2 is now: T-016 → T-017 → T-019 → T-020 → T-021 → T-022 → T-023. |
