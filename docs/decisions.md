@@ -802,3 +802,12 @@ generator writes the lead-up); D-046 (the generator's entry point).
 **Why.** §8.1 and §8.2 give the formats and the guard but not the function names. The lock lives in
 the loader, so no caller can forget it.
 **Supersedes.** —
+
+## D-050 · No label for "sorting"; a label table only if the list grows again · 2026-11-07 · human
+**Decision.** Merge Sorted Array's final code copies and sorts. It gets **no algorithm label**: the
+eval plan allows "up to 2", so zero is allowed, and no label in the list fits. No migration.
+Deferred: replace the `session_algorithms.label` CHECK with an `algorithm_labels` table it
+references (one migration), so that adding a label afterwards is a row insert, not a schema change.
+**Why.** The human: "don't do another migration for the sort category". The label table removes
+the recurring cost, but only pays off once a second label is needed.
+**Supersedes.** —
