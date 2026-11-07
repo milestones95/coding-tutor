@@ -159,18 +159,21 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
     return err, warn
 
 
-# Variety (human, 2026-11-07, D-040): no dimension may lean too far one way, or a metric ends up
-# measuring the common case. Shares are over the whole dataset (with --with-real, real sessions
-# count too). Checked once there are enough rows for a share to mean something.
+# Variety (human, 2026-11-07, D-040 as amended by D-041): no dimension may lean too far one way,
+# or a metric ends up measuring the common case. Shares are over the whole dataset (with
+# --with-real, real sessions count too). Checked once there are enough rows to mean something.
+# Difficulty is reported but not balanced: the human rarely practises Hard problems.
+# Time spent: most sessions 10–30 min, with at least one under 10 and one over 30.
 BALANCE_MIN_ROWS = 8
-MAX_SHARE = {"status": 0.35, "failure type": 0.30, "difficulty": 0.50, "time spent": 0.40, "algorithm": 0.20}
-MIN_SHARE = {"difficulty": 0.15, "time spent": 0.10}
+MAX_SHARE = {"status": 0.35, "failure type": 0.30, "algorithm": 0.20}
+TYPICAL_TIME = "10–30 min"
+MIN_TYPICAL_SHARE = 0.50
 DIFFICULTIES = {"Easy", "Medium", "Hard"}
-TIME_BUCKETS = ["under 10 min", "10–25 min", "25–45 min", "45–60 min"]
+TIME_BUCKETS = ["under 10 min", TYPICAL_TIME, "over 30 min"]
 
 
 def time_bucket(minutes: float) -> str:
-    return TIME_BUCKETS[0 if minutes < 10 else 1 if minutes < 25 else 2 if minutes < 45 else 3]
+    return TIME_BUCKETS[0 if minutes < 10 else 1 if minutes <= 30 else 2]
 
 
 def spec_row(s: dict) -> dict:
@@ -227,10 +230,13 @@ def coverage(rows: list[dict]) -> tuple[str, list[str]]:
             for k, n in c.items():
                 if dim in MAX_SHARE and n / total > MAX_SHARE[dim]:
                     skew.append(f"{dim} leans on {k!r}: {n}/{total} = {n / total:.0%} (max {MAX_SHARE[dim]:.0%})")
-            if dim in MIN_SHARE:
-                for k in order:
-                    if c.get(k, 0) / total < MIN_SHARE[dim]:
-                        skew.append(f"{dim} has too few {k!r}: {c.get(k, 0)}/{total} (min {MIN_SHARE[dim]:.0%})")
+            if dim == "time spent":
+                if c.get(TYPICAL_TIME, 0) / total < MIN_TYPICAL_SHARE:
+                    skew.append(f"time spent: only {c.get(TYPICAL_TIME, 0)}/{total} sessions are {TYPICAL_TIME} "
+                                f"(most should be, min {MIN_TYPICAL_SHARE:.0%})")
+                for k in ("under 10 min", "over 30 min"):
+                    if not c.get(k):
+                        skew.append(f"time spent: no session {k} (need at least one)")
     syn = [r for r in rows if r["source"] == "synthetic"]
     lines.append(f"  near-misses (failing with ≥ 90% tests passed): {sum(r['near_miss'] for r in syn)}")
     lines.append(f"  split: {dict(Counter(r.get('split', 'unassigned') for r in syn))}" if syn else "")

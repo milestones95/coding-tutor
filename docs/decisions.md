@@ -690,3 +690,12 @@ sessions already lean hard: 7 of 8 Accepted, no Hard problems, none over 25 minu
 a model could score well by always saying "passed", and long timelines would never be tested.
 Thresholds are starting points, and a change to them is a recorded decision.
 **Supersedes.** —
+
+## D-041 · Balance rules for difficulty and time spent changed · 2026-11-07 · human
+**Decision.** Difficulty is reported but no longer balanced. Time spent uses three buckets:
+under 10, 10–30, and over 30 minutes. Most sessions (at least 50%) must be 10–30 min, with at
+least one under 10 and at least one over 30. Every other D-040 rule stands.
+**Why.** The human: "we won't be practicing many hard problems. and most problems should be between
+10-30 minutes. but at least have 1 that is under 10 and one that is over 30." A dataset forced to
+15% Hard and spread across 45–60 minutes wouldn't look like the practice it's meant to evaluate.
+**Supersedes.** D-040 (the difficulty and time-spent rules only)

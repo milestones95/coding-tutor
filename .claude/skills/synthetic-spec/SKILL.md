@@ -77,7 +77,7 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    `null` when the first approach was on track. Labels only, never code: the eval plan rules out an
    expected approach with code. It is never shown to a model. `wrong_approach` always means off
    track and never corrected.
-8. **Shape**: `duration_min` (2–60) and `runs` (0–20), consistent with the story. A course
+8. **Shape**: `duration_min` (2–60, usually 10–30) and `runs` (0–20), consistent with the story. A course
    correction needs time before and after it; a near-miss usually has several runs.
 9. **Key facts**: 2–4 things a correct timeline summary must mention, each **visible in the
    session's behaviour** (a run result, when code changed shape, the final verdict). They should
@@ -95,15 +95,15 @@ the specs across every dimension, and lean **away** from where the real sessions
 |---|---|
 | Verdict / status | no one status above 35%; cover every status, including never-submitted |
 | Failure type | no one type above 30%; cover all six |
-| Difficulty | none above 50%; Easy, Medium and Hard each at least 15% |
-| Time spent | none of under 10 / 10–25 / 25–45 / 45–60 min above 40%; each at least 10% |
+| Difficulty | reported, not balanced: Hard problems are rare in practice (D-041) |
+| Time spent | most sessions 10–30 min; at least one under 10 and at least one over 30 (D-041) |
 | Algorithm | no one label on more than 20% of sessions |
 | Problem | a synthetic spec never reuses a problem, real or synthetic |
 | First approach | a mix of on track, corrected and not corrected |
 
-**The real sessions skew hard** (frozen copy, 8 sessions): 7 Accepted, no Hard, nothing over 25
-minutes, two problems seen twice. So synthetic specs should be mostly failing verdicts, include
-Hard problems, and include long sessions (25–60 min).
+**The real sessions skew** (frozen copy, 8 sessions): 7 Accepted, nothing over 25 minutes, two
+problems seen twice. So synthetic specs should be mostly failing verdicts, mostly 10–30 minutes,
+and include at least one session over 30 minutes.
 
 Always check balance with the real sessions counted:
 `uv run python evals/generate/check_specs.py --with-real evals/data/sessions/synthetic/specs*.jsonl`
