@@ -781,3 +781,24 @@ generator bias at its source and make every snapshot the human's call. It also d
 and an LLM spend from M2.
 **Supersedes.** D-017 (generation by an in-repo Claude generator); D-043's point 2 (the
 generator writes the lead-up); D-046 (the generator's entry point).
+
+## D-049 · Eval case interfaces the T-016 tests pin · 2026-11-07 · tester (the human asked to finish M2 without stopping)
+**Decision.** The module is `tutor.evals.cases`.
+- `Case` follows the §8.1 format, with no extra fields. `source` is `real` or `synthetic`, `session`
+  carries exactly one of `capture_session_id` / `synthetic_path`, and `label_source` is
+  `human_written`.
+- `load_cases(suite, split, *, root=None, milestone=None)`:
+  - reads `<root>/data/<suite>/<split>/cases.jsonl`; `root` is the evals directory;
+  - an unknown suite or split is a `ValueError`;
+  - a malformed or duplicate case is a `CaseError`;
+  - the test split raises `SplitLockedError` unless `milestone` is listed in
+    `<root>/test_approvals.json` as `{"approved": [...]}`, a file only the human writes.
+- `load_case_session(case, *, settings, root=None)`:
+  - a real case comes from `paths.eval_capture_db`, opened immutable;
+  - a synthetic case comes from `synthetic_path`, relative to the repo root and confined to
+    `evals/data/sessions/synthetic/`, and only if its `meta.json` says `"verdict": "accepted"`.
+- Label fence: nothing under `src/tutor/` outside `tutor/evals/` mentions `evals/data` or imports
+  `tutor.evals`, except `cli.py`, which wires `tutor-eval`.
+**Why.** §8.1 and §8.2 give the formats and the guard but not the function names. The lock lives in
+the loader, so no caller can forget it.
+**Supersedes.** —

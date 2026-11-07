@@ -853,6 +853,13 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 **Not included:** running fields or grading (T-022); writing cases (T-021).
 **Test assets:** required (split-lock and label-fence contract tests).
 **Log**
+- 2026-11-07 `/test write T-016` (D-049). `tests/contract/test_eval_split_and_label_fence.py` (10:
+  dev loads; test refused without a milestone, for an unapproved milestone, and with no approvals
+  file; loads when approved; four path or case tricks refused; label fence) and
+  `tests/acceptance/test_t016_cases.py` (15: all fields; 7 malformed cases; duplicate ids;
+  synthetic session loads; unaccepted or missing meta refused; path escape refused; a real case
+  from the frozen copy, unchanged, live DB untouched; missing file). Result: 24 fail on
+  `No module named 'tutor.evals'`, and the label fence passes already.
 
 ### T-017 · Session checks
 **Milestone:** M2 · **Size:** M · **Owner:** test · **Traces to:** arch §8.5 checks; D-043.
