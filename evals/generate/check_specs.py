@@ -7,8 +7,10 @@ reviews it and before any generation money is spent.
 
     uv run python evals/generate/check_specs.py evals/data/sessions/synthetic/specs.draft.jsonl
     uv run python evals/generate/check_specs.py specs.draft.jsonl specs.jsonl   # coverage across both
+    uv run python evals/generate/check_specs.py --with-real specs.jsonl         # balance incl. real sessions
 
-Exit 0 if every spec is valid, 1 otherwise. Warnings don't fail; they flag specs worth a second look.
+Exit 0 if every spec is valid, 1 otherwise. Warnings and skew lines don't fail; they flag what to fix
+in the next specs.
 """
 
 import json
@@ -27,8 +29,10 @@ VERDICTS = {"Accepted", "Wrong Answer", "Time Limit Exceeded", "Memory Limit Exc
 FAILURE_TYPES = {"edge_case_missed", "wrong_approach", "too_slow", "implementation_bug", "did_not_finish", "none"}
 ALGORITHMS = {"hash_map", "two_pointers", "sliding_window", "binary_search", "stack", "heap", "bfs",
               "dfs_backtracking", "dynamic_programming", "greedy", "intervals", "linked_list",
-              "tree_traversal", "trie", "union_find", "graph_topological_sort", "bit_manipulation", "math"}
-LANGUAGES = {"python3", "java", "cpp", "javascript", "typescript", "golang"}
+              "tree_traversal", "trie", "union_find", "graph_topological_sort", "bit_manipulation", "math",
+              "prefix_sum"}  # prefix_sum: D-044
+# Python only for now (human, 2026-11-07, D-042). Widening this is a recorded decision.
+LANGUAGES = {"python3"}
 SPLITS = {"dev", "test", "unassigned"}
 KEYS = {"id", "split", "problem", "language", "duration_min", "runs", "verdict", "labels", "story", "key_facts"}
 
@@ -140,8 +144,9 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
             elif on is False and not (isinstance(ota, list) and 1 <= len(ota) <= 2 and len(set(ota)) == len(ota)
                                       and set(ota) <= ALGORITHMS):
                 err.append("first approach off track ⇒ on_track_algorithms is 1–2 labels from the algorithm list")
-            elif on is False and isinstance(algos, list) and set(ota) == set(algos):
-                warn.append("off track, yet the final code's algorithms equal the on-track ones: is one label wrong?")
+            elif on is False and corr is False and isinstance(algos, list) and set(ota) == set(algos):
+                # Never switched, yet the final code already does what would have worked.
+                warn.append("off track and never corrected, yet the final code's algorithms equal the on-track ones")
             if ft == "wrong_approach" and not (on is False and corr is False):
                 err.append("wrong_approach ⇒ the first approach was off track and never corrected")
             if on is True and isinstance(ap, list) and len(ap) > 1:
@@ -157,33 +162,101 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
     return err, warn
 
 
-def coverage(specs: list[dict]) -> str:
-    def row(title, counter, universe=None):
-        keys = sorted(universe or counter, key=str)
-        cells = ", ".join(f"{k} {counter.get(k, 0)}" for k in keys)
-        gaps = [k for k in (universe or []) if not counter.get(k)]
-        return f"  {title}: {cells}" + (f"\n    missing: {', '.join(sorted(gaps))}" if gaps else "")
-
-    statuses = Counter((s["verdict"] or {}).get("status", "not submitted") for s in specs)
-    fts = Counter(s["labels"]["failure_type"] for s in specs)
-    algos = Counter(a for s in specs for a in s["labels"]["algorithms"])
-    cc = Counter("on track" if s["story"]["course_correction"]["first_approach_on_track"]
-                 else ("corrected" if s["story"]["course_correction"]["corrected"] else "not corrected")
-                 for s in specs)
-    near = sum(1 for s in specs if s["verdict"] and s["verdict"]["status"] != "Accepted"
-               and s["verdict"]["tests_passed"] / s["verdict"]["tests_total"] >= 0.9)
-    return "\n".join([
-        f"coverage over {len(specs)} specs",
-        row("status", statuses, VERDICTS | {"not submitted"}),
-        row("failure type", fts, FAILURE_TYPES),
-        row("algorithms", algos),
-        row("first approach", cc, {"on track", "corrected", "not corrected"}),
-        f"  near-misses (failing with ≥ 90% tests passed): {near}",
-        row("split", Counter(s["split"] for s in specs)),
-    ])
+# Variety (human, 2026-11-07, D-040 as amended by D-041): no dimension may lean too far one way,
+# or a metric ends up measuring the common case. Shares are over the whole dataset (with
+# --with-real, real sessions count too). Checked once there are enough rows to mean something.
+# Difficulty is reported but not balanced: the human rarely practises Hard problems.
+# Time spent: most sessions 10–30 min, with at least one under 10 and one over 30.
+BALANCE_MIN_ROWS = 8
+MAX_SHARE = {"status": 0.35, "failure type": 0.30, "algorithm": 0.20}
+TYPICAL_TIME = "10–30 min"
+MIN_TYPICAL_SHARE = 0.50
+DIFFICULTIES = {"Easy", "Medium", "Hard"}
+TIME_BUCKETS = ["under 10 min", TYPICAL_TIME, "over 30 min"]
 
 
-def main(paths: list[str]) -> int:
+def time_bucket(minutes: float) -> str:
+    return TIME_BUCKETS[0 if minutes < 10 else 1 if minutes <= 30 else 2]
+
+
+def spec_row(s: dict) -> dict:
+    v = s["verdict"]
+    cc = s["story"]["course_correction"]
+    return {"source": "synthetic", "slug": s["problem"]["slug"],
+            "status": v["status"] if v else "not submitted", "difficulty": s["problem"]["difficulty"],
+            "time spent": time_bucket(s["duration_min"]), "failure type": s["labels"]["failure_type"],
+            "algorithm": s["labels"]["algorithms"],
+            "first approach": "on track" if cc["first_approach_on_track"]
+            else ("corrected" if cc["corrected"] else "not corrected"),
+            "near_miss": bool(v and v["status"] != "Accepted" and v["tests_passed"] / v["tests_total"] >= 0.9)}
+
+
+def real_rows() -> list[dict]:
+    """The frozen copy's real sessions, for status / difficulty / time balance. Their failure type
+    and algorithms aren't labelled yet, so they don't count on those dimensions."""
+    from tutor.capture.loader import CaptureLoader
+    from tutor.config import load_settings
+    from tutor.fields.deterministic import status, time_to_finish
+
+    settings = load_settings()
+    rows = []
+    for x in CaptureLoader(settings.paths.eval_capture_db, mode="immutable", settings=settings,
+                           run_id="check-specs").iter_sessions():
+        st = status(x, settings=settings, run_id="check-specs")
+        rows.append({"source": "real", "slug": x.problem.slug,
+                     "status": st.leetcode_verdict or "not submitted", "difficulty": x.problem.difficulty,
+                     "time spent": time_bucket(time_to_finish(x))})
+    return rows
+
+
+def coverage(rows: list[dict]) -> tuple[str, list[str]]:
+    """A distribution table, and skew warnings once there are BALANCE_MIN_ROWS rows."""
+    lines, skew = [], []
+    n_real = sum(r["source"] == "real" for r in rows)
+    lines.append(f"coverage over {len(rows)} sessions ({len(rows) - n_real} synthetic, {n_real} real)")
+    universes = {"status": VERDICTS | {"not submitted"}, "failure type": FAILURE_TYPES,
+                 "difficulty": DIFFICULTIES, "time spent": set(TIME_BUCKETS), "algorithm": None,
+                 "first approach": {"on track", "corrected", "not corrected"}}
+    for dim, universe in universes.items():
+        have = [r for r in rows if dim in r]
+        if not have:
+            continue
+        c = Counter(v for r in have for v in (r[dim] if isinstance(r[dim], list) else [r[dim]]))
+        total = len(have)  # shares are per session (a session can carry 2 algorithm labels)
+        order = TIME_BUCKETS if dim == "time spent" else sorted(universe or c)
+        cells = ", ".join(f"{k} {c.get(k, 0)} ({c.get(k, 0) / total:.0%})" for k in order if universe or c.get(k))
+        lines.append(f"  {dim} [{total}]: {cells}")
+        gaps = sorted(k for k in (universe or []) if not c.get(k))
+        if gaps:
+            lines.append(f"    missing: {', '.join(gaps)}")
+        if total >= BALANCE_MIN_ROWS:
+            for k, n in c.items():
+                if dim in MAX_SHARE and n / total > MAX_SHARE[dim]:
+                    skew.append(f"{dim} leans on {k!r}: {n}/{total} = {n / total:.0%} (max {MAX_SHARE[dim]:.0%})")
+            if dim == "time spent":
+                if c.get(TYPICAL_TIME, 0) / total < MIN_TYPICAL_SHARE:
+                    skew.append(f"time spent: only {c.get(TYPICAL_TIME, 0)}/{total} sessions are {TYPICAL_TIME} "
+                                f"(most should be, min {MIN_TYPICAL_SHARE:.0%})")
+                for k in ("under 10 min", "over 30 min"):
+                    if not c.get(k):
+                        skew.append(f"time spent: no session {k} (need at least one)")
+    syn = [r for r in rows if r["source"] == "synthetic"]
+    lines.append(f"  near-misses (failing with ≥ 90% tests passed): {sum(r['near_miss'] for r in syn)}")
+    lines.append(f"  split: {dict(Counter(r.get('split', 'unassigned') for r in syn))}" if syn else "")
+    # A real session repeating a problem is genuine practice; a synthetic spec reusing a problem
+    # (real or synthetic) narrows the variety for nothing.
+    syn_slugs = {r["slug"] for r in syn}
+    repeats = [f"{s} ×{n}" for s, n in Counter(r["slug"] for r in rows).items() if n > 1 and s in syn_slugs]
+    if repeats:
+        skew.append(f"a synthetic spec reuses a problem: {', '.join(sorted(repeats))}")
+    if len(rows) < BALANCE_MIN_ROWS:
+        lines.append(f"  (balance is checked from {BALANCE_MIN_ROWS} sessions on)")
+    return "\n".join(x for x in lines if x), skew
+
+
+def main(argv: list[str]) -> int:
+    with_real = "--with-real" in argv
+    paths = [a for a in argv if a != "--with-real"]
     db = _problem_db()
     if db is None:
         print("warning: data/capture.db not found; problem metadata not checked", file=sys.stderr)
@@ -213,8 +286,12 @@ def main(paths: list[str]) -> int:
         if count > 1:
             print(f"ERROR id {sid} is used {count} times")
             bad += 1
-    if specs:
-        print(coverage(specs))
+    rows = [spec_row(s) | {"split": s["split"]} for s in specs] + (real_rows() if with_real else [])
+    if rows:
+        table, skew = coverage(rows)
+        print(table)
+        for w in skew:
+            print(f"skew  {w}")
     print(f"{len(specs)} valid, {bad} invalid")
     return 1 if bad else 0
 

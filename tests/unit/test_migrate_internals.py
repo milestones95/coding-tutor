@@ -52,3 +52,15 @@ def test_the_error_names_the_failing_file(tmp_path):
     (mig / "0001_bad.sql").write_text("NOT SQL;\n")
     with pytest.raises(MigrationError, match="0001_bad.sql.*rolled back"):
         migrate(tmp_path / "t.db", settings=_settings(tmp_path), migrations_dir=mig)
+
+
+def test_algorithm_label_enum_matches_the_latest_check_list():
+    import re
+
+    from tutor.models import AlgorithmLabel
+
+    pattern = re.compile(r"label\s+TEXT NOT NULL CHECK \(label IN \((.*?)\)\)", re.S)
+    # The newest migration that (re)defines the label list; later ones may not touch the table.
+    check = next(m.group(1) for mig in reversed(discover(MIGRATIONS_DIR))
+                 if (m := pattern.search(mig.path.read_text())))
+    assert {s.strip().strip("'") for s in check.split(",")} == {a.value for a in AlgorithmLabel}

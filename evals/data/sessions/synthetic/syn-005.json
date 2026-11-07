@@ -1,0 +1,72 @@
+{
+  "session_id": "syn-005",
+  "problem": {
+    "slug": "daily-temperatures",
+    "title": "Daily Temperatures",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "stack",
+      "monotonic-stack"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-17T15:02:00.000Z",
+      "code": "class Solution:\n    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:\n        n = len(temperatures)\n        answer = [0] * n\n        stack = []\n        for i, t in enumerate(temperatures):\n            still_waiting = []\n            for j in stack:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-17T15:04:00.000Z",
+      "code": "class Solution:\n    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:\n        n = len(temperatures)\n        answer = [0] * n\n        stack = []\n        for i, t in enumerate(temperatures):\n            still_waiting = []\n            for j in stack:\n                if temperatures[j] < t:\n                    answer[j] = i - j\n                else:\n                    still_waiting.append(j)\n            stack = still_waiting\n        return answer\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-17T15:08:00.000Z",
+      "code": "class Solution:\n    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:\n        n = len(temperatures)\n        answer = [0] * n\n        stack = []\n        for i, t in enumerate(temperatures):\n            still_waiting = []\n            for j in stack:\n                if temperatures[j] < t:\n                    answer[j] = i - j\n                else:\n                    still_waiting.append(j)\n            still_waiting.append(i)\n            stack = still_waiting\n        return answer\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-17T15:16:00.000Z",
+      "code": "class Solution:\n    def dailyTemperatures(self, temperatures):\n        n = len(temperatures)\n        answer = [0] * n\n        stack = []  # indices still waiting for a warmer day\n        for i, t in enumerate(temperatures):\n\n            still_waiting = []\n            for j in stack:\n                if temperatures[j] < t:\n                    answer[j] = i - j\n                else:\n                    still_waiting.append(j)\n            still_waiting.append(i)\n            stack = still_waiting\n        return answer\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-17T15:05:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 3,
+      "error_detail": "Output: [0,0,0,0,0,0,0,0]\nExpected: [1,1,4,2,1,1,0,0]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-17T15:08:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-17T15:11:50.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-17T15:17:00.000Z",
+      "verdict": "Time Limit Exceeded",
+      "tests_passed": 47,
+      "tests_total": 48,
+      "error_detail": "Last executed input: temperatures = [100,100,100,100,100,100,...] (length 100000)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

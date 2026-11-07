@@ -1,0 +1,76 @@
+{
+  "session_id": "syn-013",
+  "problem": {
+    "slug": "remove-nth-node-from-end-of-list",
+    "title": "Remove Nth Node From End of List",
+    "difficulty": "Medium",
+    "tags": [
+      "linked-list",
+      "two-pointers"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-24T14:52:00.000Z",
+      "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        fast = slow = head\n        for _ in range(n - 1):\n            fast = fast.next\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-24T14:54:00.000Z",
+      "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        fast = slow = head\n        for _ in range(n - 1):\n            fast = fast.next\n        while fast.next:\n            fast = fast.next\n            slow = slow.next\n        slow.next = slow.next.next\n        return head\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-24T14:58:00.000Z",
+      "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        fast = slow = head\n            fast = fast.next\n        while fast.next:\n            fast = fast.next\n            slow = slow.next\n        slow.next = slow.next.next\n        return head\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-24T15:00:00.000Z",
+      "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        fast = slow = head\n        for _ in range(n):\n            fast = fast.next\n        while fast.next:\n            fast = fast.next\n            slow = slow.next\n        slow.next = slow.next.next\n        return head\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-24T15:08:00.000Z",
+      "code": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def removeNthFromEnd(self, head, n):\n        fast = slow = head\n        for _ in range(n):\n            fast = fast.next\n        while fast.next:\n            fast = fast.next\n            slow = slow.next\n        slow.next = slow.next.next\n        return head\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-24T14:56:10.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 2,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'next'\n    slow.next = slow.next.next\nLine 14 in removeNthFromEnd (Solution.py)\nLast executed input: head = [1,2], n = 1"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-24T15:00:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-24T15:04:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-24T15:08:00.000Z",
+      "verdict": "Runtime Error",
+      "tests_passed": 206,
+      "tests_total": 208,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'next'\n    while fast.next:\nLine 11 in removeNthFromEnd (Solution.py)\nLast executed input: head = [1], n = 1",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

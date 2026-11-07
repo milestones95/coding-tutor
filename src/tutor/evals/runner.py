@@ -1,0 +1,150 @@
+"""The eval runner: dataset → predictor → graders → versioned result record (architecture §8.2, §8.3; D-051).
+
+One shape for every suite: load the cases (the sealed-split lock lives in `load_cases`), load each
+case's `Session`, hand the predictor that `Session` and nothing else (labels stay here, §4.3 #1),
+grade the output against the case, then aggregate overall, real-only and synthetic-only. Every
+record names what produced it (rule 7), and a test-split run keeps aggregates only (rule 2).
+
+A predictor is any callable `Session -> dict` with `.name` and `.version`: the keyword baseline
+now, the LLM fields from M3.
+"""
+
+import json
+import subprocess
+import sys
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Protocol
+
+from tutor.condense import CONDENSER_VERSION
+from tutor.config import REPO_ROOT, Settings
+from tutor.evals.cases import DEFAULT_ROOT, CaseError, load_case_session, load_cases
+from tutor.logs import new_run_id
+
+
+class Predictor(Protocol):
+    name: str
+    version: str
+
+    def __call__(self, session: Any) -> dict: ...
+
+
+def _evals_importable() -> None:
+    """Graders and the baseline are tester-owned files under <repo>/evals/ (D-051)."""
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+
+
+def graders_for(suite: str) -> list:
+    _evals_importable()
+    if suite == "algorithm":
+        from evals.graders.algorithm_overlap import AlgorithmOverlap
+
+        return [AlgorithmOverlap()]
+    raise NotImplementedError(f"no graders for suite {suite!r} yet (failure: M3, timeline: M4)")
+
+
+def predictor_named(name: str) -> Predictor:
+    _evals_importable()
+    if name == "keyword_baseline":
+        from evals.graders.keyword_baseline import KeywordBaseline
+
+        return KeywordBaseline()
+    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline (LLM fields arrive in M3)")
+
+
+def _git() -> tuple[str, bool]:
+    def out(*args: str) -> str:
+        return subprocess.run(["git", *args], cwd=REPO_ROOT, capture_output=True, text=True).stdout.strip()
+
+    return out("rev-parse", "HEAD") or "unknown", bool(out("status", "--porcelain"))
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def estimate(suite: str, split: str, *, predictor: Predictor, repeats: int = 1, root: Path | None = None,
+             milestone: str | None = None) -> dict:
+    """Projected calls and cost; makes no predictor calls. Non-LLM predictors cost nothing."""
+    cases = load_cases(suite, split, root=root or DEFAULT_ROOT, milestone=milestone)
+    per_call = float(getattr(predictor, "est_cost_per_call", 0.0))
+    return {"cases": len(cases), "calls": len(cases) * repeats, "cost_usd": round(len(cases) * repeats * per_call, 6)}
+
+
+def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, repeats: int = 1,
+        milestone: str | None = None, root: Path | None = None, results_dir: Path | None = None) -> dict:
+    root = root or DEFAULT_ROOT
+    cases = load_cases(suite, split, root=root, milestone=milestone)   # refuses a locked test split first
+    graders = graders_for(suite)
+    run_id, started = new_run_id(), _now()
+    rows: list[dict] = []
+    for case in cases:
+        session, load_error = None, None
+        try:
+            session = load_case_session(case, settings=settings, root=root)
+        except CaseError as e:
+            load_error = f"CaseError: {e}"
+        for rep in range(1, repeats + 1):
+            t0 = time.monotonic()
+            output: dict = {}
+            error = load_error
+            if error is None:
+                try:
+                    output = predictor(session)
+                except Exception as e:  # a failing predictor is a scored error, not a crashed run
+                    error = f"{type(e).__name__}: {e}"
+            grades = [] if error else [g.model_dump() for gr in graders for g in gr.grade(case, output, None)]
+            rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source, "output": output,
+                         "grades": grades, "error": error, "cost_usd": 0.0,
+                         "latency_ms": int((time.monotonic() - t0) * 1000), "input_tokens": 0, "output_tokens": 0})
+
+    def accuracy(subset: list[dict]) -> float | None:
+        if not subset:
+            return None
+        return sum((r["grades"][0]["value"] if r["grades"] else 0.0) for r in subset) / len(subset)
+
+    by_case: dict[str, list[str]] = {}
+    for r in rows:
+        by_case.setdefault(r["case_id"], []).append(json.dumps(r["output"], sort_keys=True))
+    consistency = (sum(len(set(v)) == 1 for v in by_case.values()) / len(by_case)) if by_case else None
+    sha, dirty = _git()
+    record = {
+        "run_id": run_id, "suite": suite, "split": split,
+        "dataset_version": cases[0].dataset_version if cases else f"{split}-v1",
+        "started_at": started, "finished_at": _now(), "git_sha": sha, "git_dirty": dirty,
+        "provider": getattr(predictor, "provider", "local"), "model": f"{predictor.name}@{predictor.version}",
+        "prompt_versions": dict(getattr(predictor, "prompt_versions", {})),
+        "prompt_sha256": dict(getattr(predictor, "prompt_sha256", {})),
+        "condenser_version": CONDENSER_VERSION, "judge": None, "repeats": repeats,
+        "metric": graders[0].name,
+        "cases": [] if split == "test" else rows,      # rule 2: test runs keep aggregates only
+        "aggregates": {
+            "accuracy": accuracy(rows),
+            "by_source": {src: {"accuracy": accuracy([r for r in rows if r["source"] == src]),
+                                "n": len({r["case_id"] for r in rows if r["source"] == src})}
+                          for src in ("real", "synthetic")},
+            "consistency": consistency,
+            "errors": sum(1 for r in rows if r["error"]),
+        },
+        "cost_usd_total": round(sum(r["cost_usd"] for r in rows), 6),
+    }
+    out = (results_dir or root / "results")
+    (out / suite).mkdir(parents=True, exist_ok=True)
+    (out / suite / f"{run_id}.json").write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
+    with (out / "index.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({k: v for k, v in record.items() if k != "cases"}, ensure_ascii=False) + "\n")
+    return record
+
+
+def summary_line(record: dict) -> str:
+    def fmt(v: float | None) -> str:
+        return "—" if v is None else f"{v:.2f}"
+
+    a = record["aggregates"]
+    parts = [f"{src} {fmt(a['by_source'][src]['accuracy'])} (n={a['by_source'][src]['n']})" for src in ("real", "synthetic")]
+    return (f"{record['suite']} {record['metric']} {fmt(a['accuracy'])} @ predictor {record['model']}, "
+            f"dataset {record['dataset_version']}, condenser {record['condenser_version']}, "
+            f"judge {record['judge'] or '—'} | {', '.join(parts)} | errors {a['errors']} | "
+            f"consistency {fmt(a['consistency'])} | ${record['cost_usd_total']:.4f} | run {record['run_id']}")

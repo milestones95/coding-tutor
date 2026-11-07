@@ -1,0 +1,90 @@
+{
+  "session_id": "syn-004",
+  "problem": {
+    "slug": "longest-substring-without-repeating-characters",
+    "title": "Longest Substring Without Repeating Characters",
+    "difficulty": "Medium",
+    "tags": [
+      "hash-table",
+      "string",
+      "sliding-window"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-16T18:12:00.000Z",
+      "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        best = 0\n        for i in range(len(s)):\n            for j in range(i, len(s)):\n                seen = set()\n                ok = True\n                for k in range(i, j + 1):\n                    if s[k] in seen:\n                        ok = False\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-16T18:14:00.000Z",
+      "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        best = 0\n        for i in range(len(s)):\n            for j in range(i, len(s)):\n                seen = set()\n                ok = True\n                for k in range(i, j + 1):\n                    if s[k] in seen:\n                        ok = False\n                        break\n                    seen.add(s[k])\n                if ok:\n                    best = max(best, j - i + 1)\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-16T18:18:00.000Z",
+      "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        last_seen = {}\n        left = 0\n        best = 0\n                if ok:\n                    best = max(best, j - i + 1)\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-16T18:20:00.000Z",
+      "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        last_seen = {}\n        left = 0\n        best = 0\n        for right, ch in enumerate(s):\n            if ch in last_seen:\n                left = last_seen[ch] + 1\n            last_seen[ch] = right\n            best = max(best, right - left + 1)\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-16T18:26:00.000Z",
+      "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        last_seen = {}\n        left = 0\n        best = 0\n        for right, ch in enumerate(s):\n                left = last_seen[ch] + 1\n            last_seen[ch] = right\n            best = max(best, right - left + 1)\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-16T18:28:00.000Z",
+      "code": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        last_seen = {}\n        left = 0\n        best = 0\n        for right, ch in enumerate(s):\n            if ch in last_seen and last_seen[ch] >= left:\n                left = last_seen[ch] + 1\n            last_seen[ch] = right\n            best = max(best, right - left + 1)\n        return best\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-16T18:16:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-16T18:20:20.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-16T18:24:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 3,
+      "tests_total": 4,
+      "error_detail": "Output: 3\nExpected: 2"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-16T18:27:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-16T18:31:00.000Z",
+      "verdict": "Accepted",
+      "tests_passed": 987,
+      "tests_total": 987,
+      "error_detail": null,
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

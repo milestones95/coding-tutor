@@ -1,0 +1,8 @@
+{
+  "evals/data/algorithm/dev/cases.jsonl": "6198dd164f3a5005a7e6b066225b441db0bc2635bf0a73f069616391210ee632",
+  "evals/data/algorithm/test/cases.jsonl": "3c666f4242696de06ea7e85577bfdd7e184456434531c04768f5e03478f7d6d9",
+  "evals/data/failure/dev/cases.jsonl": "164d065ae6bf2ba1a46cf5fe227eef4a871532da69c64db3b64344c1e4c97a18",
+  "evals/data/failure/test/cases.jsonl": "2f5b71c60d39f674964ae96b6ab713ab0a7205aabd0e2aa24e7ea65141e1f91c",
+  "evals/data/sessions/synthetic/specs.jsonl": "061a41513aceee5f76cdc1181ab7ec81d387aea77b1480a2876703faca0a73d1",
+  "evals/data/sessions/real/labels.jsonl": "fce996b8a7c6e16eb39942f9d16bbc14d2d277c472b93e986738da1a156a9d50"
+}

@@ -1,0 +1,52 @@
+{
+  "session_id": "syn-010",
+  "problem": {
+    "slug": "reverse-integer",
+    "title": "Reverse Integer",
+    "difficulty": "Medium",
+    "tags": [
+      "math"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-21T13:22:00.000Z",
+      "code": "class Solution:\n    def reverse(self, x: int) -> int:\n        result = 0\n        while x:\n            result = result * 10 + x % 10\n            x //= 10\n        return result\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-21T13:24:00.000Z",
+      "code": "class Solution:\n    def reverse(self, x: int) -> int:\n        sign = -1 if x < 0 else 1\n        x = abs(x)\n        result = 0\n        while x:\n            result = result * 10 + x % 10\n            x //= 10\n        return sign * result\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-21T13:24:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-21T13:26:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-21T13:29:00.000Z",
+      "verdict": "Wrong Answer",
+      "tests_passed": 1030,
+      "tests_total": 1045,
+      "error_detail": "Input: x = 1534236469\nOutput: 9646324351\nExpected: 0",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

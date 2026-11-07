@@ -1,0 +1,92 @@
+{
+  "session_id": "syn-012",
+  "problem": {
+    "slug": "binary-tree-level-order-traversal",
+    "title": "Binary Tree Level Order Traversal",
+    "difficulty": "Medium",
+    "tags": [
+      "tree",
+      "breadth-first-search",
+      "binary-tree"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-23T18:37:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:39:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                queue.append(node.left)\n                queue.append(node.right)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:41:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                queue.append(node.left)\n                queue.append(node.right)\n            result.append(level)\n        return result\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:43:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                if node.left:\n        return result\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:45:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                if node.left:\n                    queue.append(node.left)\n                if node.right:\n                    queue.append(node.right)\n                result.append(level)\n        return result\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:47:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                if node.left:\n                    queue.append(node.left)\n                if node.right:\n                    queue.append(node.right)\n        return result\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:49:00.000Z",
+      "code": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                if node.left:\n                    queue.append(node.left)\n                if node.right:\n                    queue.append(node.right)\n            result.append(level)\n        return result\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-23T18:51:00.000Z",
+      "code": "from collections import deque\n\n# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def levelOrder(self, root):\n        result = []\n        queue = deque([root])\n        while queue:\n            level = []\n            for _ in range(len(queue)):\n                node = queue.popleft()\n                level.append(node.val)\n                if node.left:\n                    queue.append(node.left)\n                if node.right:\n                    queue.append(node.right)\n            result.append(level)\n        return result\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-23T18:41:30.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 2,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'val'\n    level.append(node.val)\nLine 15 in levelOrder (Solution.py)\nLast executed input: root = [3,9,20,null,null,15,7]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-23T18:45:20.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: [[3],[9,20],[9,20],[15,7],[15,7]]\nExpected: [[3],[9,20],[15,7]]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-23T18:48:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-23T18:51:00.000Z",
+      "verdict": "Runtime Error",
+      "tests_passed": 1,
+      "tests_total": 35,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'val'\n    level.append(node.val)\nLine 15 in levelOrder (Solution.py)\nLast executed input: root = []",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

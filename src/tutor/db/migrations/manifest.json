@@ -1,3 +1,4 @@
 {
-  "0001_init.sql": "4fab915cfa666c3c2faba229f9d28a31d9cd37bdc654f12cae149eb5085048b2"
+  "0001_init.sql": "4fab915cfa666c3c2faba229f9d28a31d9cd37bdc654f12cae149eb5085048b2",
+  "0002_add_prefix_sum.sql": "b20f7b23fa5c5c7e0dbf90bff4e1d929213157994eafa01d96b51ebf0ed909e4"
 }

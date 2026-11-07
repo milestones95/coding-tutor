@@ -672,3 +672,164 @@ by the human, gives the generator a target for course corrections, and lets the
 failure-explanation judge check a suggested alternative. Labels rather than prose or code, because
 the eval plan rules out an expected approach with code.
 **Supersedes.** — (adds one field to the §8.5 spec)
+
+## D-040 · The dataset must stay balanced; the spec checker measures it · 2026-11-07 · human
+**Decision.** Variety is a checked requirement. `check_specs.py` reports the distribution over
+the whole dataset (with `--with-real`, the frozen copy's sessions count too) and prints a `skew`
+line, from 8 sessions on, when any of these rules breaks:
+- no single status above 35%;
+- no single failure type above 30%;
+- no difficulty above 50%, and Easy, Medium and Hard each at least 15%;
+- across the time buckets under 10, 10–25, 25–45 and 45–60 min, none above 40% and each at least 10%;
+- no algorithm label on more than 20% of sessions;
+- no synthetic spec reusing a problem.
+
+The `synthetic-spec` skill drafts each batch against those skew lines.
+**Why.** The human: variety of problems, verdicts and time spent, without skewing one way. The real
+sessions already lean hard: 7 of 8 Accepted, no Hard problems, none over 25 minutes. Left alone,
+a model could score well by always saying "passed", and long timelines would never be tested.
+Thresholds are starting points, and a change to them is a recorded decision.
+**Supersedes.** —
+
+## D-041 · Balance rules for difficulty and time spent changed · 2026-11-07 · human
+**Decision.** Difficulty is reported but no longer balanced. Time spent uses three buckets:
+under 10, 10–30, and over 30 minutes. Most sessions (at least 50%) must be 10–30 min, with at
+least one under 10 and at least one over 30. Every other D-040 rule stands.
+**Why.** The human: "we won't be practicing many hard problems. and most problems should be between
+10-30 minutes. but at least have 1 that is under 10 and one that is over 30." A dataset forced to
+15% Hard and spread across 45–60 minutes wouldn't look like the practice it's meant to evaluate.
+**Supersedes.** D-040 (the difficulty and time-spent rules only)
+
+## D-042 · Synthetic sessions are Python only, for now · 2026-11-07 · human
+**Decision.** Every synthetic spec uses `python3`, and the spec checker enforces it. A Python
+Compile Error spec means a `SyntaxError` or `IndentationError`. A misspelt name or field fails at
+runtime (Runtime Error), not at compile time.
+**Why.** The human: "i want to keep everything python right now". Every real session is Python
+too, so a second language would add a variable the evals aren't trying to measure.
+**Supersedes.** —
+
+## D-043 · Synthetic final code is human-written; giveaway comments are removed · 2026-11-07 · human
+**Decision.**
+1. The human writes each synthetic session's **final code** (generated with Claude, then checked on
+   LeetCode itself). It lives in `evals/data/sessions/synthetic/final_code/<id>.py`, one file per
+   spec, with the class named as LeetCode's editor names it.
+2. The session generator writes only the **earlier** snapshots leading up to that code, plus each
+   Run's output. The final snapshot is the human's file, unchanged.
+3. Comments that state the bug or name the algorithm used or needed are removed before code goes
+   into the dataset. Examples: "should be max(…)", "no overflow check", "bug: …",
+   "AttributeError on empty tree". Ordinary comments stay: TODOs, notes on what a variable holds,
+   and step notes like "# delete word1[i]".
+**Why.** Final code checked on LeetCode makes the verdict and the story real rather than imagined.
+Comments that state the answer would let the failure-reason and algorithm evals be passed by
+reading them, and real practice code doesn't annotate its own bugs. The generator's leak check
+(§8.5) still runs on everything.
+**Supersedes.** D-017 in part: the model no longer writes the final snapshot.
+
+## D-044 · `prefix_sum` joins the algorithm labels · 2026-11-07 · human
+**Decision.** The fixed algorithm list gains a 19th label, `prefix_sum`, covering prefix sums and
+products. The eval plan, architecture §4.2, the spec checker and the skill already list it.
+`analysis.db` gets it through migration `0002_add_prefix_sum.sql`, which recreates
+`session_algorithms` with the longer `label` CHECK and copies existing rows. It is a tracker task
+(T-014), because applied migrations are never edited (§3.3). syn-021 is labelled `prefix_sum`, and
+syn-011's on-track algorithms become `prefix_sum, hash_map`.
+**Why.** The human: it is "the category that is more accurate". Product of Array Except Self and
+Subarray Sum Equals K are prefix-sum problems, and no existing label fit (`math` was a stand-in).
+The CHECK keeps an off-list label out of the database, so it must list every valid label. The
+table is empty everywhere today, which makes this the cheapest moment to change it.
+**Supersedes.** — (extends the eval plan's label list)
+
+## D-045 · The synthetic spec set closes at 20 for now · 2026-11-07 · human
+**Decision.** Synthetic specs stop at 20 (syn-001 – syn-023, with syn-008, syn-014 and syn-015
+retired), each with human-written final code checked on LeetCode. With the 8 frozen real sessions
+the dataset is 28, not 30. Known gap: no Compile Error session. The 20/10 dev/test split is
+re-proportioned when the dataset is assembled (M2). More specs, or more real sessions after
+refreshing the frozen copy, can be added later as a dataset-version change.
+**Why.** The human: "i think this is good enough for now". The set covers every other status,
+every failure type and 18 of 19 algorithm labels, with no skew. Two more specs would only fill
+Compile Error, a status that never needs an LLM call.
+**Supersedes.** — (the eval plan's "30 sessions" becomes 28 for dev-v1)
+
+## D-046 · The session generator runs as the tester's module, not a `tutor-eval` subcommand · 2026-11-07 · pm (human approved the M2 plan)
+**Decision.** The synthetic-session generator lives in `evals/generate/` (tester-owned, D-017) and
+runs as `uv run python -m evals.generate.sessions …`, rather than the `tutor-eval
+generate-sessions` that §8.5 names.
+**Why.** A `tutor-eval` subcommand would put generator wiring in `src/tutor/cli.py`, which is
+builder code, while the generator itself is tester-owned. That splits one tool across two owners
+for no gain. The generator still calls the LLM only through `LLMClient` (rule 5).
+**Supersedes.** — (amends §8.5's command name)
+
+## D-047 · A model refusal is a non-retryable provider error · 2026-11-07 · tester (human approved)
+**Decision.** When a provider ends a response with a refusal (Anthropic `stop_reason: "refusal"`),
+the adapter raises `LLMProviderError(retryable=False)` with "refusal" in the message. The client
+does not retry it, and the field or case records it as an error. No server-side `fallbacks` model
+is configured for now.
+**Why.** Re-sending the same request would very likely be refused again, and it costs money each
+time. Treating it as invalid output would spend the output retry on a request that can't succeed.
+A fallback model would quietly change which model produced an eval number, which breaks rule 7's
+"every number names its model".
+**Supersedes.** —
+
+## D-048 · The human writes the 20 synthetic session files; no in-repo generator · 2026-11-07 · human
+**Decision.** The human writes each synthetic session's full event file
+(`evals/data/sessions/synthetic/<id>.json`, `Session`-shaped) from the approved spec, ending in
+their LeetCode-checked final code. There is no in-repo generator: T-018 is dropped. T-015, the
+Anthropic adapter, is deferred until M7's model comparison needs Claude; its test assets stay
+committed. T-017's checks stay, now validating the human's files. If an AI helps draft them, it is
+Claude, never the model being evaluated (D-018), and the file's `meta.json` names it.
+**Why.** The human: "i will generate the session events myself". Human-written sessions remove
+generator bias at its source and make every snapshot the human's call. It also drops two tasks
+and an LLM spend from M2.
+**Supersedes.** D-017 (generation by an in-repo Claude generator); D-043's point 2 (the
+generator writes the lead-up); D-046 (the generator's entry point).
+
+## D-049 · Eval case interfaces the T-016 tests pin · 2026-11-07 · tester (the human asked to finish M2 without stopping)
+**Decision.** The module is `tutor.evals.cases`.
+- `Case` follows the §8.1 format, with no extra fields. `source` is `real` or `synthetic`, `session`
+  carries exactly one of `capture_session_id` / `synthetic_path`, and `label_source` is
+  `human_written`.
+- `load_cases(suite, split, *, root=None, milestone=None)`:
+  - reads `<root>/data/<suite>/<split>/cases.jsonl`; `root` is the evals directory;
+  - an unknown suite or split is a `ValueError`;
+  - a malformed or duplicate case is a `CaseError`;
+  - the test split raises `SplitLockedError` unless `milestone` is listed in
+    `<root>/test_approvals.json` as `{"approved": [...]}`, a file only the human writes.
+- `load_case_session(case, *, settings, root=None)`:
+  - a real case comes from `paths.eval_capture_db`, opened immutable;
+  - a synthetic case comes from `synthetic_path`, relative to the repo root and confined to
+    `evals/data/sessions/synthetic/`, and only if its `meta.json` says `"verdict": "accepted"`.
+- Label fence: nothing under `src/tutor/` outside `tutor/evals/` mentions `evals/data` or imports
+  `tutor.evals`, except `cli.py`, which wires `tutor-eval`.
+**Why.** §8.1 and §8.2 give the formats and the guard but not the function names. The lock lives in
+the loader, so no caller can forget it.
+**Supersedes.** —
+
+## D-050 · No label for "sorting"; a label table only if the list grows again · 2026-11-07 · human
+**Decision.** Merge Sorted Array's final code copies and sorts. It gets **no algorithm label**: the
+eval plan allows "up to 2", so zero is allowed, and no label in the list fits. No migration.
+Deferred: replace the `session_algorithms.label` CHECK with an `algorithm_labels` table it
+references (one migration), so that adding a label afterwards is a row insert, not a schema change.
+**Why.** The human: "don't do another migration for the sort category". The label table removes
+the recurring cost, but only pays off once a second label is needed.
+**Supersedes.** —
+
+## D-051 · Eval runner interfaces the T-022 tests pin · 2026-11-07 · tester (the human asked to finish M2 without stopping)
+**Decision.** The module is `tutor.evals.runner`.
+- `run(suite, split, *, predictor, settings, repeats=1, milestone=None, root=None,
+  results_dir=None)` returns the §8.3 record and writes it to `<results>/<suite>/<run_id>.json`,
+  plus a summary line, without per-case data, to `<results>/index.jsonl`. The test split is
+  locked by `load_cases`, and a test run saves aggregates only (`cases: []`).
+- `estimate(...)` counts cases and calls, prices them, and makes no calls.
+- `summary_line(record)` names every version.
+- A **predictor** is a callable `Session -> dict` with `.name` and `.version`. The runner hands it
+  the `Session` only; graders see the case. `model` in the record is `name@version`.
+- Aggregates are `accuracy`, `by_source.{real, synthetic}.{accuracy, n}`, `consistency` (the share
+  of cases whose output is identical across repeats) and `errors`. An error counts as wrong, and is
+  also counted separately (§6.4).
+- `evals/graders/` (tester) holds the §8.4 `Grade` / `Grader`, `AlgorithmOverlap` (any overlap
+  counts; an empty output scores 0) and `KeywordBaseline` (`keyword-v1`, the final code only).
+  The runner imports them from the repo's `evals/` directory.
+**Why.** §8.2 and §8.3 give the commands and the record but not the Python seam. A predictor
+interface lets M3's LLM fields and the keyword baseline run through the same runner. The baseline
+is tester-owned because it is the bar the model must beat.
+**Supersedes.** — (architecture §2 put the keyword baseline in `fields/algorithm.py`; it now lives
+with the graders)

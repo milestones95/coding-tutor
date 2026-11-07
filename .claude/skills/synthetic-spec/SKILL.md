@@ -64,7 +64,7 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    ideally needs. A wrong greedy attempt at a DP problem is labelled `greedy`. Use labels from:
    `hash_map` `two_pointers` `sliding_window` `binary_search` `stack` `heap` `bfs` `dfs_backtracking`
    `dynamic_programming` `greedy` `intervals` `linked_list` `tree_traversal` `trie` `union_find`
-   `graph_topological_sort` `bit_manipulation` `math`.
+   `graph_topological_sort` `bit_manipulation` `math` `prefix_sum` (prefix sums or products, D-044).
 5. **Approaches**: every distinct approach, in the order tried, in plain words. A refinement
    (fixing a bug in the same idea) is not a new approach.
 6. **Course correction** (D-026):
@@ -77,7 +77,9 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    `null` when the first approach was on track. Labels only, never code: the eval plan rules out an
    expected approach with code. It is never shown to a model. `wrong_approach` always means off
    track and never corrected.
-8. **Shape**: `duration_min` (2–60) and `runs` (0–20), consistent with the story. A course
+8. **Language**: `python3` only for now (D-042). A Python *Compile Error* on LeetCode means a
+   `SyntaxError`/`IndentationError`; a misspelt name is a Runtime Error.
+   **Shape**: `duration_min` (2–60, usually 10–30) and `runs` (0–20), consistent with the story. A course
    correction needs time before and after it; a near-miss usually has several runs.
 9. **Key facts**: 2–4 things a correct timeline summary must mention, each **visible in the
    session's behaviour** (a run result, when code changed shape, the final verdict). They should
@@ -85,11 +87,37 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
 10. **Split**: leave `"unassigned"`. Specs are split 20 dev / 10 test, balanced by status, only
     when the dataset is assembled.
 
+## Variety: don't let the dataset lean one way (D-040)
+
+A metric measured on a lopsided dataset measures the common case. Mostly-Accepted sessions let a
+model score well by always saying "passed"; all-short sessions never test long timelines. Spread
+the specs across every dimension, and lean **away** from where the real sessions already sit.
+
+| Dimension | Rule (over the whole dataset, real + synthetic) |
+|---|---|
+| Verdict / status | no one status above 35%; cover every status, including never-submitted |
+| Failure type | no one type above 30%; cover all six |
+| Difficulty | reported, not balanced: Hard problems are rare in practice (D-041) |
+| Time spent | most sessions 10–30 min; at least one under 10 and at least one over 30 (D-041) |
+| Algorithm | no one label on more than 20% of sessions |
+| Problem | a synthetic spec never reuses a problem, real or synthetic |
+| First approach | a mix of on track, corrected and not corrected |
+
+**The real sessions skew** (frozen copy, 8 sessions): 7 Accepted, nothing over 25 minutes, two
+problems seen twice. So synthetic specs should be mostly failing verdicts, mostly 10–30 minutes,
+and include at least one session over 30 minutes.
+
+Always check balance with the real sessions counted:
+`uv run python evals/generate/check_specs.py --with-real evals/data/sessions/synthetic/specs*.jsonl`
+It prints the distribution with percentages and a `skew` line for each rule broken, from 8
+sessions on. Before drafting the next batch, read the skew lines and aim the new specs at them.
+When proposing a batch, say which skew lines it fixes.
+
 ## Workflow
 
 1. **Plan coverage first** when drafting a batch. Run the checker over what exists and fill the
    reported gaps:
-   `uv run python evals/generate/check_specs.py evals/data/sessions/synthetic/specs*.jsonl`
+   `uv run python evals/generate/check_specs.py --with-real evals/data/sessions/synthetic/specs*.jsonl`
    Across the whole dataset (real plus synthetic, about 30 cases), aim for:
    - every failure type;
    - every status, including runtime error, output limit and never-submitted;
@@ -99,8 +127,8 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    - corrected and not-corrected sessions;
    - a spread of algorithms and difficulties.
 2. **Draft** each spec, appending it to `specs.draft.jsonl`.
-3. **Check**: run the checker on the draft file. Fix every ERROR before showing the human.
-   Mention any warnings.
+3. **Check**: run the checker (with `--with-real`) on the draft and approved files. Fix every
+   ERROR before showing the human. Mention warnings, and say how the batch moved the skew lines.
 4. **Show the human** each spec as a short table (problem · verdict · failure type · algorithms
    · approaches → final · course correction · key facts), with a one-line reason for each label.
    Ask them to confirm or correct each one.

@@ -157,8 +157,50 @@ def _eval_parser() -> argparse.ArgumentParser:
         prog="tutor-eval",
         description="Run evals: dataset → field or agent → graders → versioned result record.",
     )
-    p.add_subparsers(dest="command", metavar="<command>")
+    sub = p.add_subparsers(dest="command", metavar="<command>")
+    for name, handler, helptext in (("run", _eval_run, "run a suite and write a versioned result record"),
+                                    ("estimate", _eval_estimate, "count calls and cost; makes no calls")):
+        c = sub.add_parser(name, help=helptext)
+        c.add_argument("--suite", required=True, choices=["failure", "algorithm", "timeline", "agent"])
+        c.add_argument("--split", default="dev", choices=["dev", "test"])
+        c.add_argument("--predictor", required=True, help="what produces the output, e.g. keyword_baseline")
+        c.add_argument("--repeats", type=int, default=1)
+        c.add_argument("--milestone", default=None, help="required for --split test, and must be approved")
+        c.set_defaults(handler=handler)
     return p
+
+
+def _eval_errors() -> tuple[type[BaseException], ...]:
+    from tutor.evals.cases import CaseError, SplitLockedError
+
+    return (CaseError, SplitLockedError, ValueError, NotImplementedError)
+
+
+def _eval_run(args: argparse.Namespace) -> int:
+    from tutor.config import load_settings
+    from tutor.evals.runner import predictor_named, run, summary_line
+
+    try:
+        record = run(args.suite, args.split, predictor=predictor_named(args.predictor), settings=load_settings(),
+                     repeats=args.repeats, milestone=args.milestone)
+    except _eval_errors() as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(summary_line(record))
+    return 0
+
+
+def _eval_estimate(args: argparse.Namespace) -> int:
+    from tutor.evals.runner import estimate, predictor_named
+
+    try:
+        est = estimate(args.suite, args.split, predictor=predictor_named(args.predictor), repeats=args.repeats,
+                       milestone=args.milestone)
+    except _eval_errors() as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"{args.suite}/{args.split}: {est['cases']} cases × {args.repeats} = {est['calls']} calls, ${est['cost_usd']:.4f}")
+    return 0
 
 
 def _run(parser: argparse.ArgumentParser, argv: list[str] | None) -> int:

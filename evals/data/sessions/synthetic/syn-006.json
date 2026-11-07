@@ -1,0 +1,117 @@
+{
+  "session_id": "syn-006",
+  "problem": {
+    "slug": "word-break",
+    "title": "Word Break",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "hash-table",
+      "string",
+      "dynamic-programming",
+      "trie",
+      "memoization",
+      "brute-force-search"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-18T19:32:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        def can_break(start):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:34:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        def can_break(start):\n            if start >= len(s):\n                return False\n            for end in range(start + 1, len(s) + 1):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:36:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        def can_break(start):\n            if start >= len(s):\n                return False\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in wordDict and can_break(end):\n                    return True\n            return False\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:38:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        def can_break(start):\n            if start >= len(s):\n                return False\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in wordDict and can_break(end):\n                    return True\n            return False\n\n        return can_break(0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:40:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        def can_break(start):\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in wordDict and can_break(end):\n                    return True\n            return False\n\n        return can_break(0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:42:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        def can_break(start):\n            if start == len(s):\n                return True\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in wordDict and can_break(end):\n                    return True\n            return False\n\n        return can_break(0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:48:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        words = set(wordDict)\n\n        def can_break(start):\n            if start == len(s):\n                return True\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in wordDict and can_break(end):\n                    return True\n            return False\n\n        return can_break(0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:50:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        words = set(wordDict)\n\n        def can_break(start):\n            if start == len(s):\n                return True\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in words and can_break(end):\n                    return True\n            return False\n\n        return can_break(0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-18T19:56:00.000Z",
+      "code": "class Solution:\n    def wordBreak(self, s, wordDict):\n        words = set(wordDict)\n\n        def can_break(start):\n            if start == len(s):\n                return True\n            for end in range(start + 1, len(s) + 1):\n                if s[start:end] in words and can_break(end):\n                    return True\n            return False\n\n        return can_break(0)\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-18T19:38:40.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 3,
+      "error_detail": "Output: false\nExpected: true"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-18T19:42:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-18T19:46:10.000Z",
+      "status": "Time Limit Exceeded",
+      "tests_passed": null,
+      "tests_total": 4,
+      "error_detail": "Last executed input: s = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaab\", wordDict = [\"a\",\"aa\",\"aaa\",\"aaaa\",\"aaaaa\"]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-18T19:50:40.000Z",
+      "status": "Time Limit Exceeded",
+      "tests_passed": null,
+      "tests_total": 4,
+      "error_detail": "Last executed input: s = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaab\", wordDict = [\"a\",\"aa\",\"aaa\",\"aaaa\",\"aaaaa\"]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-18T19:53:50.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-18T19:56:00.000Z",
+      "verdict": "Time Limit Exceeded",
+      "tests_passed": 35,
+      "tests_total": 46,
+      "error_detail": "Last executed input: s = \"aaaaaaaaaaaaaaaaaaaa...\" (length 151), wordDict = [\"a\",\"aa\",\"aaa\",\"aaaa\",\"aaaaa\",\"aaaaaa\",...] (length 10)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

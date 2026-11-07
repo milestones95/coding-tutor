@@ -1,0 +1,87 @@
+{
+  "session_id": "syn-018",
+  "problem": {
+    "slug": "edit-distance",
+    "title": "Edit Distance",
+    "difficulty": "Medium",
+    "tags": [
+      "string",
+      "dynamic-programming"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-27T14:27:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] != word2[j]:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:29:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] != word2[j]:\n                ops += 1\n            i += 1\n            j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:33:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                ops += 1\n            i += 1\n            j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:35:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                j += 1\n            elif i + 1 < len(word1) and word1[i + 1] == word2[j]:\n                ops += 1\n                i += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:37:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                j += 1\n            elif i + 1 < len(word1) and word1[i + 1] == word2[j]:\n                ops += 1\n                i += 1\n            else:\n                ops += 1\n                i += 1\n                j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:41:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                j += 1\n            elif i + 1 < len(word1) and word1[i + 1] == word2[j]:\n                ops += 1\n                i += 1\n            elif j + 1 < len(word2) and word1[i] == word2[j + 1]:\n            else:\n                ops += 1\n                i += 1\n                j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:43:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                j += 1\n            elif i + 1 < len(word1) and word1[i + 1] == word2[j]:\n                ops += 1\n                i += 1\n            elif j + 1 < len(word2) and word1[i] == word2[j + 1]:\n                ops += 1\n                i += 1\n            else:\n                ops += 1\n                i += 1\n                j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:47:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                j += 1\n            elif i + 1 < len(word1) and word1[i + 1] == word2[j]:\n                ops += 1\n                i += 1\n            elif j + 1 < len(word2) and word1[i] == word2[j + 1]:\n                ops += 1\n            else:\n                ops += 1\n                i += 1\n                j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-27T14:49:00.000Z",
+      "code": "class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        i = j = 0\n        ops = 0\n        while i < len(word1) and j < len(word2):\n            if word1[i] == word2[j]:\n                i += 1\n                j += 1\n            elif i + 1 < len(word1) and word1[i + 1] == word2[j]:\n                ops += 1  # delete word1[i]\n                i += 1\n            elif j + 1 < len(word2) and word1[i] == word2[j + 1]:\n                ops += 1  # insert word2[j]\n                j += 1\n            else:\n                ops += 1  # replace\n                i += 1\n                j += 1\n        ops += (len(word1) - i) + (len(word2) - j)\n        return ops\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-27T14:31:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: 4\nExpected: 3"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-27T14:38:10.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: 9\nExpected: 5"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-27T14:45:10.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: 10\nExpected: 5"
+    }
+  ],
+  "submit_capture_reliable": true
+}

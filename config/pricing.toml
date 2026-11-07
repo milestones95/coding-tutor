@@ -7,3 +7,9 @@ input_per_mtok = 5.00
 output_per_mtok = 30.00
 as_of = "2026-11-03"     # OpenAI pricing page, screenshot from the human
 # cached input is $0.50 / 1M; not used for cost until the client reports cached tokens
+
+[models."anthropic:claude-opus-5-5"]
+input_per_mtok = 4.00
+output_per_mtok = 20.00
+as_of = "2026-11-07"     # Anthropic's model table (claude-api reference, cached 2026-10-06); human confirmed the model
+# cached-prompt reads are $0.20 / 1M; not used for cost until the client reports cached tokens

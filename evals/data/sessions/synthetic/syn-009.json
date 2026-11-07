@@ -1,0 +1,77 @@
+{
+  "session_id": "syn-009",
+  "problem": {
+    "slug": "merge-intervals",
+    "title": "Merge Intervals",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "sorting",
+      "quicksort"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-20T17:47:00.000Z",
+      "code": "class Solution:\n    def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n        intervals.sort(key=lambda iv: iv[0])\n        merged = []\n        for start, end in intervals:\n            if merged and start < merged[-1][1]:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-20T17:49:00.000Z",
+      "code": "class Solution:\n    def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n        intervals.sort(key=lambda iv: iv[0])\n        merged = []\n        for start, end in intervals:\n            if merged and start < merged[-1][1]:\n                merged[-1][1] = end\n            else:\n                merged.append([start, end])\n        return merged\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-20T17:53:00.000Z",
+      "code": "class Solution:\n    def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n        intervals.sort(key=lambda iv: iv[0])\n        merged = []\n        for start, end in intervals:\n                merged[-1][1] = end\n            else:\n                merged.append([start, end])\n        return merged\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-20T17:55:00.000Z",
+      "code": "class Solution:\n    def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n        intervals.sort(key=lambda iv: iv[0])\n        merged = []\n        for start, end in intervals:\n            if merged and start <= merged[-1][1]:\n                merged[-1][1] = end\n            else:\n                merged.append([start, end])\n        return merged\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-20T17:59:00.000Z",
+      "code": "class Solution:\n    def merge(self, intervals):\n        intervals.sort(key=lambda iv: iv[0])\n        merged = []\n        for start, end in intervals:\n            if merged and start <= merged[-1][1]:\n                merged[-1][1] = end\n            else:\n                merged.append([start, end])\n        return merged\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-20T17:50:40.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: [[1,4],[4,5]]\nExpected: [[1,5]]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-20T17:54:10.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-20T17:57:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-20T18:00:00.000Z",
+      "verdict": "Wrong Answer",
+      "tests_passed": 160,
+      "tests_total": 171,
+      "error_detail": "Input: intervals = [[1,4],[2,3]]\nOutput: [[1,3]]\nExpected: [[1,4]]",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

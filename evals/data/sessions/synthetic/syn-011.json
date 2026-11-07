@@ -1,0 +1,85 @@
+{
+  "session_id": "syn-011",
+  "problem": {
+    "slug": "subarray-sum-equals-k",
+    "title": "Subarray Sum Equals K",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "hash-table",
+      "prefix-sum"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-22T16:02:00.000Z",
+      "code": "class Solution:\n    def subarraySum(self, nums: List[int], k: int) -> int:\n        left = 0\n        window_sum = 0\n        count = 0\n        for right in range(len(nums)):\n            window_sum += nums[right]\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-22T16:04:00.000Z",
+      "code": "class Solution:\n    def subarraySum(self, nums: List[int], k: int) -> int:\n        left = 0\n        window_sum = 0\n        count = 0\n        for right in range(len(nums)):\n            window_sum += nums[right]\n            while window_sum > k:\n                window_sum -= nums[left]\n                left += 1\n            if window_sum == k:\n                count += 1\n        return count\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-22T16:12:00.000Z",
+      "code": "class Solution:\n    def subarraySum(self, nums: List[int], k: int) -> int:\n        left = 0\n        window_sum = 0\n        count = 0\n        for right in range(len(nums)):\n            window_sum += nums[right]\n                window_sum -= nums[left]\n                left += 1\n            if window_sum == k:\n                count += 1\n        return count\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-22T16:14:00.000Z",
+      "code": "class Solution:\n    def subarraySum(self, nums: List[int], k: int) -> int:\n        left = 0\n        window_sum = 0\n        count = 0\n        for right in range(len(nums)):\n            window_sum += nums[right]\n            while window_sum > k and left <= right:\n                window_sum -= nums[left]\n                left += 1\n            if window_sum == k:\n                count += 1\n        return count\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-22T16:20:00.000Z",
+      "code": "class Solution:\n    def subarraySum(self, nums, k):\n        left = 0\n        window_sum = 0\n        count = 0\n        for right in range(len(nums)):\n            window_sum += nums[right]\n            while window_sum > k and left <= right:\n                window_sum -= nums[left]\n                left += 1\n            if window_sum == k:\n                count += 1\n        return count\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-22T16:06:20.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-22T16:09:50.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 2,
+      "tests_total": 3,
+      "error_detail": "Output: 1\nExpected: 3"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-22T16:14:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 2,
+      "tests_total": 3,
+      "error_detail": "Output: 1\nExpected: 3"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-22T16:17:10.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 2,
+      "tests_total": 4,
+      "error_detail": "Output: 1\nExpected: 3"
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-22T16:20:00.000Z",
+      "verdict": "Wrong Answer",
+      "tests_passed": 55,
+      "tests_total": 93,
+      "error_detail": "Input: nums = [1,-1,0], k = 0\nOutput: 1\nExpected: 3",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}
