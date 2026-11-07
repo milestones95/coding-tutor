@@ -18,7 +18,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 |---|---|---|---|
 | M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ✅ 2026-11-03 (T-007) | One captured session loads, validates, and one logged LLM call runs |
 | M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ✅ 2026-11-03 (T-012) | Unit tests green on real + hand-built sessions; token budget measured |
-| M2 | Dataset + eval runner: 28 cases (8 real + 20 synthetic, D-045), Anthropic adapter, generator, split | ⬜ | Runner writes a versioned result record for a trivial grader |
+| M2 | Dataset + eval runner: 28 cases (8 real + 20 synthetic, D-045), split, eval runner (adapter deferred to M7, generator dropped: D-048) | ✅ 2026-11-07 (T-023) | Runner writes a versioned result record for a trivial grader |
 | M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
 | M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
@@ -753,7 +753,7 @@ periods are deferred. The timeline summary instead says whether the first approa
 right track and whether / when the user course-corrected. No condenser change (rewrite flags,
 D-013, already show new approaches); M2 labels gain `course_correction`; M4's checklist checks it.
 
-## Tasks — active milestone: M2
+## Tasks — M2 (✅ done 2026-11-07)
 
 Planned 2026-11-07. Already done ahead of the plan (in the session log): the `synthetic-spec`
 skill, the spec checker, and 20 human-approved specs, each with LeetCode-checked final code
@@ -765,13 +765,13 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
 | T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ deferred to M7 (D-048); test assets written | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ✅ 2026-11-07 `/test run` | arch §8.1, §8.2, §4.3 #1 |
-| T-017 | Session checks (`evals/generate/checks.py`): validate the human's session files | test | M | required | 🔄 built 2026-11-07; needs the human's confirmation | arch §8.5; D-043 |
+| T-017 | Session checks (`evals/generate/checks.py`): validate the human's session files | test | M | required | ✅ 2026-11-07 `/test run` (the human confirmed) | arch §8.5; D-043 |
 | ~~T-018~~ | ~~Session generator~~: dropped, the human writes the sessions (D-048) | — | — | — | dropped | arch §8.5; D-017, D-043 |
-| T-019 | The human writes the 20 session files; each passes T-017's checks | test | M | required | 🔄 20 files in; T-017 not built yet | arch §8.5; D-017 |
+| T-019 | The human writes the 20 session files; each passes T-017's checks | test | M | required | ✅ 2026-11-07 `/test run` (the human confirmed) | arch §8.5; D-017 |
 | T-020 | Label the 8 real sessions | test | M | required | ✅ 2026-11-07 (the human confirmed) | eval plan "Dataset"; D-026, D-039 |
-| T-021 | Assemble `dev-v1` + test split, `cases.jsonl` per suite | test | S | required | 🔄 built; split approved by the human 2026-11-07 (awaiting `/test run`) | arch §8.1; eval plan "Dataset" |
+| T-021 | Assemble `dev-v1` + test split, `cases.jsonl` per suite | test | S | required | ✅ 2026-11-07 `/test run` (the human confirmed) | arch §8.1; eval plan "Dataset" |
 | T-022 | Eval runner, result record, `estimate`; overlap grader + keyword baseline | build | M | required | ✅ 2026-11-07 `/test run` | arch §8.2 – §8.4; eval plan algorithm metric |
-| T-023 | M2 checkpoint: keyword baseline on `algorithm` dev-v1 → versioned record + baseline row | test | S | required | 🔄 ran 2026-11-07; awaiting the human's confirmation | M2 checkpoint |
+| T-023 | M2 checkpoint: keyword baseline on `algorithm` dev-v1 → versioned record + baseline row | test | S | required | ✅ 2026-11-07 `/test run` (the human confirmed) | M2 checkpoint |
 
 ### T-014 · Migration 0002: `prefix_sum` label
 **Milestone:** M2 · **Size:** S · **Owner:** build · **Traces to:** D-044; arch §3.3.
@@ -1073,3 +1073,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | — | T-021 | — | **Dataset v1 assembled** by `evals/build/build_dataset.py` (seeded and stratified by status, keeping the real/synthetic mix): **19 dev / 9 test sessions**. Test, by count: Accepted 3 (2 real, 1 synthetic), Wrong Answer 2, TLE 1, MLE 1, Runtime Error 1, never submitted 1. Dev has every status, including the single OLE. Suites: `failure` (19 dev / 9 test) and `algorithm` (18 / 9; Merge Sorted Array is left out, having no label, D-050). `timeline` waits for M4, because real sessions don't yet have approach labels. `evals/data/manifest.json` + `tests/contract/test_frozen_dataset.py` (3) freeze the files (rule 10). Suite: 409 passed. |
 | 2026-11-07 | T-016, T-022 | T-017, T-019, T-021, T-023 (each awaiting the human's confirmation) | — | **M2 checkpoint run (T-023):** `tutor-eval run --suite algorithm --split dev --predictor keyword_baseline` → `algorithm algorithm_overlap 0.83 @ predictor keyword_baseline@keyword-v1, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.77 (n=13) | errors 0 | consistency 1.00 | $0.0000`. The versioned record is in `evals/results/algorithm/` (gitignored), and the Baselines row is added. `--split test` without a milestone was refused. **Finding:** the keyword baseline is a high bar (0.83). The real sessions hit 1.00 partly because their natural comments name the technique, so the M3 algorithm field must beat 0.83, especially on synthetic cases. |
 | 2026-11-07 | — | T-021 | — | **The human approved the 19 dev / 9 test split** ("it's fine to use the sessions i gave you for test"). Their note for M3: keyword cues can't reliably show DP or backtracking, so the 0.83 baseline is inflated by algorithms with obvious code signatures. The per-label scores should be read alongside it. |
+| 2026-11-07 | T-017, T-019, T-021, T-023; **M2 ✅** | — | — | **`/test run`, M2 close.** The human confirmed T-017 (checker rules), T-019 (the 20 session files as final), T-021 (the split) and T-023 (the 0.83 keyword baseline). Gates: 434 passed / 23 skipped (T-015 deferred), ruff clean, mypy clean, `checks.py` 20/20. The judging files in the branch diff are the tester's own (tester-owned tasks), not the builder's. M3 is next: `/pm plan`. |
