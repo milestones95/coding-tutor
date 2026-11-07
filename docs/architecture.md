@@ -371,6 +371,7 @@ class Moment(BaseModel):
     code_ref: int | None             # index of the Moment whose code applies, when code is None
     change: ChangeSummary | None     # vs previous kept code; None for 'opened'
     run: RunEvent | None             # for kind='run'
+    submit: SubmitEvent | None       # for kind='submit' (D-034)
     snapshot_lag_s: float | None     # run/submit: seconds between nearest earlier snapshot and event
 
 class CondensedSession(BaseModel):
@@ -508,10 +509,13 @@ the rules below bumps `CONDENSER_VERSION`.
 3. **Run / submit:** for every event, take the latest snapshot at or before the event
    (`snapshot_lag_s` records the gap). Always emit a Moment; if the code equals the last
    kept code, set `code=None` and `code_ref` to that Moment.
-4. **Final:** the last snapshot, `kind='final'`, always emitted (with `code_ref` if unchanged).
+4. **Final:** `kind='final'`, always emitted (with `code_ref` if unchanged). It is the last
+   timed Moment: its `ts` is the latest snapshot or event timestamp, and its code is the last
+   snapshot's (D-034).
 5. Every submit is emitted with its verdict, test counts and error. Backfilled submits
    (`ts=None`) come after `final` as "SUBMIT (time not captured) · <verdict>", and are
-   taken to have submitted the final code.
+   taken to have submitted the final code: they take FINAL's `elapsed_min` and point at the
+   final code (D-034).
 6. Moments are ordered by `ts`; ties order `timed < run < submit < final`.
 
 ### 5.3 Change summary
@@ -557,7 +561,8 @@ Output: … | Expected: …
 SUBMIT (time not captured) · Wrong Answer · 59/90 tests passed
 ```
 
-Code is wrapped in fenced blocks with the session language. `error_detail` is truncated to
+A change line whose `rewrite` is true ends with ` · REWRITE`, e.g. `+30 −28 lines · 92% changed ·
+REWRITE` (D-034). Code is wrapped in fenced blocks with the session language. `error_detail` is truncated to
 `error_max_chars` with `… [truncated]`.
 
 ### 5.6 Storage and rebuild (D-012)
@@ -818,7 +823,8 @@ approved by the human (rule 11):
  "labels": {"failure_type": "too_slow", "algorithms": ["dynamic_programming"]},
  "story": {"approaches": ["brute force recursion", "memoised recursion"],
            "course_correction": {"first_approach_on_track": false, "corrected": true, "at_min": 9},
-           "final_approach": "…"},
+           "final_approach": "…",
+           "on_track_algorithms": ["dynamic_programming"]},
  "key_facts": ["…"]}
 ```
 

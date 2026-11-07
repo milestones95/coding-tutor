@@ -49,7 +49,13 @@ def settings_for(tmp_path, *, live_db=None, verdicts=None, since=None):
     }
     if since:
         env["TUTOR__CAPTURE__SUBMITS_RELIABLE_SINCE"] = since
-    return load_settings(env=env, dotenv_path=tmp_path / "none.env")
+        return load_settings(env=env, dotenv_path=tmp_path / "none.env")
+    # since=None means "no cutoff": load a copy of tutor.toml without submits_reliable_since, so the
+    # tests don't depend on the real file's value (set to 2026-11-04 in T-010; an env var can't unset it).
+    toml = tmp_path / "tutor.no-cutoff.toml"
+    toml.write_text("".join(line for line in (REPO_ROOT / "tutor.toml").read_text().splitlines(keepends=True)
+                            if not line.lstrip().startswith("submits_reliable_since")))
+    return load_settings(toml_path=toml, env=env, dotenv_path=tmp_path / "none.env")
 
 
 def loader(tmp_path, db, *, mode="immutable", **kw):

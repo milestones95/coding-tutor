@@ -506,3 +506,169 @@ open `/pm` follow-up.
 "you called it wrong". (2) A second copy of the lookup order could drift, and then the reported
 model would differ from the one called. (3) Building a lock command is outside T-007's scope.
 **Supersedes.** —
+
+## D-031 · Lint + type gate: ruff (narrow rule set) + mypy on src/ · 2026-11-03 · human
+**Decision.** The `/test run` "Lint + types" gate is `uv run ruff check src tests && uv run mypy`.
+- **Ruff** checks `src/` and `tests/` with exactly `E4, E7, E9, F`: undefined names, unused
+  imports and variables, import placement, statement and syntax errors.
+- **mypy** checks `src/` only, with the pydantic plugin.
+- Both are dev dependencies.
+**Why.** The human chose the lean gate. It catches real bugs and is clean today without editing
+tester-owned files. The wider sets (I, B, UP and others) and type-checking `tests/` would mean
+about 40 mostly cosmetic edits to test files only `/test write` may touch. The rules are named,
+not left to ruff's defaults, because ruff 0.17's defaults are much wider than 0.8's: the same
+config would have gone from 0 findings to 24 on an upgrade. mypy over pyright: a plain Python
+dev dependency, with no Node download.
+**Rejected.** The strict gate (wider ruff sets, plus types over `tests/`): about one extra session,
+for little bug-catching value.
+**Supersedes.** —
+
+## D-032 · Migration interfaces the T-008 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+- `tutor.db.migrate.migrate(db_path, *, settings, migrations_dir=None) -> list[int]` applies the
+  pending migrations, each in its own transaction, records each one in `schema_migrations`, and
+  returns the versions it applied. `migrations_dir` defaults to `src/tutor/db/migrations/`.
+- `MigrationError` covers a refused target, and a migration that failed and was rolled back.
+- `tutor migrate [--db PATH]`; `PATH` defaults to `paths.analysis_db`. It exits 1 with a message on
+  stderr on error (D-030).
+- `schema_migrations.name` is the file name with the number and `.sql` removed: `0001_init.sql`
+  → `init`.
+- The refusal covers both `paths.capture_db` and `paths.eval_capture_db`, compared after resolving
+  symlinks and `..`, and happens before the file is opened.
+- The acceptance test checks `0001_init.sql` against the SQL block in architecture §3.2: both are
+  applied to empty databases and the schemas compared, ignoring comments and whitespace.
+**Why.** `migrations_dir` lets a test supply a migration that fails partway, which is the only
+way to check the one-transaction rule. Comparing against the doc's own DDL means the migration
+and the architecture can't drift apart unnoticed. The frozen copy is refused as well as the live
+DB because it must never change either (D-016).
+**Supersedes.** —
+
+## D-033 · Migration runner details left open by D-032 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. Each migration runs as `BEGIN;` + the file through `executescript`, on an autocommit
+   connection (`isolation_level=None`). The `schema_migrations` row is then inserted with bound
+   parameters and `COMMIT` sent. On any `sqlite3.Error` the runner sends `ROLLBACK` and raises
+   `MigrationError` naming the file.
+2. A migration file may not contain `BEGIN`, `COMMIT`, `ROLLBACK` or `END` statements; `migrate`
+   refuses such a file before running it.
+3. `migrate` doesn't check `migrations/manifest.json` at run time. The contract test enforces it.
+**Why.** (1) On its own, `executescript` commits before running and keeps whatever ran before a
+failure. Starting the script with `BEGIN` puts the file and its version row in one
+transaction. Splitting files into statements would need a SQL splitter, which is fragile around
+semicolons inside strings. (2) A transaction statement inside a file would silently break that
+rule. (3) A hash check at run time would block `tutor migrate` locally for a mismatch the
+contract test already reports.
+**Supersedes.** —
+
+## D-034 · Condenser gaps settled for the T-009 tests · 2026-11-03 · human
+**Decision.**
+1. `Moment.submit: SubmitEvent | None` carries a submit's verdict, test counts and error
+   (kind='submit'), alongside the existing `run` field. Architecture §4.1 updated.
+2. FINAL is the last timed Moment. Its `ts` is the latest snapshot or event timestamp, and its
+   code is the last snapshot's. Only backfilled submits (`ts=None`) follow it: they take FINAL's
+   `elapsed_min` and point at the final code. Time to finish is unchanged: it still ends at the
+   last captured submit (§5.1).
+3. A rewrite renders as ` · REWRITE` at the end of the change line.
+4. Smaller pins, chosen by the tester without a separate question:
+   - a timed Moment's `ts` is its tick (`t0 + k·interval_s`, k ≥ 1, ticks up to and including
+     `t_end`);
+   - `code_ref` is an index into `moments`;
+   - a Moment with `code=None` has `change=None`, except a timed Moment whose code was dropped
+     for the budget, which keeps its change;
+   - the render's "N runs · M submits" counts captured submits only, as the §5.5 example does.
+**Why.** (1) The render needs a submit's verdict, and `Moment` had nowhere to keep it. (2) Read
+literally, "the last snapshot, ordered by ts" puts FINAL in the middle of the timeline whenever
+the user keeps typing or runs after the last submit. (3) D-026 relies on rewrite flags to show
+new approaches to the timeline model. A percentage leaves that for the model to infer.
+**Supersedes.** — (amends architecture §4.1, §5.2 and §5.5)
+
+## D-035 · Condenser build details left open by §5 and D-034 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. `CondensedSession.language`: the last snapshot's language, used to fence code in the render.
+2. Every Moment that shows new code puts its change summary on its header line, runs and
+   submits included: `RUN · <status> · 0/2 passed · code as of 30.0 s earlier · +1 −0 lines ·
+   20% changed`.
+3. Each Moment renders as: a header, then the error line if there is one, then either the code
+   block or a placeholder line. The placeholders are "(code unchanged since X min)", "(code
+   omitted to fit the token budget)" for dropped timed code, and "(no code captured yet)" for an
+   event before the first snapshot.
+4. "N runs · M submits" is always plural, exactly as §5.5 writes it.
+5. `error_detail` is cut inside `condense`, on the Moment's copy of the event, so `render` takes
+   no settings. `session_times()` is the one §5.1 helper. T-010's time to finish must call it.
+**Why.** (1) §5.5 asks for code fenced in the session language, but `render(c)` receives only the
+condensed session, which had no field for it. (2) A rewrite just before a run is as important
+to see as one at a tick. (5) `render` stays a function of `c` alone, so a stored
+`rendered_text` can always be regenerated from `timeline_json`.
+**Supersedes.** — (adds one field to §4.1's `CondensedSession`)
+
+## D-036 · Deterministic-field interfaces the T-010 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+- `tutor.models` gains `Status` and `StatusSource`, StrEnums whose values are exactly the §3.2
+  CHECK lists.
+- `tutor.fields.deterministic` provides:
+  - `problem(session) -> Problem`;
+  - `time_to_finish(session) -> float`, equal to `condense(session).duration_min` through
+    `session_times()` (D-035);
+  - `attempted_at(session, *, settings) -> (datetime UTC, date)`: the first event in UTC, and its
+    date in `time.timezone`;
+  - `status(session, *, settings, run_id) -> StatusResult(status, status_source,
+    leetcode_verdict, tests_passed, tests_total)`.
+- An unmapped verdict gives `unknown` and writes one `unmapped_verdict` line, with `session_id`
+  and `verdict`, to `<paths.logs>/pipeline.jsonl`. It never raises.
+**Why.** Architecture §2 names the module but not its functions. `settings` is passed in rather
+than loaded inside, so the tests can pin the timezone and the log path.
+**Supersedes.** —
+
+## D-037 · Pipeline interfaces the T-011 tests pin · 2026-11-03 · tester (human approved)
+**Decision.**
+- `tutor analyze [--since YYYY-MM-DD]` reads `paths.capture_db` (`mode=ro`) and upserts `problems`,
+  `sessions` and `condensed_timelines` in one transaction. `--since` is a date in `time.timezone`:
+  sessions that started on or after its local midnight.
+- `tutor rebuild-timelines` re-condenses every loadable session in one transaction. A stored
+  timeline whose session no longer loads is kept and logged as `timeline_orphaned`.
+- `tutor check` exits 1, naming each stale session, when a `session_analysis` row's
+  `condenser_version` differs from its timeline's.
+- All three exit 0 on success and 1 on error (D-030). `analyze` refuses a missing or unmigrated
+  `analysis.db` without creating it, and its message points to `tutor migrate`.
+- `pipeline.jsonl` gets `session_loaded` and `session_condensed` for each kept session, plus the
+  loader's `session_excluded` with its `reason`. Each line has `session_id` and `run_id`, and one
+  command run uses one `run_id`.
+- The condenser's `interval_s`, `error_max_chars` and `token_budget` come from
+  `settings.condenser`.
+- `submit_count` counts captured submits only (§3.2).
+**Why.** §5.6 and §13 give the behaviour but not the command names' exit codes, the log event
+names, or what `--since` compares. A failed run must leave the database as it was, or a
+half-written `analysis.db` would read as complete.
+**Supersedes.** —
+
+## D-038 · Pipeline build details left open by D-037 · 2026-11-03 · builder (human approved)
+**Decision.**
+1. `rebuild-timelines` covers sessions that already have a `sessions` row. A loadable session
+   that was never analyzed is skipped and counted in the summary.
+2. `check` treats an analysis row with no stored timeline as stale, as well as one with a
+   different `condenser_version`.
+3. Stored timestamps (`attempted_at_utc`, `loaded_at`, `built_at`) are ISO-8601 UTC with
+   milliseconds and `Z`, as capture writes them.
+4. Every command condenses everything in memory first, then writes it all in one transaction.
+5. `open_analysis_db` opens with `mode=rw`, so a missing file is an error and never created.
+   It refuses capture paths through `migrate.refuse_capture`, now public.
+**Why.** (1) Adding a session is `analyze`'s job; a rebuild that inserted timelines would leave
+rows with no `sessions` row. (2) Fields built from a timeline that's no longer stored are as
+untrustworthy as fields built from an old version. (4) A condense failure then happens before
+the first write, and a write lock isn't held while condensing.
+**Supersedes.** —
+
+## D-039 · Specs say what "on track" would have been, as algorithm labels only · 2026-11-07 · human
+**Decision.** A synthetic spec's `story` gains `on_track_algorithms`. When the first approach was
+off track, it holds 1–2 labels from the algorithm list for what would have worked; when the first
+approach was on track, it is `null`. It is a label: never a model input, and not graded directly.
+`labels.algorithms` still means what the final code does, which is what the algorithm field is
+graded on. Specs are drafted with the `synthetic-spec` skill and checked by
+`evals/generate/check_specs.py`. The checker also enforces that `wrong_approach` means off track
+and never corrected, and warns when the final algorithms equal the on-track ones on an
+off-track spec.
+**Why.** "Off track" is a claim about what on track would have been. Written down, it is checkable
+by the human, gives the generator a target for course corrections, and lets the
+failure-explanation judge check a suggested alternative. Labels rather than prose or code, because
+the eval plan rules out an expected approach with code.
+**Supersedes.** — (adds one field to the §8.5 spec)

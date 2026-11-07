@@ -98,8 +98,9 @@ def test_dw2_tutor_toml_holds_every_key_with_its_default():
     for (section, key), default in DEFAULTS.items():
         assert section in raw and key in raw[section], f"tutor.toml lacks {section}.{key}"
         assert raw[section][key] == default, f"{section}.{key} = {raw[section][key]!r}, expected {default!r}"
-    # unset by default: submit capture is not yet reliable; no judge override
-    assert "submits_reliable_since" not in raw.get("capture", {}), "capture.submits_reliable_since must be unset until the human sets it"
+    # Submit capture verified 2026-11-03; the human set the cutoff to 2026-11-04 (T-001, D-024; set in T-010).
+    assert str(raw.get("capture", {}).get("submits_reliable_since")) == "2026-11-04"
+    # no judge override
     assert "judge" not in raw.get("llm", {})
 
 
@@ -111,7 +112,7 @@ def test_dw2_loaded_settings_match_the_defaults(tmp_path):
             assert _same_path(value, default), f"{section}.{key} = {value!r}"
         else:
             assert value == default, f"{section}.{key} = {value!r}, expected {default!r}"
-    assert s.capture.submits_reliable_since is None
+    assert s.capture.submits_reliable_since == date(2026, 11, 4)  # T-010, the human's T-001 cutoff
     assert s.llm.judge is None
     assert s.llm.fields == {}
     assert isinstance(s.prompts, dict)
