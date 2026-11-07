@@ -762,7 +762,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | 🔄 built 2026-11-07, awaiting `/test run` | D-044; arch §3.3 |
+| T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
 | T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ human: confirm the generator model id + enter its price | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ⬜ | arch §8.1, §8.2, §4.3 #1 |
 | T-017 | Session checks (`evals/generate/checks.py`) | test | M | required | ⬜ | arch §8.5; D-043 |
@@ -799,6 +799,11 @@ T-020 (labelling the real sessions) is human work and can happen any time before
   rows and cost; manifest updated. `models.AlgorithmLabel` (19 values). Unit test: the enum
   equals the CHECK list of the newest migration that defines it. Gate clean. Suite: 358 passed,
   10 skipped, 1 deselected; `live_capture` 10/10; T-014 7/7, T-008 17/17.
+- 2026-11-07 `/test run` → ✅. The builder's diff (`df9f1c5`) touches no judging files. Lint + types
+  clean. Python: contract 49, acceptance 225 (+10 `live_capture`: 10/10), unit 84. Capture: unit
+  8/8, contract 20/20, `tsc` clean. `tutor prompts check` ok. Extra: a copy of the M1 live-check
+  `analysis.db` (version 1, 24 sessions and timelines) upgraded with `tutor migrate` → applied
+  [2], all 24 + 24 rows intact. Done-when 1–3 met. Cost: $0.
 
 ### T-015 · Anthropic adapter
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §6.1, §6.4, §6.5; D-008, D-018.
