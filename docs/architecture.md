@@ -823,7 +823,8 @@ approved by the human (rule 11):
  "labels": {"failure_type": "too_slow", "algorithms": ["dynamic_programming"]},
  "story": {"approaches": ["brute force recursion", "memoised recursion"],
            "course_correction": {"first_approach_on_track": false, "corrected": true, "at_min": 9},
-           "final_approach": "…"},
+           "final_approach": "…",
+           "on_track_algorithms": ["dynamic_programming"]},
  "key_facts": ["…"]}
 ```
 

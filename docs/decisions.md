@@ -657,3 +657,18 @@ rows with no `sessions` row. (2) Fields built from a timeline that's no longer s
 untrustworthy as fields built from an old version. (4) A condense failure then happens before
 the first write, and a write lock isn't held while condensing.
 **Supersedes.** —
+
+## D-039 · Specs say what "on track" would have been, as algorithm labels only · 2026-11-07 · human
+**Decision.** A synthetic spec's `story` gains `on_track_algorithms`. When the first approach was
+off track, it holds 1–2 labels from the algorithm list for what would have worked; when the first
+approach was on track, it is `null`. It is a label: never a model input, and not graded directly.
+`labels.algorithms` still means what the final code does, which is what the algorithm field is
+graded on. Specs are drafted with the `synthetic-spec` skill and checked by
+`evals/generate/check_specs.py`. The checker also enforces that `wrong_approach` means off track
+and never corrected, and warns when the final algorithms equal the on-track ones on an
+off-track spec.
+**Why.** "Off track" is a claim about what on track would have been. Written down, it is checkable
+by the human, gives the generator a target for course corrections, and lets the
+failure-explanation judge check a suggested alternative. Labels rather than prose or code, because
+the eval plan rules out an expected approach with code.
+**Supersedes.** — (adds one field to the §8.5 spec)
