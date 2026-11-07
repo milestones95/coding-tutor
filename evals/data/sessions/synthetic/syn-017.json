@@ -1,0 +1,98 @@
+{
+  "session_id": "syn-017",
+  "problem": {
+    "slug": "trapping-rain-water",
+    "title": "Trapping Rain Water",
+    "difficulty": "Hard",
+    "tags": [
+      "array",
+      "two-pointers",
+      "dynamic-programming",
+      "stack",
+      "monotonic-stack"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-26T19:02:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        water = 0\n        for i in range(len(height)):\n            left_max = max(height[:i + 1])\n            right_max = max(height[i:])\n            water += min(left_max, right_max) - height[i]\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:12:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        water = 0\n        for i in range(len(height)):\n            left_max = max(height[:i + 1])\n            right_max = max(height[i:])\n            water += min(left_max, right_max) - height[i]\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:14:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                water += left_max - height[left]\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:16:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                water += left_max - height[left]\n                left_max = max(left_max, height[left])\n                left += 1\n            else:\n                water += right_max - height[right]\n                right_max = max(right_max, height[right])\n                right -= 1\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:20:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                left_max = max(left_max, height[left])\n                water += left_max - height[left]\n                left_max = max(left_max, height[left])\n                left += 1\n            else:\n                water += right_max - height[right]\n                right_max = max(right_max, height[right])\n                right -= 1\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:22:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                left_max = max(left_max, height[left])\n                water += left_max - height[left]\n                left += 1\n            else:\n                water += right_max - height[right]\n                right_max = max(right_max, height[right])\n                right -= 1\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:24:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                left_max = max(left_max, height[left])\n                water += left_max - height[left]\n                left += 1\n            else:\n                right -= 1\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:26:00.000Z",
+      "code": "class Solution:\n    def trap(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                left_max = max(left_max, height[left])\n                water += left_max - height[left]\n                left += 1\n            else:\n                # TODO: right side\n                right -= 1\n        return water\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-26T19:28:00.000Z",
+      "code": "class Solution:\n    def trap(self, height):\n        left, right = 0, len(height) - 1\n        left_max = right_max = 0\n        water = 0\n        while left < right:\n            if height[left] < height[right]:\n                left_max = max(left_max, height[left])\n                water += left_max - height[left]\n                left += 1\n            else:\n                # TODO: mirror the left side using right_max\n                right -= 1\n        return water\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-26T19:07:20.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-26T19:11:30.000Z",
+      "status": "Time Limit Exceeded",
+      "tests_passed": null,
+      "tests_total": 3,
+      "error_detail": "Last executed input: height = [0,7919,5837,3755,1673,9592,...] (length 20000)"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-26T19:18:40.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 2,
+      "error_detail": "Output: 2\nExpected: 6"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-26T19:28:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: 5\nExpected: 6"
+    }
+  ],
+  "submit_capture_reliable": true
+}

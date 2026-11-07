@@ -1,0 +1,123 @@
+{
+  "session_id": "syn-007",
+  "problem": {
+    "slug": "course-schedule",
+    "title": "Course Schedule",
+    "difficulty": "Medium",
+    "tags": [
+      "depth-first-search",
+      "breadth-first-search",
+      "graph",
+      "topological-sort",
+      "directed-acyclic-graph"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-19T14:17:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        visited = set()\n\n        def has_cycle(node):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:19:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        visited = set()\n\n        def has_cycle(node):\n            if node in visited:\n                return True\n            visited.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            return False\n\n        for c in range(numCourses):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:21:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        visited = set()\n\n        def has_cycle(node):\n            if node in visited:\n                return True\n            visited.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n                return False\n        return True\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:23:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        on_path = set()\n\n        def has_cycle(node):\n                return True\n            visited.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n                return False\n        return True\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:25:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        on_path = set()\n\n        def has_cycle(node):\n            if node in on_path:\n                return True\n            on_path.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            on_path.remove(node)\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:27:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        on_path = set()\n\n        def has_cycle(node):\n            if node in on_path:\n                return True\n            on_path.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            on_path.remove(node)\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n                return True\n        return False\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:29:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        on_path = set()\n\n        def has_cycle(node):\n            if node in on_path:\n                return True\n            on_path.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            on_path.remove(node)\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:31:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses: int, prerequisites: List[List[int]]) -> bool:\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        on_path = set()\n\n        def has_cycle(node):\n            if node in on_path:\n                return True\n            on_path.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            on_path.remove(node)\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n                return False\n        return True\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-19T14:47:00.000Z",
+      "code": "class Solution:\n    def canFinish(self, numCourses, prerequisites):\n        graph = [[] for _ in range(numCourses)]\n        for course, pre in prerequisites:\n            graph[course].append(pre)\n\n        on_path = set()\n\n        def has_cycle(node):\n            if node in on_path:\n                return True\n            on_path.add(node)\n            for nxt in graph[node]:\n                if has_cycle(nxt):\n                    return True\n            on_path.remove(node)\n            return False\n\n        for c in range(numCourses):\n            if has_cycle(c):\n                return False\n        return True\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-19T14:21:50.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: false\nExpected: true"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-19T14:27:15.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 2,
+      "error_detail": "Output: false\nExpected: true"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-19T14:31:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-19T14:35:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-19T14:39:50.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-19T14:43:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 5,
+      "tests_total": 5,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-19T14:48:00.000Z",
+      "verdict": "Time Limit Exceeded",
+      "tests_passed": 49,
+      "tests_total": 53,
+      "error_detail": "Last executed input: numCourses = 2000, prerequisites = [[0,2],[0,3],[1,2],[1,3],[2,4],[2,5],...] (length 3996)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

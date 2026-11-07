@@ -1,0 +1,72 @@
+{
+  "session_id": "syn-020",
+  "problem": {
+    "slug": "removing-stars-from-a-string",
+    "title": "Removing Stars From a String",
+    "difficulty": "Medium",
+    "tags": [
+      "string",
+      "stack",
+      "simulation"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-29T13:57:00.000Z",
+      "code": "class Solution:\n    def removeStars(self, s: str) -> str:\n        history = []\n        for ch in s:\n            if ch == \"*\":\n                history.pop()\n            else:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-29T13:59:00.000Z",
+      "code": "class Solution:\n    def removeStars(self, s: str) -> str:\n        history = []\n        for ch in s:\n            if ch == \"*\":\n                history.pop()\n            else:\n                history.append(history[-1] + ch)\n        return history[-1]\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-29T14:01:00.000Z",
+      "code": "class Solution:\n    def removeStars(self, s: str) -> str:\n        for ch in s:\n            if ch == \"*\":\n                history.pop()\n            else:\n                history.append(history[-1] + ch)\n        return history[-1]\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-29T14:03:00.000Z",
+      "code": "class Solution:\n    def removeStars(self, s: str) -> str:\n        history = [\"\"]\n        for ch in s:\n            if ch == \"*\":\n                history.pop()\n            else:\n                history.append(history[-1] + ch)\n        return history[-1]\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-29T13:59:30.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 2,
+      "error_detail": "IndexError: list index out of range\n    history.append(history[-1] + ch)\nLine 8 in removeStars (Solution.py)\nLast executed input: s = \"leet**cod*e\""
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-29T14:02:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-29T14:05:20.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-29T14:09:00.000Z",
+      "verdict": "Memory Limit Exceeded",
+      "tests_passed": 58,
+      "tests_total": 65,
+      "error_detail": "Last executed input: s = \"xyzabxyzabxyzabxyzab...\" (length 100000)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

@@ -1,0 +1,74 @@
+{
+  "session_id": "syn-001",
+  "problem": {
+    "slug": "container-with-most-water",
+    "title": "Container With Most Water",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "two-pointers",
+      "greedy"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-13T14:07:00.000Z",
+      "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-13T14:09:00.000Z",
+      "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n            best = max(best, (right - left) * min(height[left], height[right]))\n            left += 1\n            right -= 1\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-13T14:11:00.000Z",
+      "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n            best = max(best, (right - left) * min(height[left], height[right]))\n            right -= 1\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-13T14:13:00.000Z",
+      "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n            best = max(best, (right - left) * min(height[left], height[right]))\n            if height[left] < height[right]:\n                left += 1\n            else:\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-13T14:15:00.000Z",
+      "code": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n            best = max(best, (right - left) * min(height[left], height[right]))\n            if height[left] < height[right]:\n                left += 1\n            else:\n                right -= 1\n        return best\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-13T14:19:00.000Z",
+      "code": "class Solution:\n    def maxArea(self, height: list[int]) -> int:\n        left, right = 0, len(height) - 1\n        best = 0\n        while left < right:\n            best = max(best, (right - left) * min(height[left], height[right]))\n            if height[left] < height[right]:\n                left += 1\n            else:\n                right -= 1\n        return best\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-13T14:10:10.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 2,
+      "error_detail": "Output: 24\nExpected: 49"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-13T14:14:05.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-13T14:19:00.000Z",
+      "verdict": "Accepted",
+      "tests_passed": 62,
+      "tests_total": 62,
+      "error_detail": null,
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

@@ -1,0 +1,90 @@
+{
+  "session_id": "syn-022",
+  "problem": {
+    "slug": "longest-consecutive-sequence",
+    "title": "Longest Consecutive Sequence",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "hash-table",
+      "union-find"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-31T15:32:00.000Z",
+      "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        parent = {x: x for x in nums}\n\n        def find(x):\n            while parent[x] != x:\n                x = parent[x]\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-31T15:34:00.000Z",
+      "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        parent = {x: x for x in nums}\n\n        def find(x):\n            while parent[x] != x:\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra != rb:\n                parent[ra] = rb\n\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-31T15:36:00.000Z",
+      "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        parent = {x: x for x in nums}\n\n        def find(x):\n            while parent[x] != x:\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra != rb:\n                parent[ra] = rb\n\n        for x in nums:\n            if x + 1 in parent:\n                union(x, x + 1)\n\n        return len({find(x) for x in parent})\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-31T15:40:00.000Z",
+      "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        parent = {x: x for x in nums}\n\n        def find(x):\n            while parent[x] != x:\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra != rb:\n                parent[ra] = rb\n\n        for x in nums:\n            if x + 1 in parent:\n                union(x, x + 1)\n\n        size = {}\n        for x in parent:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-31T15:42:00.000Z",
+      "code": "class Solution:\n    def longestConsecutive(self, nums: List[int]) -> int:\n        parent = {x: x for x in nums}\n\n        def find(x):\n            while parent[x] != x:\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra != rb:\n                parent[ra] = rb\n\n        for x in nums:\n            if x + 1 in parent:\n                union(x, x + 1)\n\n        size = {}\n        for x in parent:\n            root = find(x)\n            size[root] = size.get(root, 0) + 1\n        return max(size.values(), default=0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-31T15:52:00.000Z",
+      "code": "class Solution:\n    def longestConsecutive(self, nums: list[int]) -> int:\n        parent = {x: x for x in nums}\n\n        def find(x):\n            while parent[x] != x:\n                x = parent[x]\n            return x\n\n        def union(a, b):\n            ra, rb = find(a), find(b)\n            if ra != rb:\n                parent[ra] = rb\n\n        for x in nums:\n            if x + 1 in parent:\n                union(x, x + 1)\n\n        size = {}\n        for x in parent:\n            root = find(x)\n            size[root] = size.get(root, 0) + 1\n        return max(size.values(), default=0)\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-31T15:37:40.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 3,
+      "error_detail": "Output: 3\nExpected: 4"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-31T15:42:20.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-31T15:45:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-31T15:48:50.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 5,
+      "tests_total": 5,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-31T15:52:00.000Z",
+      "verdict": "Time Limit Exceeded",
+      "tests_passed": 70,
+      "tests_total": 78,
+      "error_detail": "Last executed input: nums = [0,1,2,3,4,5,...] (length 100000)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

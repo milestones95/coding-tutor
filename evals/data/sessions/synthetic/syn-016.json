@@ -1,0 +1,155 @@
+{
+  "session_id": "syn-016",
+  "problem": {
+    "slug": "lru-cache",
+    "title": "LRU Cache",
+    "difficulty": "Medium",
+    "tags": [
+      "hash-table",
+      "linked-list",
+      "design",
+      "doubly-linked-list"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-25T15:12:00.000Z",
+      "code": "class LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.order = []\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.order.remove(key)\n\n    def put(self, key: int, value: int) -> None:\n\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:14:00.000Z",
+      "code": "class LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.order = []\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.order.remove(key)\n        self.order.append(key)\n        return self.cache[key]\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self.order.remove(key)\n        self.cache[key] = value\n        self.order.append(key)\n        if len(self.cache) > self.cap:\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:16:00.000Z",
+      "code": "class LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.order = []\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.order.remove(key)\n        self.order.append(key)\n        return self.cache[key]\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self.order.remove(key)\n        self.cache[key] = value\n        self.order.append(key)\n        if len(self.cache) > self.cap:\n            old = self.order.pop()\n            del self.cache[old]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:20:00.000Z",
+      "code": "class LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.cache = {}\n        self.order = []\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        self.order.remove(key)\n        self.order.append(key)\n        return self.cache[key]\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            self.order.remove(key)\n        self.cache[key] = value\n        self.order.append(key)\n        if len(self.cache) > self.cap:\n            old = self.order.pop(0)\n            del self.cache[old]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:22:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        return self.map[key].val\n\n    def put(self, key: int, value: int) -> None:\n        self.cache[key] = value\n        self.order.append(key)\n        if len(self.cache) > self.cap:\n            old = self.order.pop(0)\n            del self.cache[old]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:24:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        return self.map[key].val\n\n    def put(self, key: int, value: int) -> None:\n        pass\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:26:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        return self.map[key].val\n\n    def put(self, key: int, value: int) -> None:\n        pass\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:28:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        return self.map[key].val\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:30:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        return self.map[key].val\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:34:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:36:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:38:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:40:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:42:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:44:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.map:\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:46:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.map:\n            self.map[key].val = value\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:48:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.map:\n            self.map[key].val = value\n            # TODO: move to front\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:50:00.000Z",
+      "code": "class Node:\n    def __init__(self, key=0, val=0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.map:\n            self.map[key].val = value\n            # TODO: move to front\n            return\n        node = Node(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-25T15:56:00.000Z",
+      "code": "class DNode:\n    def __init__(self, key=0, val=0):\n        self.key, self.val = key, val\n        self.prev = self.next = None\n\n\nclass LRUCache:\n    def __init__(self, capacity: int):\n        self.cap = capacity\n        self.map = {}\n        self.head = DNode()  # most-recent side\n        self.tail = DNode()  # least-recent side\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def _remove(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def _add_front(self, node):\n        self.head.next = node\n        node.next = self.head.next\n        node.prev = self.head\n        # TODO: fix old first node's prev?\n\n    def get(self, key: int) -> int:\n        if key not in self.map:\n            return -1\n        node = self.map[key]\n        self._remove(node)\n        self._add_front(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.map:\n            self.map[key].val = value\n            # TODO: move to front\n            return\n        node = DNode(key, value)\n        self.map[key] = node\n        self._add_front(node)\n        if len(self.map) > self.cap:\n            lru = self.tail\n            self._remove(lru)\n            del self.map[lru.key]\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-25T15:17:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 1,
+      "error_detail": "Output: [null,null,null,1,null,2,null,1,-1,-1]\nExpected: [null,null,null,1,null,-1,null,-1,3,4]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-25T15:20:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 1,
+      "tests_total": 1,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-25T15:31:00.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 1,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'prev'\n    node.next.prev = node.prev\nLine 21 in _remove (Solution.py)\nLast executed input: [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-25T15:41:30.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 1,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'prev'\n    node.next.prev = node.prev\nLine 21 in _remove (Solution.py)\nLast executed input: [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-25T15:57:00.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 1,
+      "error_detail": "AttributeError: 'NoneType' object has no attribute 'prev'\n    node.next.prev = node.prev\nLine 21 in _remove (Solution.py)\nLast executed input: [\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]"
+    }
+  ],
+  "submit_capture_reliable": true
+}

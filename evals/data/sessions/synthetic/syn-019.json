@@ -1,0 +1,76 @@
+{
+  "session_id": "syn-019",
+  "problem": {
+    "slug": "valid-palindrome",
+    "title": "Valid Palindrome",
+    "difficulty": "Easy",
+    "tags": [
+      "two-pointers",
+      "string"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-28T17:07:00.000Z",
+      "code": "class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        cleaned = \"\".join(ch.lower() for ch in s if ch.isalnum())\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-28T17:09:00.000Z",
+      "code": "class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        cleaned = \"\".join(ch.lower() for ch in s if ch.isalnum())\n\n        def check(t):\n            if len(t) <= 1:\n                return True\n            if t[0] != t[-1]:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-28T17:11:00.000Z",
+      "code": "class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        cleaned = \"\".join(ch.lower() for ch in s if ch.isalnum())\n\n        def check(t):\n            if len(t) <= 1:\n                return True\n            if t[0] != t[-1]:\n                return False\n            return check(t[1:-1])\n\n        return check(cleaned)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-28T17:15:00.000Z",
+      "code": "import sys\nsys.setrecursionlimit(10**6)\n\nclass Solution:\n    def isPalindrome(self, s: str) -> bool:\n        cleaned = \"\".join(ch.lower() for ch in s if ch.isalnum())\n\n        def check(t):\n            if len(t) <= 1:\n                return True\n            if t[0] != t[-1]:\n                return False\n            return check(t[1:-1])\n\n        return check(cleaned)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-28T17:17:00.000Z",
+      "code": "class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        cleaned = \"\".join(ch.lower() for ch in s if ch.isalnum())\n\n        def check(t):\n            if len(t) <= 1:\n                return True\n            if t[0] != t[-1]:\n                return False\n            return check(t[1:-1])\n\n        return check(cleaned)\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-28T17:11:20.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-28T17:13:30.000Z",
+      "status": "Runtime Error",
+      "tests_passed": null,
+      "tests_total": 4,
+      "error_detail": "RecursionError: maximum recursion depth exceeded\n    return check(t[1:-1])\nLine 10 in check (Solution.py)\nLast executed input: s = \"aaaaaaaaaaaaaaaaaaaa...\" (length 5000)"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-28T17:16:10.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-28T17:18:00.000Z",
+      "verdict": "Memory Limit Exceeded",
+      "tests_passed": 467,
+      "tests_total": 485,
+      "error_detail": "Last executed input: s = \"abababababababababab...\" (length 200000)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

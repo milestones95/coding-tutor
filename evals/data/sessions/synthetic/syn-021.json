@@ -1,0 +1,81 @@
+{
+  "session_id": "syn-021",
+  "problem": {
+    "slug": "product-of-array-except-self",
+    "title": "Product of Array Except Self",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "prefix-sum"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-10-30T18:22:00.000Z",
+      "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        answer = [1] * n\n\n        prefix = 1\n        for i in range(n):\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-30T18:24:00.000Z",
+      "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        answer = [1] * n\n\n        prefix = 1\n        for i in range(n):\n            answer[i] = prefix\n            prefix *= nums[i]\n\n        suffix = 1\n        for i in range(n - 1, -1, -1):\n            answer[i] *= suffix\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-30T18:26:00.000Z",
+      "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        answer = [1] * n\n\n        prefix = 1\n        for i in range(n):\n            answer[i] = prefix\n            prefix *= nums[i]\n\n        suffix = 1\n        for i in range(n - 1, -1, -1):\n            answer[i] *= suffix\n\n        return answer\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-30T18:28:00.000Z",
+      "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        answer = [1] * n\n\n        prefix = 1\n        for i in range(n):\n            answer[i] = prefix\n            prefix *= nums[i]\n            print(\"prefix pass\", i, answer)\n\n        suffix = 1\n        for i in range(n - 1, -1, -1):\n            answer[i] *= suffix\n\n        return answer\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-30T18:30:00.000Z",
+      "code": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        answer = [1] * n\n\n        prefix = 1\n        for i in range(n):\n            answer[i] = prefix\n            prefix *= nums[i]\n            print(\"prefix pass\", i, answer)\n\n        suffix = 1\n        for i in range(n - 1, -1, -1):\n            answer[i] *= suffix\n            suffix *= nums[i]\n            print(\"suffix pass\", i, answer)\n\n        return answer\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-10-30T18:36:00.000Z",
+      "code": "class Solution:\n    def productExceptSelf(self, nums: list[int]) -> list[int]:\n        n = len(nums)\n        answer = [1] * n\n\n        prefix = 1\n        for i in range(n):\n            answer[i] = prefix\n            prefix *= nums[i]\n            print(\"prefix pass\", i, answer)\n\n        suffix = 1\n        for i in range(n - 1, -1, -1):\n            answer[i] *= suffix\n            suffix *= nums[i]\n            print(\"suffix pass\", i, answer)\n\n        return answer\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-10-30T18:26:10.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 2,
+      "error_detail": "Output: [1,1,2,6]\nExpected: [24,12,8,6]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-30T18:30:10.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-10-30T18:32:40.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-10-30T18:36:00.000Z",
+      "verdict": "Output Limit Exceeded",
+      "tests_passed": 17,
+      "tests_total": 24,
+      "error_detail": "Last executed input: nums = [1,-1,1,-1,1,-1,...] (length 100000)",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}
