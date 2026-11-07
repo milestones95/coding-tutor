@@ -770,7 +770,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 | T-019 | The human writes the 20 session files; each passes T-017's checks | test | M | required | 🔄 20 files in; T-017 not built yet | arch §8.5; D-017 |
 | T-020 | Label the 8 real sessions | test | M | required | ✅ 2026-11-07 (the human confirmed) | eval plan "Dataset"; D-026, D-039 |
 | T-021 | Assemble `dev-v1` + test split, `cases.jsonl` per suite | test | S | required | 🔄 built; awaiting the human's approval of the split | arch §8.1; eval plan "Dataset" |
-| T-022 | Eval runner, result record, `estimate`; overlap grader + keyword baseline | build | M | required | ⬜ | arch §8.2 – §8.4; eval plan algorithm metric |
+| T-022 | Eval runner, result record, `estimate`; overlap grader + keyword baseline | build | M | required | ✅ 2026-11-07 `/test run` | arch §8.2 – §8.4; eval plan algorithm metric |
 | T-023 | M2 checkpoint: keyword baseline on `algorithm` dev-v1 → versioned record + baseline row | test | S | required | ⬜ | M2 checkpoint |
 
 ### T-014 · Migration 0002: `prefix_sum` label
@@ -963,6 +963,13 @@ algorithm metric ("any overlap counts", keyword baseline).
   accuracy overall, real and synthetic; errors count as wrong; repeats and consistency; summary
   versions; estimate makes no calls; approved test run saves aggregates only). Result: the runner
   tests fail on `No module named 'tutor.evals.runner'`.
+- 2026-11-07 `/build T-022` → 🔄. `src/tutor/evals/runner.py` (`run`, `estimate`, `summary_line`,
+  `graders_for`, `predictor_named`), plus `tutor-eval run|estimate --suite --split --predictor
+  [--repeats] [--milestone]`. A predictor exception becomes a scored error, and a test run keeps
+  aggregates only. Gate clean (mypy, 26 files).
+- 2026-11-07 `/test run` → ✅. The builder's diff (runner.py, cli.py) touches no judging files.
+  Runner contract 9/9, graders 16/16, split lock and label fence 10/10. Full suite: 434 passed,
+  23 skipped. $0.
 
 ### T-023 · M2 checkpoint
 **Milestone:** M2 · **Size:** S · **Owner:** test · **Traces to:** M2 checkpoint.
