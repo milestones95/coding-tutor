@@ -763,7 +763,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
-| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ human: confirm the generator model id + enter its price | arch §6; D-008, D-018 |
+| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⬜ unblocked 2026-11-07 | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ⬜ | arch §8.1, §8.2, §4.3 #1 |
 | T-017 | Session checks (`evals/generate/checks.py`) | test | M | required | ⬜ | arch §8.5; D-043 |
 | T-018 | Session generator + prompt `generators/session/v1` | test | M | required | ⬜ | arch §8.5; D-017, D-043 |
@@ -820,6 +820,14 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 **Blocked on the human:** confirm `llm.generator` (`anthropic:claude-opus-5-5`) and its prices.
 **Test assets:** required.
 **Log**
+- 2026-11-07 Unblocked. The human confirmed `llm.generator` = `anthropic:claude-opus-5-5` ("yes you
+  can proceed"). Price from Anthropic's model table (claude-api reference, cached 2026-10-06):
+  $4.00 input / $20.00 output per 1M tokens, entered in `config/pricing.toml` with `as_of =
+  2026-11-07`. API facts for the tests: structured output is `output_config.format =
+  {type: "json_schema", schema}` on `messages.create`, and the JSON comes back as the first `text`
+  block. Opus 5.5 thinking is always on and can't be disabled (`thinking` omitted). Effort
+  defaults to `medium`. `ANTHROPIC_BASE_URL` sets the base URL; `max_retries=0` turns off SDK
+  retries.
 
 ### T-016 · Eval cases + split guard
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §8.1, §8.2 (split guard), §4.3 #1 (label fence).
