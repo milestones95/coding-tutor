@@ -68,10 +68,16 @@ def db(tmp_path, settings):
 # ---------------------------------------------------------------- Done-when 1: the §3.2 DDL, exactly
 
 
-def test_dw1_the_migration_is_the_architecture_ddl(db):
+def test_dw1_the_migration_is_the_architecture_ddl(tmp_path, settings):
+    # Only 0001 applied: later migrations (0002, T-014) legitimately change the schema §3.2 shows.
+    only_0001 = tmp_path / "only-0001"
+    only_0001.mkdir()
+    (only_0001 / MIGRATION.name).write_text(MIGRATION.read_text())
+    path = tmp_path / "v1.db"
+    migrate(path, settings=settings, migrations_dir=only_0001)
     ref = sqlite3.connect(":memory:")
     ref.executescript(_architecture_ddl())
-    assert _schema(db) == _schema(ref), "0001_init.sql must create exactly the §3.2 schema"
+    assert _schema(sqlite3.connect(path)) == _schema(ref), "0001_init.sql must create exactly the §3.2 schema"
 
 
 def test_dw1_the_migration_starts_with_a_header_about_existing_rows():
@@ -91,14 +97,15 @@ def test_dw1_the_migration_starts_with_a_header_about_existing_rows():
 def test_dw2_migrate_creates_every_table_and_index(tmp_path, settings):
     path = tmp_path / "analysis.db"
     assert not path.exists()
-    assert migrate(path, settings=settings) == [1]
+    assert migrate(path, settings=settings) == [1, 2]   # 0002_add_prefix_sum since T-014
     con = sqlite3.connect(path)
     names = {n: t for t, n in con.execute("SELECT type, name FROM sqlite_master")}
     assert TABLES <= {n for n, t in names.items() if t == "table"}
     assert INDEXES <= {n for n, t in names.items() if t == "index"}
-    [(version, name, applied_at)] = con.execute("SELECT version, name, applied_at FROM schema_migrations").fetchall()
-    assert (version, name) == (1, "init")
-    assert re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d", applied_at), "applied_at is ISO-8601"
+    rows = con.execute("SELECT version, name, applied_at FROM schema_migrations ORDER BY version").fetchall()
+    assert [(v, n) for v, n, _ in rows] == [(1, "init"), (2, "add_prefix_sum")]
+    for _, _, applied_at in rows:
+        assert re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d", applied_at), "applied_at is ISO-8601"
 
 
 def test_dw2_a_second_run_applies_nothing_and_changes_nothing(tmp_path, settings):

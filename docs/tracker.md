@@ -784,6 +784,16 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 **Not included:** any other schema change.
 **Test assets:** required (upgrade-with-rows and CHECK tests).
 **Log**
+- 2026-11-07 `/test write T-014`. Written: `tests/acceptance/test_t014_prefix_sum.py` (7 tests:
+  0002 exists with a header on rows; fresh DB → [1, 2], then idempotent; v1 → [2]; v1 rows with
+  algorithm labels survive; `prefix_sum` accepted, all 18 old labels accepted, `hashmap`
+  rejected; primary key and `algorithms_label` index survive; `AlgorithmLabel` = the 19
+  labels). Checked side effects on existing tests first (M1 lesson) and updated two T-008
+  checks with this reason: 0002 legitimately changes the schema and the version list.
+  "0001 is the §3.2 DDL" now compares a DB with only 0001 applied; "fresh migrate" expects
+  [1, 2] and rows (1, init), (2, add_prefix_sum). Result: 6 fail for the right reason (no 0002,
+  CHECK rejects `prefix_sum`, no `AlgorithmLabel`, T-008's [1, 2]); the rows and key/index tests
+  pass vacuously until 0002 exists. Rest of the suite unchanged.
 
 ### T-015 · Anthropic adapter
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §6.1, §6.4, §6.5; D-008, D-018.
