@@ -757,3 +757,14 @@ generate-sessions` that §8.5 names.
 builder code, while the generator itself is tester-owned. That splits one tool across two owners
 for no gain. The generator still calls the LLM only through `LLMClient` (rule 5).
 **Supersedes.** — (amends §8.5's command name)
+
+## D-047 · A model refusal is a non-retryable provider error · 2026-11-07 · tester (human approved)
+**Decision.** When a provider ends a response with a refusal (Anthropic `stop_reason: "refusal"`),
+the adapter raises `LLMProviderError(retryable=False)` with "refusal" in the message. The client
+does not retry it, and the field or case records it as an error. No server-side `fallbacks` model
+is configured for now.
+**Why.** Re-sending the same request would very likely be refused again, and it costs money each
+time. Treating it as invalid output would spend the output retry on a request that can't succeed.
+A fallback model would quietly change which model produced an eval number, which breaks rule 7's
+"every number names its model".
+**Supersedes.** —

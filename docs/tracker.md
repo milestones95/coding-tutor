@@ -828,6 +828,16 @@ T-020 (labelling the real sessions) is human work and can happen any time before
   block. Opus 5.5 thinking is always on and can't be disabled (`thinking` omitted). Effort
   defaults to `medium`. `ANTHROPIC_BASE_URL` sets the base URL; `max_retries=0` turns off SDK
   retries.
+- 2026-11-07 `/test write T-015`. Written: `tests/_fake_anthropic.py` (a loopback Messages API whose
+  replies carry a thinking block before the text, plus refusals and errors);
+  `tests/contract/test_anthropic_adapter.py` (13 tests: native `output_config.format` JSON schema
+  with every object closed; no thinking-disable or sampling params; JSON read past the thinking
+  block; tokens and cost at $4/$20; 500 → exactly 4 requests (SDK retries off); 429/529/timeout
+  retried; 400/401 not; refusal → non-retryable error (D-047); key from env, never logged;
+  missing key → config error before any request); `tests/acceptance/test_t015_anthropic_live.py`
+  (1 `llm` test: a real logged call to `llm.generator`). Checked existing tests for an
+  "anthropic has no adapter" assumption: none. Result: 13 fail for the right reason ("no adapter
+  for provider 'anthropic' yet"). Rest of the suite unchanged.
 
 ### T-016 · Eval cases + split guard
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §8.1, §8.2 (split guard), §4.3 #1 (label fence).
