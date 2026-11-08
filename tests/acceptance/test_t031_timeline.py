@@ -100,7 +100,7 @@ def test_the_call_is_logged_with_field_and_prompt_version(settings):
     client, _ = _client(settings, [{"summary": SUMMARY}])
     timeline(_session(), client=client, settings=settings, run_id="r-log")
     row = json.loads((settings.paths.logs / "llm_calls.jsonl").read_text().splitlines()[-1])
-    assert (row["field"], row["prompt_version"], row["run_id"]) == ("timeline", "v1", "r-log")
+    assert (row["field"], row["prompt_version"], row["run_id"]) == ("timeline", settings.prompts["timeline"], "r-log")
 
 
 # ---------------------------------------------------------------- 2. the prompt file
@@ -109,7 +109,7 @@ def test_the_call_is_logged_with_field_and_prompt_version(settings):
 def test_the_prompt_is_versioned_pinned_and_asks_for_the_checklist(settings):
     from tutor.prompts import load_prompt
 
-    assert settings.prompts.get("timeline") == "v1"
+    assert settings.prompts.get("timeline") in ("v1", "v2")   # v2 pinned by T-036; v1 kept as written
     p = load_prompt("timeline", "v1")
     assert json.loads((REPO / "prompts" / "manifest.json").read_text()).get("timeline/v1.md") == p.sha256
     assert "timeline" in p.variables
@@ -163,8 +163,9 @@ def test_the_runner_records_versions_cost_and_the_sentence_count(root, settings,
     rec = run("timeline", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results",
               graders=[SentenceCount()])
     assert len(fake.calls) == 2
-    assert rec["prompt_versions"] == {"timeline": "v1"}
-    assert rec["prompt_sha256"] == {"timeline": load_prompt("timeline", "v1").sha256}
+    pin = settings.prompts["timeline"]   # pinned version, not a literal: T-036 pins timeline v2 (`/test write` correction, 2026-11-08)
+    assert rec["prompt_versions"] == {"timeline": pin}
+    assert rec["prompt_sha256"] == {"timeline": load_prompt("timeline", pin).sha256}
     assert (rec["provider"], rec["model"], rec["metric"]) == ("openai", "gpt-5.5", "sentence_count")
     outs = {c["case_id"]: c for c in rec["cases"]}
     assert outs["timeline-dev-001"]["output"] == {"summary": SUMMARY}
@@ -172,5 +173,5 @@ def test_the_runner_records_versions_cost_and_the_sentence_count(root, settings,
     assert [g["value"] for g in outs["timeline-dev-002"]["grades"]] == [0.0], "7 sentences fails the checklist"
     assert rec["aggregates"]["accuracy"] == pytest.approx(0.5)
     assert rec["cost_usd_total"] > 0
-    assert "prompt timeline-v1" in summary_line(rec)
+    assert f"prompt timeline-{pin}" in summary_line(rec)
 

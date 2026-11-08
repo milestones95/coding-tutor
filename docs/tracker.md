@@ -1231,6 +1231,8 @@ content in any log (counts only).
 3. No other checklist item drops outside the noise band.
 **Not included:** the failure prompt; any change to labels or the judge; test-split runs.
 **Test assets:** required (`/test write T-036` before `/build`).
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t036_timeline_v2.py` (9): v2 pinned and in the manifest; v1 unchanged; same variables and output shape as v1; states the D-063 definition (only bug fixes = on track; a different algorithm or too slow for the limits = off track); still asks for the rest of the checklist; names no dataset problem (slugs and titles, rule 9); judge, timeline cases and calibration set untouched. 7 fail as expected (no v2 yet), 2 pass. `/test write` corrections, same reason: `test_t027_pipeline_llm`, `test_t031_pipeline`, `test_t031_timeline` asserted the literal "v1" for the timeline prompt; they now read the pinned version, so pinning v2 doesn't break them (v1's own checks stay). **Eval half, checked at `/test run`:** the timeline dev set is now dev-v3 (D-066), so v1's 0.95/0.93 aren't comparable. The builder runs **both v1 and v2 on dev-v3** under timeline-judge-v1 (calibrated) and reports `checklist.first_approach`, `timeline_checklist` and each item for both (≈ $1 per judged run).
 
 ### T-035 · M4 checkpoint
 **Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** M4 checkpoint "Judge agreement ≥ 85% recorded".

@@ -134,8 +134,11 @@ def test_provenance_names_prompt_model_run_and_call(env):
                                                             (D, "algorithm"), (D, "failure"),
                                                             (A, "timeline_summary"), (B, "timeline_summary"),
                                                             (D, "timeline_summary")}
-    assert all((p["prompt_version"], p["provider"], p["model"], p["run_id"]) == ("v1", "openai", "gpt-5.5", "run-prov")
-               for p in prov)
+    from tutor.config import load_settings
+
+    pin = load_settings().prompts   # pinned version, not a literal: T-036 pins timeline v2 (`/test write` correction, 2026-11-08)
+    assert all((p["prompt_version"], p["provider"], p["model"], p["run_id"])
+               == (pin[p["prompt_name"]], "openai", "gpt-5.5", "run-prov") for p in prov)
     assert {p["prompt_name"] for p in prov} == {"algorithm", "failure", "timeline"}
     logged = {json.loads(x)["call_id"] for x in (env / "logs" / "llm_calls.jsonl").read_text().splitlines()}
     assert {p["call_id"] for p in prov} <= logged, "call_id joins to llm_calls.jsonl"
