@@ -20,6 +20,9 @@ from typing import Any, Protocol
 from tutor.condense import CONDENSER_VERSION
 from tutor.config import REPO_ROOT, Settings
 from tutor.evals.cases import DEFAULT_ROOT, CaseError, load_case_session, load_cases
+from tutor.llm import LLMClient, ModelRef
+from tutor.llm.client import Usage
+from tutor.llm.pricing import DEFAULT_PRICING, price_for
 from tutor.logs import new_run_id
 
 
@@ -45,13 +48,56 @@ def graders_for(suite: str) -> list:
     raise NotImplementedError(f"no graders for suite {suite!r} yet (failure: M3, timeline: M4)")
 
 
-def predictor_named(name: str) -> Predictor:
+class AlgorithmPredictor:
+    """The algorithm field as a runner predictor (D-054): the same function the pipeline calls.
+
+    The runner sets `run_id` before the first case so every logged call carries the record's id,
+    and reads `last_usage` after each call for the per-case cost and tokens.
+    """
+
+    name = "algorithm"
+
+    def __init__(self, settings: Settings, *, client: LLMClient | None = None, model: ModelRef | None = None):
+        from tutor.fields.algorithm import PROMPT, prompt_for
+
+        self._settings, self._model = settings, model
+        self._client = client or LLMClient(settings)
+        prompt = prompt_for(settings)
+        self.version = prompt.version
+        self.prompt_versions = {PROMPT: prompt.version}
+        self.prompt_sha256 = {PROMPT: prompt.sha256}
+        self.ref = self._client.model_for(PROMPT, model)
+        self.provider = self.ref.provider
+        self.run_id = new_run_id()
+        self.last_usage: Usage | None = None
+
+    @property
+    def est_cost_per_call(self) -> float:
+        # ~2,000 tokens in (prompt + a typical final solution), ~500 out (including reasoning tokens)
+        return price_for(DEFAULT_PRICING, str(self.ref)).cost(2000, 500)
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.algorithm import algorithm
+
+        self.last_usage = None
+        result = algorithm(session, client=self._client, settings=self._settings, run_id=self.run_id,
+                           model=self._model)
+        self.last_usage = result.usage
+        return {"labels": [a.value for a in result.output.algorithms]}
+
+
+def predictor_named(name: str, *, settings: Settings | None = None, client: LLMClient | None = None,
+                    model: ModelRef | None = None) -> Predictor:
     _evals_importable()
     if name == "keyword_baseline":
         from evals.graders.keyword_baseline import KeywordBaseline
 
         return KeywordBaseline()
-    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline (LLM fields arrive in M3)")
+    if name == "algorithm":
+        if settings is None:
+            raise ValueError("the algorithm predictor needs settings")
+        return AlgorithmPredictor(settings, client=client, model=model)
+    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm")
 
 
 def _git() -> tuple[str, bool]:
@@ -79,6 +125,8 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
     cases = load_cases(suite, split, root=root, milestone=milestone)   # refuses a locked test split first
     graders = graders_for(suite)
     run_id, started = new_run_id(), _now()
+    if hasattr(predictor, "run_id"):
+        predictor.run_id = run_id      # the field's logged calls carry the record's run id
     rows: list[dict] = []
     for case in cases:
         session, load_error = None, None
@@ -95,10 +143,13 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                     output = predictor(session)
                 except Exception as e:  # a failing predictor is a scored error, not a crashed run
                     error = f"{type(e).__name__}: {e}"
+            usage = getattr(predictor, "last_usage", None) if error is None else None
             grades = [] if error else [g.model_dump() for gr in graders for g in gr.grade(case, output, None)]
             rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source, "output": output,
-                         "grades": grades, "error": error, "cost_usd": 0.0,
-                         "latency_ms": int((time.monotonic() - t0) * 1000), "input_tokens": 0, "output_tokens": 0})
+                         "grades": grades, "error": error, "cost_usd": usage.cost_usd if usage else 0.0,
+                         "latency_ms": int((time.monotonic() - t0) * 1000),
+                         "input_tokens": usage.input_tokens if usage else 0,
+                         "output_tokens": usage.output_tokens if usage else 0})
 
     def accuracy(subset: list[dict]) -> float | None:
         if not subset:
@@ -114,7 +165,8 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
         "run_id": run_id, "suite": suite, "split": split,
         "dataset_version": cases[0].dataset_version if cases else f"{split}-v1",
         "started_at": started, "finished_at": _now(), "git_sha": sha, "git_dirty": dirty,
-        "provider": getattr(predictor, "provider", "local"), "model": f"{predictor.name}@{predictor.version}",
+        "provider": getattr(predictor, "provider", "local"),
+        "model": predictor.ref.model if hasattr(predictor, "ref") else f"{predictor.name}@{predictor.version}",
         "prompt_versions": dict(getattr(predictor, "prompt_versions", {})),
         "prompt_sha256": dict(getattr(predictor, "prompt_sha256", {})),
         "condenser_version": CONDENSER_VERSION, "judge": None, "repeats": repeats,
@@ -144,7 +196,12 @@ def summary_line(record: dict) -> str:
 
     a = record["aggregates"]
     parts = [f"{src} {fmt(a['by_source'][src]['accuracy'])} (n={a['by_source'][src]['n']})" for src in ("real", "synthetic")]
-    return (f"{record['suite']} {record['metric']} {fmt(a['accuracy'])} @ predictor {record['model']}, "
+    if record["prompt_versions"]:   # an LLM predictor: name the prompt and the model (rule 7)
+        prompts = ", ".join(f"{n}-{v}" for n, v in record["prompt_versions"].items())
+        made_by = f"prompt {prompts}, model {record['provider']}:{record['model']}"
+    else:
+        made_by = f"predictor {record['model']}"
+    return (f"{record['suite']} {record['metric']} {fmt(a['accuracy'])} @ {made_by}, "
             f"dataset {record['dataset_version']}, condenser {record['condenser_version']}, "
             f"judge {record['judge'] or '—'} | {', '.join(parts)} | errors {a['errors']} | "
             f"consistency {fmt(a['consistency'])} | ${record['cost_usd_total']:.4f} | run {record['run_id']}")

@@ -166,22 +166,37 @@ def _eval_parser() -> argparse.ArgumentParser:
         c.add_argument("--predictor", required=True, help="what produces the output, e.g. keyword_baseline")
         c.add_argument("--repeats", type=int, default=1)
         c.add_argument("--milestone", default=None, help="required for --split test, and must be approved")
+        c.add_argument("--model", default=None, metavar="PROVIDER:MODEL",
+                       help="model for an LLM predictor (default: llm.fields.<field>, else llm.default)")
         c.set_defaults(handler=handler)
     return p
 
 
 def _eval_errors() -> tuple[type[BaseException], ...]:
     from tutor.evals.cases import CaseError, SplitLockedError
+    from tutor.llm import LLMConfigError
 
-    return (CaseError, SplitLockedError, ValueError, NotImplementedError)
+    return (CaseError, SplitLockedError, LLMConfigError, ValueError, NotImplementedError)
+
+
+def _eval_predictor(args: argparse.Namespace, settings):
+    from tutor.evals.runner import predictor_named
+    from tutor.llm import ModelRef
+
+    model = ModelRef.parse(args.model) if args.model else None
+    return predictor_named(args.predictor, settings=settings, model=model)
 
 
 def _eval_run(args: argparse.Namespace) -> int:
     from tutor.config import load_settings
-    from tutor.evals.runner import predictor_named, run, summary_line
+    from tutor.evals.runner import estimate, run, summary_line
 
     try:
-        record = run(args.suite, args.split, predictor=predictor_named(args.predictor), settings=load_settings(),
+        settings = load_settings()
+        predictor = _eval_predictor(args, settings)
+        est = estimate(args.suite, args.split, predictor=predictor, repeats=args.repeats, milestone=args.milestone)
+        print(f"estimate: {est['calls']} calls, ${est['cost_usd']:.4f}", file=sys.stderr)
+        record = run(args.suite, args.split, predictor=predictor, settings=settings,
                      repeats=args.repeats, milestone=args.milestone)
     except _eval_errors() as e:
         print(f"error: {e}", file=sys.stderr)
@@ -191,11 +206,12 @@ def _eval_run(args: argparse.Namespace) -> int:
 
 
 def _eval_estimate(args: argparse.Namespace) -> int:
-    from tutor.evals.runner import estimate, predictor_named
+    from tutor.config import load_settings
+    from tutor.evals.runner import estimate
 
     try:
-        est = estimate(args.suite, args.split, predictor=predictor_named(args.predictor), repeats=args.repeats,
-                       milestone=args.milestone)
+        est = estimate(args.suite, args.split, predictor=_eval_predictor(args, load_settings()),
+                       repeats=args.repeats, milestone=args.milestone)
     except _eval_errors() as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
