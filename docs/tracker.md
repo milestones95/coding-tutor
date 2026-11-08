@@ -1136,6 +1136,9 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 **Not included:** the synthetic sessions (their specs already have the story); the test split's
 content in any log (counts only).
 
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t029_real_timeline_labels.py` (5 tests): approaches and final approach present for all 8, a correction means ≥ 2 approaches, the T-020 labels pinned by hash. 2 fail as expected (no approaches yet), 3 pass. Tester proposes the 6 dev sessions' labels; the 2 test-split sessions are written by the human without the tester opening them.
+
 ### T-030 · Timeline suite
 **Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1.
 **Done when:**
