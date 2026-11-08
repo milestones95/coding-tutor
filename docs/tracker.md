@@ -1123,7 +1123,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 | T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ✅ | eval plan "Checking the judge"; rule 8 |
 | T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ✅ | eval plan "Failure explanation"; D-052 |
 | T-036 | Timeline prompt v2: a general definition of "on the right track"; measured against v1 with the calibrated judge | build | S | required | ✅ | eval plan "Summary checklist" (first approach on the right track); T-033 finding |
-| T-037 | Runner: failure suite graded by the explanation judge; "calibrated" needs an accepted decision | build | S | required | ⬜ | eval plan "Failure explanation"; rule 8; D-063, D-067 |
+| T-037 | Runner: failure suite graded by the explanation judge; "calibrated" needs an accepted decision | build | S | required | 🔄 | eval plan "Failure explanation"; rule 8; D-063, D-067 |
 | T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
 
 ### T-029 · Timeline labels for the real sessions
@@ -1249,6 +1249,7 @@ content in any log (counts only).
 **Log:**
 - 2026-11-08 · `/test write` — `tests/acceptance/test_t037_failure_judge_runner.py` (10): graders_for("failure") order; a fake-LLM failure run judges only the explanation (no call for the passed session), accuracy still the type, `by_metric.explanation_checklist`, `record.judge`, judge cost per row; `_is_calibrated` needs the latest entry for that exact version at ≥ 0.85 *and* `accept` (6 cases); the committed file reads timeline v1 ✓, explanation v2 ✓, explanation v1 ✗. 5 fail as expected, 5 pass.
 - 2026-11-08 · `/test write` correction — `test_t026_failure.py::test_the_runner_records_both_deciders_versions_and_cost` now passes `graders=[FailureTypeExact()]`: T-037 makes the explanation judge a default failure grader, and that test checks the predictor's record, not the default graders (same reason as the T-031 correction).
+- 2026-11-08 · `/build` → 🔄 — `graders_for("failure")` → `[FailureTypeExact(), FailureExplanationJudge()]`; `_is_calibrated` takes the latest entry for the exact version and needs agreement ≥ 0.85 and decision `accept` (case-insensitive; no decision = uncalibrated). Unit: one existing test's fixture said decision "a" → "accept"; +1 test. 610 passed; ruff + mypy clean. No eval run: no field or prompt changed (T-035 runs the judged failure suite).
 
 ### T-035 · M4 checkpoint
 **Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** M4 checkpoint "Judge agreement ≥ 85% recorded".

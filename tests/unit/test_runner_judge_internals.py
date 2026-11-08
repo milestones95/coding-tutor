@@ -16,7 +16,7 @@ def test_agreement_exactly_at_the_threshold_counts(tmp_path):
     from tutor.evals.runner import _is_calibrated
 
     p = tmp_path / "calibration.json"
-    p.write_text(json.dumps({"entries": [{"judge": "j", "version": "v1", "agreement": 0.85, "n": 20, "decision": "a"}]}))
+    p.write_text(json.dumps({"entries": [{"judge": "j", "version": "v1", "agreement": 0.85, "n": 20, "decision": "accept"}]}))
     assert _is_calibrated("j", "v1", p) is True
     assert _is_calibrated("j", "v2", p) is False
 
@@ -69,3 +69,13 @@ def test_a_case_that_fails_to_load_is_an_error_and_is_not_graded(tmp_path):
     rec = run("timeline", "dev", predictor=P(), settings=settings, root=tmp_path / "evals",
               results_dir=tmp_path / "r", graders=[G()])
     assert calls == [] and rec["cases"][0]["error"].startswith("CaseError")
+
+
+def test_decision_is_read_case_insensitively_and_a_missing_decision_is_uncalibrated(tmp_path):
+    from tutor.evals.runner import _is_calibrated
+
+    p = tmp_path / "calibration.json"
+    p.write_text(json.dumps({"entries": [{"judge": "j", "version": "v1", "agreement": 0.9, "n": 20, "decision": " Accept "},
+                                         {"judge": "k", "version": "v1", "agreement": 0.9, "n": 20}]}))
+    assert _is_calibrated("j", "v1", p) is True
+    assert _is_calibrated("k", "v1", p) is False, "no recorded decision means nobody accepted it"
