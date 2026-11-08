@@ -1116,7 +1116,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-029 | Timeline labels for the 8 real sessions: approaches, final approach (the human's) | test | M | required | ⬜ | eval plan "Dataset", "Summary checklist"; arch §8.1 |
+| T-029 | Timeline labels for the 8 real sessions: approaches, final approach (the human's) | test | M | required | 🔄 | eval plan "Dataset", "Summary checklist"; arch §8.1 |
 | T-030 | `timeline` suite: dev/test `cases.jsonl` on the existing split, frozen by hash | test | S | required | ⬜ | arch §8.1; D-050 |
 | T-031 | Timeline field: `prompts/timeline/v1.md` + `fields/timeline.py`; runner predictor; `analyze --llm` writes `timeline_summary` | build | M | required | ⬜ | eval plan "Timeline summary"; arch §6.3, §7 |
 | T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ⬜ | arch §8.3, §8.4; rule 8 |
@@ -1138,6 +1138,7 @@ content in any log (counts only).
 
 **Log:**
 - 2026-11-08 · `/test write` — `tests/acceptance/test_t029_real_timeline_labels.py` (5 tests): approaches and final approach present for all 8, a correction means ≥ 2 approaches, the T-020 labels pinned by hash. 2 fail as expected (no approaches yet), 3 pass. Tester proposes the 6 dev sessions' labels; the 2 test-split sessions are written by the human without the tester opening them.
+- 2026-11-08 · human confirmation — the human confirmed the tester's 6 dev-session proposals (approaches + final approach) and wrote the 2 test-split sessions' labels by hand; the tester did not open them. T-020 labels unchanged (hash pin passes). Manifest rebuilt: only `labels.jsonl`'s hash changed; every cases file is byte-identical, so `dev-v1`/`test-v1` stand. Tests 504 passed, ruff + mypy clean. Awaiting `/test run`.
 
 ### T-030 · Timeline suite
 **Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1.
