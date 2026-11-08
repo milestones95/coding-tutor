@@ -35,7 +35,7 @@ timeout_s = 60
 # <name> = "v1"                              # pinned version per prompt
 algorithm = "v1"
 failure = "v1"
-timeline = "v1"
+timeline = "v2"
 
 [agent]
 max_steps = 10
