@@ -49,6 +49,10 @@ def graders_for(suite: str) -> list:
         from evals.graders.failure_type_exact import FailureTypeExact
 
         return [FailureTypeExact()]
+    if suite == "timeline":   # the judge joins in T-033 (D-060)
+        from evals.graders.sentence_count import SentenceCount
+
+        return [SentenceCount()]
     raise NotImplementedError(f"no graders for suite {suite!r} yet (failure: M3, timeline: M4)")
 
 
@@ -125,6 +129,39 @@ class FailurePredictor:
         return {"failure_type": o.failure_type.value, "source": o.source, "explanation": o.explanation}
 
 
+class TimelinePredictor:
+    """The timeline field as a runner predictor (D-060): the same function the pipeline calls."""
+
+    name = "timeline"
+
+    def __init__(self, settings: Settings, *, client: LLMClient | None = None, model: ModelRef | None = None):
+        from tutor.fields.timeline import PROMPT, prompt_for
+
+        self._settings, self._model = settings, model
+        self._client = client or LLMClient(settings)
+        prompt = prompt_for(settings)
+        self.version = prompt.version
+        self.prompt_versions = {PROMPT: prompt.version}
+        self.prompt_sha256 = {PROMPT: prompt.sha256}
+        self.ref = self._client.model_for(PROMPT, model)
+        self.provider = self.ref.provider
+        self.run_id = new_run_id()
+        self.last_usage: Usage | None = None
+
+    @property
+    def est_cost_per_call(self) -> float:
+        # ~3,000 tokens in (prompt + a condensed timeline), ~250 out (3–5 sentences)
+        return price_for(DEFAULT_PRICING, str(self.ref)).cost(3000, 250)
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.timeline import timeline
+
+        self.last_usage = None
+        r = timeline(session, client=self._client, settings=self._settings, run_id=self.run_id, model=self._model)
+        self.last_usage = r.usage
+        return {"summary": r.output.summary}
+
+
 class FailureRulesPredictor:
     """Failure type from the rules alone (`rules-v1`, D-055): it measures the rule-decided half of
     the failure suite before the LLM exists. A status no rule decides raises, so the runner scores
@@ -166,7 +203,12 @@ def predictor_named(name: str, *, settings: Settings | None = None, client: LLMC
         if settings is None:
             raise ValueError("the failure_rules predictor needs settings")
         return FailureRulesPredictor(settings)
-    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm, failure, failure_rules")
+    if name == "timeline":
+        if settings is None:
+            raise ValueError("the timeline predictor needs settings")
+        return TimelinePredictor(settings, client=client, model=model)
+    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm, failure, failure_rules, "
+                     "timeline")
 
 
 def _git() -> tuple[str, bool]:
