@@ -1117,7 +1117,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-029 | Timeline labels for the 8 real sessions: approaches, final approach (the human's) | test | M | required | ✅ | eval plan "Dataset", "Summary checklist"; arch §8.1 |
-| T-030 | `timeline` suite: dev/test `cases.jsonl` on the existing split, frozen by hash | test | S | required | 🔄 | arch §8.1; D-050 |
+| T-030 | `timeline` suite: dev/test `cases.jsonl` on the existing split, frozen by hash | test | S | required | ✅ | arch §8.1; D-050 |
 | T-031 | Timeline field: `prompts/timeline/v1.md` + `fields/timeline.py`; runner predictor; `analyze --llm` writes `timeline_summary` | build | M | required | ⬜ | eval plan "Timeline summary"; arch §6.3, §7 |
 | T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ⬜ | arch §8.3, §8.4; rule 8 |
 | T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ⬜ | eval plan "Checking the judge"; rule 8 |
@@ -1152,6 +1152,8 @@ content in any log (counts only).
 **Not included:** grading (T-033).
 **Log:**
 - 2026-11-08 · `/test write` — `evals/build/build_dataset.py` now also writes `evals/data/timeline/{dev,test}/cases.jsonl` (19 dev / 9 test, one per session, same split as dev-v1; outcome from the verdict, D-059); manifest updated; failure/algorithm cases byte-identical. `tests/acceptance/test_t030_timeline_suite.py` (10 tests) and the frozen-dataset contract test now covers the timeline suite: 13 pass. No new labels: the checklist is assembled from the human's confirmed specs and T-029 labels. Needs the human's confirmation of the assembled suite to close.
+- 2026-11-08 · human confirmation — the human accepted the assembled suite (asked for /test run after reviewing the summary; the corrected-session gap went to Deferred as dataset v2).
+- 2026-11-08 · `/test run` ✅ — contract 72, acceptance 342, unit 100 passed; ruff + mypy clean. Diff: builder script, timeline cases, manifest, tests, docs; no application code. failure/algorithm cases unchanged, so the M3 baselines stand. No eval run: no LLM field exists for this suite yet (T-031).
 
 ### T-031 · Timeline field
 **Milestone:** M4 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Timeline summary … 3–5 sentences"; arch §6.3, §7.
