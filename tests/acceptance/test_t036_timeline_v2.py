@@ -13,7 +13,16 @@ import json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-V1, V2 = REPO / "prompts/timeline/v1.md", REPO / "prompts/timeline/v2.md"
+V1 = REPO / "prompts/timeline/v1.md"
+# The pinned version (v2 or later) is what these tests check. `/test write` correction, 2026-11-08: the
+# human refined the definition (D-068), so T-036 may end on v3; v2 stays as measured.
+PIN = "v2"
+try:
+    from tutor.config import load_settings as _ls
+    PIN = _ls().prompts.get("timeline", "v2")
+except Exception:  # noqa: BLE001 - settings failing is reported by the pin test
+    pass
+V2 = REPO / f"prompts/timeline/{PIN}.md"
 DATA = REPO / "evals/data"
 
 
@@ -25,9 +34,10 @@ def test_v2_exists_pinned_and_in_the_manifest():
     from tutor.config import load_settings
     from tutor.prompts import load_prompt
 
-    assert load_settings().prompts.get("timeline") == "v2", "tutor.toml pins timeline v2"
-    p = load_prompt("timeline", "v2")
-    assert json.loads((REPO / "prompts/manifest.json").read_text()).get("timeline/v2.md") == p.sha256
+    pin = load_settings().prompts.get("timeline")
+    assert pin not in (None, "v1") and int(pin[1:]) >= 2, "tutor.toml pins timeline v2 or later"
+    p = load_prompt("timeline", pin)
+    assert json.loads((REPO / "prompts/manifest.json").read_text()).get(f"timeline/{pin}.md") == p.sha256
 
 
 def test_v1_is_unchanged():
@@ -41,7 +51,7 @@ def test_v2_reads_the_same_inputs_and_answers_the_same_shape():
     """Only the instructions change: same variables (the one condenser's timeline, rule 3), same output."""
     from tutor.prompts import load_prompt
 
-    v1, v2 = load_prompt("timeline", "v1"), load_prompt("timeline", "v2")
+    v1, v2 = load_prompt("timeline", "v1"), load_prompt("timeline", PIN)
     assert tuple(v2.variables) == tuple(v1.variables)
     assert '{"summary"' in V2.read_text()
 
@@ -61,6 +71,15 @@ def test_v2_says_a_pivot_to_a_different_algorithm_means_off_track():
 def test_v2_says_too_slow_for_the_limits_is_off_track():
     t = _text()
     assert ("too slow" in t or "time limit" in t) and ("limit" in t or "constraint" in t)
+
+
+def test_the_pinned_prompt_separates_a_slow_algorithm_from_a_slow_implementation():
+    """D-068 (the human): too slow because the algorithm needs a new technique is off track; too slow
+    because the right algorithm is implemented wastefully is a bug fix, so on track."""
+    if PIN == "v2":
+        return   # v2 predates D-068
+    t = _text()
+    assert "implement" in t and "technique" in t
 
 
 def test_v2_still_asks_for_the_rest_of_the_checklist():

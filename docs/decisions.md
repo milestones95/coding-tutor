@@ -1039,3 +1039,14 @@ hand-graded set from T-035's runs would show whether v2 generalises.
 **Found:** `runner._is_calibrated` reads only `agreement`, so a judge entry with `decision: reject`
 (like v1's 0.90) would count as calibrated. v1 is no longer used, but the runner should honour
 `decision` and misses caught. Builder work, alongside wiring the judge into `graders_for("failure")`.
+
+## D-068 · "Too slow" refined: a slow algorithm is off track, a slow implementation is not · 2026-11-08 · human
+T-036's v2 applied D-063 literally ("too slow = off track") and called two sessions off track that
+the human labelled on track: the right algorithm implemented wastefully (scanning a whole stack
+instead of popping its top; slicing a string on every call instead of moving two indices). The
+human's ruling: **off track** = passing needs a different algorithm or a technique the code lacks
+(adding memoization / a DP table, a hash map, sorting, a window); **on track** = the algorithm is
+right and the slowness comes from how it is implemented (an unneeded copy, using the chosen data
+structure the wrong way). Adding a memo to plain recursion is a new technique, so that stays off
+track (the existing label). Labels unchanged; `timeline/v3` states the refined rule.
+**Why.** It keeps D-063's core ("only bug fixes needed") and the human's existing labels consistent.
