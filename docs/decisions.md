@@ -912,3 +912,12 @@ the Anthropic adapter is deferred to M7 (D-048). Calibration (rule 8) measures t
 the human's grades either way: if gpt-5.5 agrees ≥ 85%, the self-preference worry is answered by
 data. **Revisit** at M7, when the Anthropic adapter exists: re-measure the judge with a Claude
 model on the same calibration set.
+
+## D-059 · Timeline suite: outcome is a verdict string; no on-track algorithms · 2026-11-08 · test
+The checklist's `outcome` is built by `evals/build/build_dataset.py` from the verdict, never typed:
+`"<LeetCode verdict>, p/t tests passed"`, or `"not submitted"`. It is a fact (rule 1), so the
+judge can check "names the final outcome" against data rather than a label. A string, not an
+object, because the judge reads it as text. `story.on_track_algorithms` stays out of the
+checklist: it says what would have worked, which a summary of what happened never needs (D-039).
+The timeline cases reuse dev-v1's split (seeded draw, same rows), so no session changes split and
+the failure / algorithm cases stay byte-identical; the new files start at `dev-v1` / `test-v1`.

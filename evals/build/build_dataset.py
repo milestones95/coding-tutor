@@ -1,7 +1,7 @@
 """Assemble dataset v1 from the approved specs and the human's real labels (T-021; arch §8.1; D-045).
 
 Tester-owned. Deterministic: a seeded draw inside each (status, real/synthetic) group, so re-running
-gives the same split. Writes evals/data/{failure,algorithm}/{dev,test}/cases.jsonl and
+gives the same split. Writes evals/data/{failure,algorithm,timeline}/{dev,test}/cases.jsonl and
 evals/data/manifest.json (hashes the frozen-dataset contract test checks). Prints counts only:
 which sessions are in test is never printed (rule 2).
 
@@ -21,6 +21,13 @@ SEED = 20261107
 TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
 
 
+def outcome(verdict, passed, total):
+    """The timeline checklist's outcome, read from the verdict (a fact, rule 1; D-059)."""
+    if verdict is None:
+        return "not submitted"
+    return f"{verdict}, {passed}/{total} tests passed" if total else verdict
+
+
 def sessions():
     """(key, source, status, near_miss, labels, story, key_facts, session_ref) for every session."""
     sys.path.insert(0, str(REPO / "src"))
@@ -35,6 +42,7 @@ def sessions():
         out.append({"key": s["id"], "source": "synthetic", "status": v["status"] if v else "not submitted",
                     "near_miss": bool(v and v["status"] != "Accepted" and v["tests_passed"] / v["tests_total"] >= 0.9),
                     "labels": s["labels"], "story": s["story"], "key_facts": s["key_facts"],
+                    "outcome": outcome(v["status"], v["tests_passed"], v["tests_total"]) if v else outcome(None, None, None),
                     "session": {"synthetic_path": f"evals/data/sessions/synthetic/{s['id']}.json"}})
     settings = load_settings()
     loader = CaptureLoader(settings.paths.eval_capture_db, mode="immutable", settings=settings, run_id="build-dataset")
@@ -45,6 +53,7 @@ def sessions():
                     "near_miss": bool(st.tests_total and st.leetcode_verdict != "Accepted"
                                       and st.tests_passed / st.tests_total >= 0.9),
                     "labels": r["labels"], "story": r["story"], "key_facts": r["key_facts"],
+                    "outcome": outcome(st.leetcode_verdict, st.tests_passed, st.tests_total),
                     "session": {"capture_session_id": r["capture_session_id"]}})
     return out
 
@@ -81,14 +90,22 @@ def main():
     rows = sessions()
     where = split(rows)
     written = {}
-    for suite in ("failure", "algorithm"):
+    for suite in ("failure", "algorithm", "timeline"):
         for sp in ("dev", "test"):
             cases = []
             for r in sorted((r for r in rows if where[r["key"]] == sp), key=lambda r: r["key"]):
                 if suite == "algorithm" and not r["labels"]["algorithms"]:
                     continue  # no label in the fixed list applies (D-050)
-                expected = ({"failure_type": r["labels"]["failure_type"], "key_facts": r["key_facts"]} if suite == "failure"
-                            else {"labels": r["labels"]["algorithms"]})
+                if suite == "failure":
+                    expected = {"failure_type": r["labels"]["failure_type"], "key_facts": r["key_facts"]}
+                elif suite == "algorithm":
+                    expected = {"labels": r["labels"]["algorithms"]}
+                else:
+                    expected = {"checklist": {"approaches": r["story"]["approaches"],
+                                              "course_correction": r["story"]["course_correction"],
+                                              "final_approach": r["story"]["final_approach"],
+                                              "outcome": r["outcome"]},
+                                "key_facts": r["key_facts"]}
                 tags = (["near_miss"] if r["near_miss"] else []) + (["rule_decided"] if suite == "failure" and r["status"] in
                         ("Accepted", "Time Limit Exceeded", "Memory Limit Exceeded") else [])
                 cases.append({"case_id": f"{suite}-{sp}-{len(cases) + 1:03d}", "suite": suite, "split": sp,

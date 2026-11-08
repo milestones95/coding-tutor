@@ -31,13 +31,13 @@ def test_every_cases_file_is_in_the_manifest():
 def test_dev_cases_load_and_never_reference_a_test_session():
     from tutor.evals.cases import load_cases
 
-    for suite in ("failure", "algorithm"):
+    for suite in ("failure", "algorithm", "timeline"):
         dev = load_cases(suite, "dev")
         assert dev and all(c.split == "dev" and c.dataset_version == "dev-v1" for c in dev)
     dev_refs = {json.dumps(json.loads(row)["session"], sort_keys=True)
-                for s in ("failure", "algorithm")
+                for s in ("failure", "algorithm", "timeline")
                 for row in (REPO / "evals" / "data" / s / "dev" / "cases.jsonl").read_text().splitlines()}
     test_refs = {json.dumps(json.loads(row)["session"], sort_keys=True)
-                 for s in ("failure", "algorithm")
+                 for s in ("failure", "algorithm", "timeline")
                  for row in (REPO / "evals" / "data" / s / "test" / "cases.jsonl").read_text().splitlines()}
     assert not dev_refs & test_refs, "a session appears in both dev and test"
