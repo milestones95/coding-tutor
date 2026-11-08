@@ -37,6 +37,9 @@ def _tutor_parser() -> argparse.ArgumentParser:
     an = sub.add_parser("analyze", help="load captured sessions, write facts + condensed timelines to analysis.db")
     an.add_argument("--since", type=date.fromisoformat, default=None, metavar="YYYY-MM-DD",
                     help="only sessions that started on or after this date (in time.timezone)")
+    an.add_argument("--llm", action="store_true",
+                    help="also run the failure and algorithm fields (LLM calls; costs money)")
+    an.add_argument("--model", default=None, metavar="PROVIDER:MODEL", help="model for --llm (default: llm.default)")
     an.set_defaults(handler=_analyze)
     rb = sub.add_parser("rebuild-timelines", help="re-condense every analyzed session (after a condenser change)")
     rb.set_defaults(handler=_rebuild)
@@ -109,13 +112,17 @@ def _analyze(args: argparse.Namespace) -> int:
     from tutor.config import load_settings
     from tutor.logs import new_run_id
 
+    from tutor.llm import LLMConfigError, ModelRef
+
     run_id = new_run_id()
     try:
-        report = analyze(load_settings(), run_id=run_id, since=args.since)
-    except _pipeline_errors() as e:
+        model = ModelRef.parse(args.model) if args.model else None
+        report = analyze(load_settings(), run_id=run_id, since=args.since, llm=args.llm, model=model)
+    except _pipeline_errors() + (LLMConfigError,) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    print(f"analyze {run_id}: {report.stored} sessions stored")
+    extra = f", {report.llm_errors} LLM field errors (see pipeline.jsonl)" if args.llm else ""
+    print(f"analyze {run_id}: {report.stored} sessions stored{extra}")
     return 0
 
 
@@ -166,22 +173,37 @@ def _eval_parser() -> argparse.ArgumentParser:
         c.add_argument("--predictor", required=True, help="what produces the output, e.g. keyword_baseline")
         c.add_argument("--repeats", type=int, default=1)
         c.add_argument("--milestone", default=None, help="required for --split test, and must be approved")
+        c.add_argument("--model", default=None, metavar="PROVIDER:MODEL",
+                       help="model for an LLM predictor (default: llm.fields.<field>, else llm.default)")
         c.set_defaults(handler=handler)
     return p
 
 
 def _eval_errors() -> tuple[type[BaseException], ...]:
     from tutor.evals.cases import CaseError, SplitLockedError
+    from tutor.llm import LLMConfigError
 
-    return (CaseError, SplitLockedError, ValueError, NotImplementedError)
+    return (CaseError, SplitLockedError, LLMConfigError, ValueError, NotImplementedError)
+
+
+def _eval_predictor(args: argparse.Namespace, settings):
+    from tutor.evals.runner import predictor_named
+    from tutor.llm import ModelRef
+
+    model = ModelRef.parse(args.model) if args.model else None
+    return predictor_named(args.predictor, settings=settings, model=model)
 
 
 def _eval_run(args: argparse.Namespace) -> int:
     from tutor.config import load_settings
-    from tutor.evals.runner import predictor_named, run, summary_line
+    from tutor.evals.runner import estimate, run, summary_line
 
     try:
-        record = run(args.suite, args.split, predictor=predictor_named(args.predictor), settings=load_settings(),
+        settings = load_settings()
+        predictor = _eval_predictor(args, settings)
+        est = estimate(args.suite, args.split, predictor=predictor, repeats=args.repeats, milestone=args.milestone)
+        print(f"estimate: {est['calls']} calls, ${est['cost_usd']:.4f}", file=sys.stderr)
+        record = run(args.suite, args.split, predictor=predictor, settings=settings,
                      repeats=args.repeats, milestone=args.milestone)
     except _eval_errors() as e:
         print(f"error: {e}", file=sys.stderr)
@@ -191,11 +213,12 @@ def _eval_run(args: argparse.Namespace) -> int:
 
 
 def _eval_estimate(args: argparse.Namespace) -> int:
-    from tutor.evals.runner import estimate, predictor_named
+    from tutor.config import load_settings
+    from tutor.evals.runner import estimate
 
     try:
-        est = estimate(args.suite, args.split, predictor=predictor_named(args.predictor), repeats=args.repeats,
-                       milestone=args.milestone)
+        est = estimate(args.suite, args.split, predictor=_eval_predictor(args, load_settings()),
+                       repeats=args.repeats, milestone=args.milestone)
     except _eval_errors() as e:
         print(f"error: {e}", file=sys.stderr)
         return 1

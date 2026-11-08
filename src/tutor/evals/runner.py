@@ -20,6 +20,9 @@ from typing import Any, Protocol
 from tutor.condense import CONDENSER_VERSION
 from tutor.config import REPO_ROOT, Settings
 from tutor.evals.cases import DEFAULT_ROOT, CaseError, load_case_session, load_cases
+from tutor.llm import LLMClient, ModelRef
+from tutor.llm.client import Usage
+from tutor.llm.pricing import DEFAULT_PRICING, price_for
 from tutor.logs import new_run_id
 
 
@@ -42,16 +45,128 @@ def graders_for(suite: str) -> list:
         from evals.graders.algorithm_overlap import AlgorithmOverlap
 
         return [AlgorithmOverlap()]
+    if suite == "failure":
+        from evals.graders.failure_type_exact import FailureTypeExact
+
+        return [FailureTypeExact()]
     raise NotImplementedError(f"no graders for suite {suite!r} yet (failure: M3, timeline: M4)")
 
 
-def predictor_named(name: str) -> Predictor:
+class AlgorithmPredictor:
+    """The algorithm field as a runner predictor (D-054): the same function the pipeline calls.
+
+    The runner sets `run_id` before the first case so every logged call carries the record's id,
+    and reads `last_usage` after each call for the per-case cost and tokens.
+    """
+
+    name = "algorithm"
+
+    def __init__(self, settings: Settings, *, client: LLMClient | None = None, model: ModelRef | None = None):
+        from tutor.fields.algorithm import PROMPT, prompt_for
+
+        self._settings, self._model = settings, model
+        self._client = client or LLMClient(settings)
+        prompt = prompt_for(settings)
+        self.version = prompt.version
+        self.prompt_versions = {PROMPT: prompt.version}
+        self.prompt_sha256 = {PROMPT: prompt.sha256}
+        self.ref = self._client.model_for(PROMPT, model)
+        self.provider = self.ref.provider
+        self.run_id = new_run_id()
+        self.last_usage: Usage | None = None
+
+    @property
+    def est_cost_per_call(self) -> float:
+        # ~2,000 tokens in (prompt + a typical final solution), ~500 out (including reasoning tokens)
+        return price_for(DEFAULT_PRICING, str(self.ref)).cost(2000, 500)
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.algorithm import algorithm
+
+        self.last_usage = None
+        result = algorithm(session, client=self._client, settings=self._settings, run_id=self.run_id,
+                           model=self._model)
+        self.last_usage = result.usage
+        return {"labels": [a.value for a in result.output.algorithms]}
+
+
+class FailurePredictor:
+    """The failure field as a runner predictor (D-056). `last_usage` is None for a session that
+    made no call (passed), so its row costs nothing."""
+
+    name = "failure"
+
+    def __init__(self, settings: Settings, *, client: LLMClient | None = None, model: ModelRef | None = None):
+        from tutor.fields.failure import PROMPT, prompt_for
+
+        self._settings, self._model = settings, model
+        self._client = client or LLMClient(settings)
+        prompt = prompt_for(settings)
+        self.version = prompt.version
+        self.prompt_versions = {PROMPT: prompt.version}
+        self.prompt_sha256 = {PROMPT: prompt.sha256}
+        self.ref = self._client.model_for(PROMPT, model)
+        self.provider = self.ref.provider
+        self.run_id = new_run_id()
+        self.last_usage: Usage | None = None
+
+    @property
+    def est_cost_per_call(self) -> float:
+        # ~3,000 tokens in (prompt + a condensed timeline), ~100 out; passed sessions make no call
+        return price_for(DEFAULT_PRICING, str(self.ref)).cost(3000, 100)
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.failure import failure
+
+        self.last_usage = None
+        r = failure(session, client=self._client, settings=self._settings, run_id=self.run_id, model=self._model)
+        self.last_usage = r.usage
+        o = r.output
+        return {"failure_type": o.failure_type.value, "source": o.source, "explanation": o.explanation}
+
+
+class FailureRulesPredictor:
+    """Failure type from the rules alone (`rules-v1`, D-055): it measures the rule-decided half of
+    the failure suite before the LLM exists. A status no rule decides raises, so the runner scores
+    that case as an error."""
+
+    name, version = "failure_rules", "rules-v1"
+
+    def __init__(self, settings: Settings):
+        self._settings = settings
+        self.run_id = new_run_id()
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.deterministic import status
+        from tutor.fields.failure import failure_rule
+
+        st = status(session, settings=self._settings, run_id=self.run_id).status
+        ft = failure_rule(st)
+        if ft is None:
+            raise LookupError(f"no rule decides status {st.value!r}; the LLM field does (T-026)")
+        return {"failure_type": ft.value, "source": "rule", "explanation": None}
+
+
+def predictor_named(name: str, *, settings: Settings | None = None, client: LLMClient | None = None,
+                    model: ModelRef | None = None) -> Predictor:
     _evals_importable()
     if name == "keyword_baseline":
         from evals.graders.keyword_baseline import KeywordBaseline
 
         return KeywordBaseline()
-    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline (LLM fields arrive in M3)")
+    if name == "algorithm":
+        if settings is None:
+            raise ValueError("the algorithm predictor needs settings")
+        return AlgorithmPredictor(settings, client=client, model=model)
+    if name == "failure":
+        if settings is None:
+            raise ValueError("the failure predictor needs settings")
+        return FailurePredictor(settings, client=client, model=model)
+    if name == "failure_rules":
+        if settings is None:
+            raise ValueError("the failure_rules predictor needs settings")
+        return FailureRulesPredictor(settings)
+    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm, failure, failure_rules")
 
 
 def _git() -> tuple[str, bool]:
@@ -79,6 +194,8 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
     cases = load_cases(suite, split, root=root, milestone=milestone)   # refuses a locked test split first
     graders = graders_for(suite)
     run_id, started = new_run_id(), _now()
+    if hasattr(predictor, "run_id"):
+        predictor.run_id = run_id      # the field's logged calls carry the record's run id
     rows: list[dict] = []
     for case in cases:
         session, load_error = None, None
@@ -95,10 +212,14 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                     output = predictor(session)
                 except Exception as e:  # a failing predictor is a scored error, not a crashed run
                     error = f"{type(e).__name__}: {e}"
+            usage = getattr(predictor, "last_usage", None) if error is None else None
             grades = [] if error else [g.model_dump() for gr in graders for g in gr.grade(case, output, None)]
-            rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source, "output": output,
-                         "grades": grades, "error": error, "cost_usd": 0.0,
-                         "latency_ms": int((time.monotonic() - t0) * 1000), "input_tokens": 0, "output_tokens": 0})
+            rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source,
+                         "decider": "rule" if "rule_decided" in case.tags else "llm", "output": output,
+                         "grades": grades, "error": error, "cost_usd": usage.cost_usd if usage else 0.0,
+                         "latency_ms": int((time.monotonic() - t0) * 1000),
+                         "input_tokens": usage.input_tokens if usage else 0,
+                         "output_tokens": usage.output_tokens if usage else 0})
 
     def accuracy(subset: list[dict]) -> float | None:
         if not subset:
@@ -110,11 +231,17 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
         by_case.setdefault(r["case_id"], []).append(json.dumps(r["output"], sort_keys=True))
     consistency = (sum(len(set(v)) == 1 for v in by_case.values()) / len(by_case)) if by_case else None
     sha, dirty = _git()
+    aggregates_extra: dict = {}
+    if suite == "failure":   # §8.1: rule- and LLM-decided accuracy apart; the decider comes from the case (D-055)
+        aggregates_extra["by_decider"] = {
+            d: {"accuracy": accuracy([r for r in rows if r["decider"] == d]),
+                "n": len({r["case_id"] for r in rows if r["decider"] == d})} for d in ("rule", "llm")}
     record = {
         "run_id": run_id, "suite": suite, "split": split,
         "dataset_version": cases[0].dataset_version if cases else f"{split}-v1",
         "started_at": started, "finished_at": _now(), "git_sha": sha, "git_dirty": dirty,
-        "provider": getattr(predictor, "provider", "local"), "model": f"{predictor.name}@{predictor.version}",
+        "provider": getattr(predictor, "provider", "local"),
+        "model": predictor.ref.model if hasattr(predictor, "ref") else f"{predictor.name}@{predictor.version}",
         "prompt_versions": dict(getattr(predictor, "prompt_versions", {})),
         "prompt_sha256": dict(getattr(predictor, "prompt_sha256", {})),
         "condenser_version": CONDENSER_VERSION, "judge": None, "repeats": repeats,
@@ -127,6 +254,7 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                           for src in ("real", "synthetic")},
             "consistency": consistency,
             "errors": sum(1 for r in rows if r["error"]),
+            **aggregates_extra,
         },
         "cost_usd_total": round(sum(r["cost_usd"] for r in rows), 6),
     }
@@ -144,7 +272,14 @@ def summary_line(record: dict) -> str:
 
     a = record["aggregates"]
     parts = [f"{src} {fmt(a['by_source'][src]['accuracy'])} (n={a['by_source'][src]['n']})" for src in ("real", "synthetic")]
-    return (f"{record['suite']} {record['metric']} {fmt(a['accuracy'])} @ predictor {record['model']}, "
+    if "by_decider" in a:
+        parts += [f"{d} {fmt(a['by_decider'][d]['accuracy'])} (n={a['by_decider'][d]['n']})" for d in ("rule", "llm")]
+    if record["prompt_versions"]:   # an LLM predictor: name the prompt and the model (rule 7)
+        prompts = ", ".join(f"{n}-{v}" for n, v in record["prompt_versions"].items())
+        made_by = f"prompt {prompts}, model {record['provider']}:{record['model']}"
+    else:
+        made_by = f"predictor {record['model']}"
+    return (f"{record['suite']} {record['metric']} {fmt(a['accuracy'])} @ {made_by}, "
             f"dataset {record['dataset_version']}, condenser {record['condenser_version']}, "
             f"judge {record['judge'] or '—'} | {', '.join(parts)} | errors {a['errors']} | "
             f"consistency {fmt(a['consistency'])} | ${record['cost_usd_total']:.4f} | run {record['run_id']}")

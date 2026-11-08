@@ -833,3 +833,75 @@ interface lets M3's LLM fields and the keyword baseline run through the same run
 is tester-owned because it is the bar the model must beat.
 **Supersedes.** — (architecture §2 put the keyword baseline in `fields/algorithm.py`; it now lives
 with the graders)
+
+## D-052 · Failure explanation is stored but not scored in M3 · 2026-11-07 · pm
+The eval plan grades the explanation with an LLM judge, and rule 8 says no judge score counts until
+the judge is calibrated (≥ 85%). The judge and the calibration work are M4's. M3 stores each
+explanation in the result record and `analysis.db`, so M4 can grade the same outputs.
+**Why.** A judge built in passing inside M3 would be uncalibrated, and its number couldn't count.
+
+## D-053 · `tutor prompts lock` stays deferred · 2026-11-07 · pm
+Its trigger ("M3 adds the field prompts") has arrived. M3 adds two prompts, so two hashes get
+entered by hand, and the manifest contract test fails on any mismatch. The cost of a mistake is
+one failed test.
+**Why.** It's tooling that teaches nothing about harnesses or evals. New trigger: a hand-entered
+hash causes a wrong commit, or there are more than 5 prompt versions.
+
+## D-054 · Algorithm-field interfaces the T-024 tests pin · 2026-11-07 · tester
+- `tutor.fields.algorithm.algorithm(session, *, client, settings, run_id, model=None) ->
+  LLMResult[AlgorithmOutput]`, where `AlgorithmOutput.algorithms` holds 1–2 `AlgorithmLabel`s.
+  It returns the whole `LLMResult`, not just the output, so the runner gets tokens and cost
+  without a second path. The prompt version comes from `settings.prompts["algorithm"]`.
+- The input is the final snapshot's code plus the problem title, difficulty and tags. It never
+  includes the verdict, test counts, runs, errors or earlier snapshots (contract
+  `test_algorithm_input.py`).
+- `predictor_named(name, *, settings=None, client=None, model=None)`. An LLM predictor outputs
+  `{"labels": [...]}` (the grader's shape) and exposes `.provider`, `.prompt_versions`,
+  `.prompt_sha256` and `.last_usage`. The record's `model` is the model id; `summary_line` prints
+  `prompt <name>-<version>, model <provider>:<model>` (rule 7). The keyword baseline keeps
+  `name@version`.
+- `tutor-eval run|estimate --model PROVIDER:MODEL`.
+**Why.** §6.3 and §8.2 name the inputs and flags but not the Python seam, so the builder would
+otherwise have to invent one.
+
+## D-055 · Failure-rule interfaces, and the decider comes from the case · 2026-11-07 · tester
+- `FailureType` in `models.py`. `fields/failure.py: failure_rule(status) -> FailureType | None`
+  (passed → none, failed_too_slow → too_slow, else None).
+- `evals/graders/failure_type_exact.py` (tester): exact match on `failure_type`; the explanation is
+  ungraded until M4 (D-052).
+- `predictor_named("failure_rules")` (`rules-v1`) applies the rules alone and raises for any other
+  status. It measures the rule-decided half before the LLM exists. Output shape for the failure
+  suite: `{"failure_type", "source", "explanation"}`.
+- `aggregates.by_decider = {"rule": {accuracy, n}, "llm": {accuracy, n}}` for the failure suite.
+  The split uses each **case's** `rule_decided` tag, never the output's `source`.
+**Why.** §8.1 asks for accuracy split by decider, so the rules can't inflate the LLM's number. If
+the split read the output, a model that labelled its own answers "rule" could move its cases into
+the rule bucket.
+
+## D-056 · Failure-field interfaces the T-026 tests pin · 2026-11-07 · tester
+- `fields/failure.failure(session, *, client, settings, run_id, model=None) -> FailureResult(output:
+  FailureOutput(failure_type, source, explanation), usage: Usage | None)`.
+- **passed**: `none`, rule, explanation NULL, and no call. **failed_too_slow**: `too_slow` by rule,
+  plus one call for the explanation only (§6.3: explanation is LLM unless passed); the model's type
+  is discarded. **Every other status**: one call, `source: "llm"`.
+- The model's type list leaves out `none`, because only Accepted is `none` and Accepted never
+  reaches the model. A `none` answer is invalid and retried. not_submitted and unknown are named
+  as such in the prompt.
+- Input: `render(condense(session))` (rule 3) plus the verdict, test counts and error text (§6.3).
+- `predictor_named("failure", ...)`: output `{failure_type, source, explanation}`, and
+  `last_usage` is None when no call was made.
+**Why.** §6.3 has the rule table but not the seam, and the too_slow case (rule type + LLM
+explanation) is easy to get wrong in either direction.
+
+## D-057 · `tutor analyze --llm` is opt-in · 2026-11-07 · tester
+- `analyze(settings, *, run_id, since=None, llm=False, client=None, model=None)`;
+  `AnalyzeReport.llm_errors`. CLI: `tutor analyze [--since] [--llm [--model PROVIDER:MODEL]]`.
+- With `--llm`, the failure and algorithm fields run through the same functions the runner calls,
+  writing `session_analysis`, `session_algorithms` and `field_provenance`. There is one provenance
+  row per field that made a call: a passed session's failure field makes none, so it gets no row
+  (its `call_id` is NOT NULL). Re-running replaces a session's rows.
+- An LLM error in one field: logged as `llm_field_failed`; that field is left NULL or without rows; the run
+  continues. A config error (e.g. an unpriced model) raises before anything is written.
+**Why.** Without the flag, analyze stays offline and free, as in T-011. Spending money should be
+asked for, not a side effect of refreshing facts. It refines T-027's Done-when ("`tutor analyze
+[--model]`") with an explicit `--llm`.

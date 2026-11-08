@@ -24,6 +24,7 @@ from tutor.condense import condense, render
 from tutor.config import Settings
 from tutor.db.migrate import MIGRATIONS_DIR, current_version, discover, refuse_capture
 from tutor.fields.deterministic import attempted_at, status, time_to_finish
+from tutor.llm import LLMClient, LLMError, ModelRef
 from tutor.logs import log_event
 from tutor.models import CondensedSession, RunEvent, Session, SubmitEvent
 
@@ -35,6 +36,7 @@ class PipelineError(Exception):
 @dataclass(frozen=True)
 class AnalyzeReport:
     stored: int
+    llm_errors: int = 0
 
 
 @dataclass(frozen=True)
@@ -122,6 +124,70 @@ UPSERT_TIMELINE = """INSERT INTO condensed_timelines (session_id, condenser_vers
     est_tokens = excluded.est_tokens, truncated = excluded.truncated, built_at = excluded.built_at"""
 
 
+UPSERT_ANALYSIS = """INSERT INTO session_analysis (session_id, failure_type, failure_type_source, failure_explanation,
+  condenser_version, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+  ON CONFLICT(session_id) DO UPDATE SET failure_type = excluded.failure_type,
+    failure_type_source = excluded.failure_type_source, failure_explanation = excluded.failure_explanation,
+    condenser_version = excluded.condenser_version, updated_at = excluded.updated_at"""
+DELETE_ALGORITHMS = "DELETE FROM session_algorithms WHERE session_id = ?"
+INSERT_ALGORITHM = "INSERT INTO session_algorithms (session_id, label) VALUES (?, ?)"
+DELETE_PROVENANCE = "DELETE FROM field_provenance WHERE session_id = ?"
+INSERT_PROVENANCE = """INSERT INTO field_provenance (session_id, field, prompt_name, prompt_version, provider, model,
+  run_id, call_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+
+
+@dataclass
+class _LLMRows:
+    """What the LLM fields add for a batch of sessions, ready for one transaction."""
+    analysis: list[tuple]
+    clear: list[tuple]
+    algorithms: list[tuple]
+    provenance: list[tuple]
+    errors: int = 0
+
+
+def _llm_rows(sessions: list[Session], c_versions: dict[str, str], settings: Settings, *, run_id: str,
+              client: LLMClient, model: ModelRef | None, now: str, log: Path) -> _LLMRows:
+    """Run the failure and algorithm fields, the same functions the eval runner calls (§8.2).
+
+    One field failing on one session is logged and left NULL; the others still land (D-057).
+    """
+    from tutor.fields.algorithm import PROMPT as ALGO, algorithm
+    from tutor.fields.algorithm import prompt_for as algo_prompt
+    from tutor.fields.failure import PROMPT as FAIL, failure
+    from tutor.fields.failure import prompt_for as fail_prompt
+
+    prompts = {ALGO: algo_prompt(settings), FAIL: fail_prompt(settings)}
+    refs = {f: client.model_for(f, model) for f in prompts}
+    out = _LLMRows([], [], [], [])
+
+    def prov(sid: str, field: str, call_id: str) -> tuple:
+        p, ref = prompts[field], refs[field]
+        return (sid, field, p.name, p.version, ref.provider, ref.model, run_id, call_id, now)
+
+    for s in sessions:
+        sid = s.session_id
+        ftype = fsource = fexpl = None
+        try:
+            fr = failure(s, client=client, settings=settings, run_id=run_id, model=model)
+            ftype, fsource, fexpl = fr.output.failure_type.value, fr.output.source, fr.output.explanation
+            if fr.call_id is not None:
+                out.provenance.append(prov(sid, FAIL, fr.call_id))
+        except LLMError as e:
+            out.errors += 1
+            log_event("llm_field_failed", run_id=run_id, path=log, session_id=sid, field=FAIL, error=f"{type(e).__name__}: {e}")
+        out.analysis.append((sid, ftype, fsource, fexpl, c_versions[sid], now))
+        out.clear.append((sid,))
+        try:
+            ar = algorithm(s, client=client, settings=settings, run_id=run_id, model=model)
+            out.algorithms += [(sid, a.value) for a in dict.fromkeys(ar.output.algorithms)]
+            out.provenance.append(prov(sid, ALGO, ar.call_id))
+        except LLMError as e:
+            out.errors += 1
+            log_event("llm_field_failed", run_id=run_id, path=log, session_id=sid, field=ALGO, error=f"{type(e).__name__}: {e}")
+    return out
+
+
 def _write(con: sqlite3.Connection, statements: list[tuple[str, list[tuple]]]) -> None:
     """Every statement in one transaction: all of it lands, or none of it does."""
     con.execute("BEGIN")
@@ -141,12 +207,20 @@ def _loader(settings: Settings, run_id: str) -> CaptureLoader:
     return CaptureLoader(settings.paths.capture_db, mode="ro", settings=settings, run_id=run_id)
 
 
-def analyze(settings: Settings, *, run_id: str, since: date | None = None) -> AnalyzeReport:
+def analyze(settings: Settings, *, run_id: str, since: date | None = None, llm: bool = False,
+            client: LLMClient | None = None, model: ModelRef | None = None) -> AnalyzeReport:
+    """Facts and timelines always; with `llm=True` also the failure and algorithm fields (D-057)."""
     con = open_analysis_db(settings)
     try:
         log = Path(settings.paths.logs) / "pipeline.jsonl"
         now = _now()
+        if llm:   # a config error (no key, no price) stops the run before any call or write
+            client = client or LLMClient(settings)
+            for field in ("failure", "algorithm"):
+                client.price_for(field, model)
         problems, sessions, timelines = {}, [], []
+        loaded: list[Session] = []
+        c_versions: dict[str, str] = {}
         start = since_utc(since, settings) if since is not None else None
         for s in _loader(settings, run_id).iter_sessions(since=start):
             log_event("session_loaded", run_id=run_id, path=log, session_id=s.session_id, slug=s.problem.slug)
@@ -156,9 +230,20 @@ def analyze(settings: Settings, *, run_id: str, since: date | None = None) -> An
             problems[s.problem.slug] = _problem_row(s)
             sessions.append(_session_row(s, settings, run_id, now))
             timelines.append(_timeline_row(c, now))
-        _write(con, [(UPSERT_PROBLEM, list(problems.values())), (UPSERT_SESSION, sessions),
-                     (UPSERT_TIMELINE, timelines)])
-        return AnalyzeReport(stored=len(sessions))
+            loaded.append(s)
+            c_versions[s.session_id] = c.condenser_version
+        statements = [(UPSERT_PROBLEM, list(problems.values())), (UPSERT_SESSION, sessions),
+                      (UPSERT_TIMELINE, timelines)]
+        errors = 0
+        if llm:
+            assert client is not None
+            rows = _llm_rows(loaded, c_versions, settings, run_id=run_id, client=client, model=model, now=now, log=log)
+            statements += [(UPSERT_ANALYSIS, rows.analysis), (DELETE_ALGORITHMS, rows.clear),
+                           (INSERT_ALGORITHM, rows.algorithms), (DELETE_PROVENANCE, rows.clear),
+                           (INSERT_PROVENANCE, rows.provenance)]
+            errors = rows.errors
+        _write(con, statements)
+        return AnalyzeReport(stored=len(sessions), llm_errors=errors)
     finally:
         con.close()
 

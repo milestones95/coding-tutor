@@ -52,6 +52,17 @@ class StatusSource(StrEnum):
     NOT_CAPTURED = "not_captured"
 
 
+class FailureType(StrEnum):
+    """Why a session failed (eval plan; §3.2 `session_analysis.failure_type` CHECK list)."""
+
+    EDGE_CASE_MISSED = "edge_case_missed"
+    WRONG_APPROACH = "wrong_approach"
+    TOO_SLOW = "too_slow"
+    IMPLEMENTATION_BUG = "implementation_bug"
+    DID_NOT_FINISH = "did_not_finish"
+    NONE = "none"
+
+
 class AlgorithmLabel(StrEnum):
     """The fixed algorithm labels (eval plan; D-044 added PREFIX_SUM). Values equal the
     session_algorithms CHECK list in the latest migration; a unit test keeps them in step."""

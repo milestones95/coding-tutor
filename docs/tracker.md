@@ -19,7 +19,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 | M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ✅ 2026-11-03 (T-007) | One captured session loads, validates, and one logged LLM call runs |
 | M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ✅ 2026-11-03 (T-012) | Unit tests green on real + hand-built sessions; token budget measured |
 | M2 | Dataset + eval runner: 28 cases (8 real + 20 synthetic, D-045), split, eval runner (adapter deferred to M7, generator dropped: D-048) | ✅ 2026-11-07 (T-023) | Runner writes a versioned result record for a trivial grader |
-| M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
+| M3 | Algorithm type, failure reason (status is no longer an LLM field) | ✅ 2026-11-07 (T-028) | Dev baseline recorded per field |
 | M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
 | M6 | Part 2 evals | ⏸ Part 2, after Part 1 (2026-11-03) | All five graders produce a baseline |
@@ -985,6 +985,124 @@ breakdown. M3: algorithm and failure-reason fields with dev baselines. M4: timel
 judge calibration. M5–M6 (Part 2) deferred until Part 1 is done (human, 2026-11-03).
 M7: Gemini adapter, Part 1 model comparison, first test-split run.
 
+## Tasks — M3 (✅ done 2026-11-07)
+
+Planned 2026-11-07. Order: **T-024 → T-025 → T-026 → T-027 → T-028**. Algorithm first, because it
+already has a bar to beat (keyword baseline 0.83). Model: `openai:gpt-5.5` (D-018). Estimated dev
+cost at $5/$30 per 1M tokens: algorithm ≈ $0.30 per run, failure ≈ $0.65 per run; a 3-repeat run
+(for the noise band) ≈ $1 and ≈ $2. `tutor-eval estimate` gives the real figure before each run.
+The failure explanation is stored but not scored in M3: it needs the judge built in M4 (D-052).
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-024 | Algorithm field: `prompts/algorithm/v1.md` + `fields/algorithm.py`; runner predictor `algorithm` with `--model` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Algorithm type"; arch §2, §6.3, §7, §8.2 |
+| T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ✅ 2026-11-07 `/test run` | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
+| T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Failure reason"; arch §6.3, §7 |
+| T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ✅ 2026-11-07 `/test run` | arch §1, §3.2, analyzer pipeline |
+| T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | ✅ 2026-11-07 `/test run` (the human confirmed) | M3 checkpoint |
+
+### T-024 · Algorithm field
+**Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Algorithm type"; arch §6.3, §7, §8.2; D-051.
+**Done when:**
+1. `algorithm(session, *, client) -> AlgorithmOutput` returns 1–2 `AlgorithmLabel`s from one
+   `LLMClient.structured` call. The input is the final code plus the problem's title and tags (as
+   hints, §6.3), never the verdict, run results or any `evals/data/` file.
+2. `prompts/algorithm/v1.md` follows §7: front matter, `$` variables, a manifest entry; its
+   version is pinned in `tutor.toml [prompts]`.
+3. `tutor-eval run --suite algorithm --split dev --predictor algorithm --model openai:gpt-5.5`
+   writes a result record that names the prompt version and sha, the model and the dataset, with
+   real and synthetic accuracy listed separately.
+4. Contract: a verdict sentinel never reaches the algorithm prompt; the label and SDK fences still
+   pass. Acceptance tests use the fake LLM client, with no network.
+5. One dev run (repeats 1) is recorded in the task log with versions, next to 0.83 @ keyword-v1.
+**Not included:** tuning past v1 (that comes after the baseline); the noise band (T-028); writing
+to `analysis.db` (T-027).
+
+**Log**
+- 2026-11-07 `/test write` — `tests/contract/test_algorithm_input.py` (1: no verdict, test count, run result or earlier code reaches the model, checked with sentinels) and `tests/acceptance/test_t024_algorithm.py` (14: labels from one call; final code, title and tags in the input; 0, 3 or unknown labels retried; logged with field and prompt version; explicit model; prompt pinned and in the manifest; every label offered and no dataset problem named; runner record names provider, model, prompt version and sha, cost and tokens per case, accuracy; no label reaches the field; provider error scored, not a crash; `predictor_named` takes a model; `--model` flag). Interfaces in D-054. All 15 fail for the right reason: the module, prompt and flag are missing.
+- 2026-11-07 `/test write` correction (two test bugs found during `/build`; no expectation changed): `AlgorithmLabel.hash_map` → `HASH_MAP` (the enum's member names are uppercase), and the explicit-model test now gives its probe model a price, because the client correctly refuses an unpriced model (T-006).
+
+- 2026-11-07 `/build T-024` → 🔄. `prompts/algorithm/v1.md`: the 19 labels, each with a one-line meaning, and the rules "label what the code does, not what the problem needs" and "tags are hints". It's in the manifest and pinned in `tutor.toml`. `fields/algorithm.py` (`AlgorithmOutput`, 1–2 labels; `algorithm()`, one `structured()` call). `runner.AlgorithmPredictor`: per-case cost and tokens from `last_usage`, and calls logged under the record's run id. The summary line names the prompt and model. `tutor-eval run|estimate --model`; `run` prints the estimate first. Tests: 15 from `/test write` + 5 unit; suite 449 passed / 23 skipped; ruff and mypy clean. **Dev eval:** `algorithm algorithm_overlap 0.94 @ prompt algorithm-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.92 (n=13) | errors 0 | consistency 1.00 | $0.0939 | run 20261108T015121Z-b0f94c13`, vs **0.83 @ keyword-v1** (+0.11). One miss (algorithm-dev-017, syn-019): it predicted `dfs_backtracking` for a recursive two-ends palindrome check labelled `two_pointers`, so the v1 description of dfs_backtracking ("including plain recursion") may be pulling it. Left for T-028's finding, not tuned now. The LLM fixed two keyword misses (dev-007 greedy, dev-013 sliding window). The estimate ($0.45) was 5× the actual: 861 tokens in and 31 out per call on average.
+- 2026-11-07 `/test run` → ✅. Gates: 454 passed, 23 skipped (the T-015 tests, deferred), ruff and mypy clean. The builder's commit `36859db` touches no judging files (the `a7c88a9` test fix is the tester's own). Independent dev rerun: `algorithm algorithm_overlap 0.94 @ prompt algorithm-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.92 (n=13) | errors 0 | $0.0911 | run 20261108T015430Z-9bbe4850`, the same as the builder's run; +0.11 over 0.83 @ keyword-v1. Noise band: none recorded, and there is no earlier LLM number to regress from; T-028 measures it (3 repeats). Same single miss (algorithm-dev-017). Done-when 1–5 met.
+
+### T-025 · Failure type rules + grader
+**Milestone:** M3 · **Size:** S · **Owner:** build · **Traces to:** arch §6.3 rule table, §8.3 `by_decider`.
+**Done when:**
+1. `FailureType` (`StrEnum`, the six values in §3.2's CHECK) is in `models.py`.
+2. `failure_rule(status) -> FailureType | None`: `passed` → `none`, `failed_too_slow` → `too_slow`,
+   anything else → `None` (meaning the LLM decides).
+3. The tester's `failure_type_exact` grader scores exact match. The runner reports `by_decider.rule`
+   and `by_decider.llm` separately, so rules can't inflate the LLM number.
+4. A dev run with a rules-only predictor (the LLM cases scored as errors) records rule-decided
+   accuracy with versions.
+**Not included:** the LLM call (T-026).
+
+**Log**
+- 2026-11-07 `/test write` — `evals/graders/failure_type_exact.py` (tester grader) and `tests/acceptance/test_t025_failure_rules.py` (16): FailureType = the CHECK list; the rules for all 7 statuses; 5 grader cases (exact match; a missing type scores 0; the explanation is not graded); the rules predictor through the runner (rule 1.00 n=2, llm 0.00 n=1, 1 error, summary shows both); the decider split taken from the case, not the output; the algorithm suite has no split. Interfaces in D-055. 10 fail for the right reason (missing `FailureType`, `fields/failure.py`, failure graders and predictor); the 6 grader and no-split tests pass.
+- 2026-11-07 `/build T-025` → 🔄. `models.FailureType`; `fields/failure.py` (`RULES`, `failure_rule`); runner: `graders_for("failure")`, `FailureRulesPredictor` (`rules-v1`, uses `deterministic.status`), each row's `decider` taken from the case's `rule_decided` tag, `aggregates.by_decider`, and the summary line shows both halves. Tests: 16 from `/test write` + 3 unit; suite 473 passed / 23 skipped; ruff and mypy clean. **Dev eval (rules only):** `failure failure_type_exact 0.53 @ predictor failure_rules@rules-v1, dataset dev-v1, condenser c1, judge — | real 0.83 (n=6), synthetic 0.38 (n=13), rule 1.00 (n=10), llm 0.00 (n=9) | errors 9 | $0.0000`. The rules agree with every rule-decided human label; the 9 LLM cases are errors until T-026.
+- 2026-11-07 `/test run` → ✅. Gates: 473 passed, 23 skipped (T-015, deferred), ruff and mypy clean. The builder's commit `53ee0b3` touches only `src/` and `tests/unit/`. Independent rerun: `failure failure_type_exact 0.53 @ predictor failure_rules@rules-v1, dataset dev-v1, condenser c1, judge — | rule 1.00 (n=10), llm 0.00 (n=9) | errors 9 | $0.0000`, the same as the build. Rule-decided baseline row added. Done-when 1–4 met.
+
+### T-026 · Failure field (LLM part)
+**Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Failure reason"; arch §6.3, §7.
+**Done when:**
+1. `failure(session, *, client) -> FailureOutput(type, source, explanation)`. The rule from T-025
+   runs first; otherwise one structured call reads the rendered condensed timeline (`condense` +
+   `render`, rule 3) plus the verdict, test counts and error.
+2. When status is `not_submitted` or `unknown`, `none` is not allowed, and the prompt says the
+   outcome was unknown or not submitted. When status is `passed`, the explanation is NULL.
+3. `prompts/failure/v1.md` follows §7 and is pinned.
+4. A dev run records failure type accuracy, LLM-decided and rule-decided, with versions.
+   Explanations are kept in the record, unscored (D-052).
+5. Contract: the human's labels (`expected`) never reach the prompt; one condenser.
+**Not included:** judging the explanation (M4).
+
+**Log**
+- 2026-11-07 `/test write` — `tests/acceptance/test_t026_failure.py` (12): passed → none by rule with no call; too_slow keeps the rule type and takes only the LLM explanation; wrong answer decided by the model; the model may not answer `none` (3 statuses); not submitted / unknown named in the prompt; the input is `render(condense())` unchanged plus verdict, counts and error; logged with field and prompt version; prompt pinned, in the manifest, offering all 5 non-none types and naming no dataset problem; runner record (deciders split, versions, $0 for the no-call case, cost 0.04); no key fact, note or label reaches the model. Interfaces in D-056. All 12 fail for the right reason (no `failure()`, prompt or predictor).
+- 2026-11-07 `/build T-026` → 🔄. `prompts/failure/v1.md`: 5 type definitions; the rules "base the answer only on the timeline" and "never-submitted is usually did_not_finish unless the code shows a clearer cause"; `$decided` tells the model when the verdict already fixed the type. It's pinned and in the manifest. `fields/failure.py`: `failure()` (passed: no call; too slow: rule type plus LLM explanation; otherwise the LLM decides; `none` is not in the model's schema) and `FailureLLMOutput`, `FailureOutput`, `FailureResult`. `runner.FailurePredictor`. Tests: 12 from `/test write` + 3 unit; suite 488 passed / 23 skipped; ruff and mypy clean. **Dev eval:** `failure failure_type_exact 0.95 @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 0.83 (n=6), synthetic 1.00 (n=13), rule 1.00 (n=10), llm 0.89 (n=9) | errors 0 | consistency 1.00 | $0.2176 | run 20261108T021736Z-cc3302f2` (estimate $0.34). One LLM miss: failure-dev-003 (real) is labelled `wrong_approach`; the model said `edge_case_missed`, citing a `while L < R` bound that skips the last element. It's a judgment boundary, and is left for T-028's finding. The 13 explanations are stored, unscored (D-052).
+- 2026-11-07 `/test run` → ✅. Gates: 488 passed, 23 skipped (T-015, deferred), ruff and mypy clean. The builder's commit `393a83d` touches only `src/`, `prompts/` (not judges), `tutor.toml` and `tests/unit/`. Independent rerun: `failure failure_type_exact 0.89 @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | rule 1.00 (n=10), llm 0.78 (n=9) | errors 0 | $0.2360 | run 20261108T022658Z-c7af78b0`, against the build run's llm 0.89. Same code and prompt, so it's **noise, not a regression**: one case flipped, failure-dev-016 (labelled did_not_finish; run 1 did_not_finish, run 2 implementation_bug, citing real link bugs in unfinished code). Its `consistency` of 1.00 is within a run only (repeats 1); across runs the answer changed. This is the first sign of the noise band, which T-028 measures with 3 repeats. failure-dev-003 missed both times. Done-when 1–5 met.
+
+### T-027 · Pipeline writes the LLM fields
+**Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** arch §1, §3.2 (`session_analysis.failure_*`, `session_algorithms`).
+**Done when:**
+1. `tutor analyze [--model]` fills `failure_type`, `failure_type_source`, `failure_explanation` and
+   `session_algorithms` rows, through the same field functions the runner calls (§8.2).
+2. Re-running is idempotent: there are no duplicate algorithm rows, and `field_provenance` records the prompt
+   version and model per field.
+3. An LLM error on one session is logged and leaves that session's LLM fields NULL; the run goes
+   on to the other sessions.
+4. Acceptance tests run on a hand-built session with the fake client; no network.
+**Not included:** the timeline summary (M4); re-analysis triggers.
+
+**Log**
+- 2026-11-07 `/test write` — `tests/acceptance/test_t027_pipeline_llm.py` (8, fake LLM that answers by schema): fields written for passed / unknown / wrong-answer sessions (rule `none`, LLM type and explanation, labels, condenser_version); no failure call for a passed session; provenance names prompt, model, run and a `call_id` that joins to `llm_calls.jsonl`; a re-run replaces rows; an LLM error leaves one field NULL, the run goes on, and `llm_field_failed` is logged; a config error writes nothing; without `--llm` there are no calls and no LLM rows; the CLI has `--llm` and `--model`. Interfaces in D-057 (opt-in `--llm`). All 8 fail for the right reason. The T-011 tests stay unchanged (analyze without `--llm`).
+- 2026-11-07 `/build T-027` → 🔄. `pipeline.analyze(..., llm, client, model)`: with `llm`, `client.price_for` checks both fields first (a config error writes nothing); `_llm_rows` runs `failure()` and `algorithm()` per session (the runner's functions), catches `LLMError` per field (logged as `llm_field_failed`, field left NULL), and builds the `session_analysis` upserts, a delete + insert for `session_algorithms` and `field_provenance`, all in the facts' one transaction. `FailureResult.call_id`; `LLMClient.price_for`; `tutor analyze --llm --model`. Tests: 8 from `/test write` + 3 unit; T-011 / T-012 unchanged and passing; suite 499 passed / 23 skipped; ruff and mypy clean. Dev eval: n/a (field functions unchanged). Not run on real data: that costs money and is the human's call.
+- 2026-11-07 `/test run` → ✅. Gates: 499 passed, 23 skipped (T-015, deferred), ruff and mypy clean. The builder's commit `5346d95` touches only `src/`, `tests/unit/` and the tracker. No dev eval: the field outputs are unchanged (`FailureResult` only gains `call_id`; `LLMClient.price_for` only reads), and the T-024 / T-026 acceptance tests still pass. Done-when 1–4 met (idempotent re-run, per-field error isolation, provenance joining to `llm_calls.jsonl`, fake client only). Not run on real data (the human's call).
+
+### T-028 · M3 checkpoint
+**Milestone:** M3 · **Size:** S · **Owner:** test · **Traces to:** M3 checkpoint "dev baseline recorded per field".
+**Done when:**
+1. Algorithm and failure dev runs with `--repeats 3`: value, noise band and consistency recorded
+   in Baselines with versions.
+2. A written finding in the task log: which dev cases the model misses, which the keyword baseline
+   misses, and whether the model beats it where there is no code cue (e.g. DP, backtracking; the
+   human's note, 2026-11-07).
+3. The human confirms the finding.
+**Not included:** prompt v2 (a new task, after the finding); the test split (M7).
+
+**Log**
+- 2026-11-07 `/test` (one pass, at the human's request): `--repeats 3` on both fields.
+  `algorithm algorithm_overlap 0.94 @ prompt algorithm-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.92 (n=13) | errors 0 | $0.2928 | run 20261108T024058Z-27b953d5`
+  and `failure failure_type_exact 0.96 @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | rule 1.00 (n=10), llm 0.93 (n=9) | errors 0 | $0.6867 | run 20261108T024206Z-5e2a1fa7`.
+  The record's `consistency` (0.94, 0.32) compares whole outputs; for failure that includes the explanation's wording, so 0.32 understates it. Type and label consistency, computed from the records, are in Baselines.
+  **Finding** (5 runs per field: 2 single + 3 repeats):
+  1. **Algorithm: one stable miss, no noise.** All 5 runs scored 0.94. algorithm-dev-017 (Valid Palindrome, a recursive two-ends check, labelled `two_pointers`) was answered `dfs_backtracking` 5/5. v1 describes dfs_backtracking as "including plain recursion that explores choices"; recursion that explores no choice is read as backtracking. A rule-level fix exists ("recursion that walks inward from both ends is two_pointers"), but it is unproven on n=1. The human decides: v2 task, relabel, or leave.
+  2. **Algorithm: the label choice varies, the score doesn't.** dev-011 (1 or 2 graph labels) and dev-014 (bfs vs bfs + tree_traversal) change between runs. "Any overlap counts" absorbs it, so it is correct 5/5.
+  3. **Failure: dev-003 is a stable disagreement.** It is right 1/5: `edge_case_missed` 4 times vs the human's `wrong_approach` (real Sort Colors session; an off-by-one loop bound in a selection sort). It's a label-boundary case: is the idea wrong, or an edge case of a workable idea? The human decides whether the label stands.
+  4. **Failure: dev-016 is noise.** It's right 4/5 (`did_not_finish`, once `implementation_bug`): an unfinished LRU Cache that also has real link bugs. Both readings are visible in the session, so this is the source of the ±0.11 band and is not a prompt fix.
+  5. **vs the keyword baseline (the human's DP / backtracking point).** The model beats keywords where the code has no cue: dev-007 (greedy, keyword found nothing) and dev-013 (sliding window, keyword said two_pointers). But in this dev set, the dynamic_programming and dfs_backtracking cases (dev-003, dev-010, dev-011) *do* have cues the keywords catch. So the dev set barely tests the human's concern, and the +0.11 margin rests on 2 cases. That is a coverage gap for the next dataset version (cue-free DP / backtracking), not something to tune.
+  Cost: $0.98. Needs the human's confirmation of findings 1 – 5 (and a decision on 1 and 3) to close.
+- 2026-11-07 **The human confirmed findings 1 – 5.** Labels are unchanged (no decision to relabel dev-003 or dev-017, so `dev-v1` stands), and there is no prompt v2 now. → ✅; **M3 ✅**. Gates at close: 499 passed, 23 skipped; ruff and mypy clean.
+
 ---
 
 ## Eval baselines (dev)
@@ -995,9 +1113,9 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 
 | Metric | Value | Noise band | Prompt | Model | Dataset | Judge | Date |
 |---|---|---|---|---|---|---|---|
-| failure type accuracy (LLM-decided) | | | | | dev-v1 | — | |
-| failure type accuracy (rule-decided) | | | — | — | dev-v1 | — | |
-| algorithm accuracy | | | | | dev-v1 | — | |
+| failure type accuracy (LLM-decided) | **0.89** median (0.78 – 1.00 over 5 runs; n=9) | **±0.11** = one case (runs: 0.89, 0.78, 0.89, 0.89, 1.00); type consistency 17/19 | failure-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
+| failure type accuracy (rule-decided) | **1.00** (n=10) | 0 (deterministic; consistency 1.00) | — | rules-v1 | dev-v1 | — | 2026-11-07 |
+| algorithm accuracy | **0.94** overall (real 1.00 n=5, synthetic 0.92 n=13) | **0.00** (0.94 in all 5 runs: 2 single + 3 repeats); label consistency 16/18 | algorithm-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
 | algorithm — keyword baseline | **0.83** overall (real 1.00 n=5, synthetic 0.77 n=13) | 0 (deterministic; consistency 1.00) | — | keyword-v1 | dev-v1 | — | 2026-11-07 |
 | failure explanation (judge) | | | | | dev-v1 | | |
 | timeline checklist (judge) | | | | | dev-v1 | | |
@@ -1035,7 +1153,7 @@ Every item has a trigger: the condition that would make it worth doing.
 | Per-session planning / coding / debugging minutes | Open question in eval plan | After M6, if aggregate questions fail for lack of data |
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
-| `tutor prompts lock` (write manifest entries by command) | Two prompts so far, one hash entered by hand (D-030); the contract test catches any mismatch | M3 adds the field prompts, or a hand-entered hash causes a wrong commit |
+| `tutor prompts lock` (write manifest entries by command) | M3 adds only two prompts; the contract test catches any wrong hash (re-checked 2026-11-07, D-053) | A hand-entered hash causes a wrong commit, or more than 5 prompt versions exist |
 | `algorithm_labels` table instead of the label CHECK (D-050) | One label gap so far ("sorting"), handled with no label | A second label needs adding: do this migration instead, then labels are rows |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
@@ -1074,3 +1192,5 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | T-016, T-022 | T-017, T-019, T-021, T-023 (each awaiting the human's confirmation) | — | **M2 checkpoint run (T-023):** `tutor-eval run --suite algorithm --split dev --predictor keyword_baseline` → `algorithm algorithm_overlap 0.83 @ predictor keyword_baseline@keyword-v1, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.77 (n=13) | errors 0 | consistency 1.00 | $0.0000`. The versioned record is in `evals/results/algorithm/` (gitignored), and the Baselines row is added. `--split test` without a milestone was refused. **Finding:** the keyword baseline is a high bar (0.83). The real sessions hit 1.00 partly because their natural comments name the technique, so the M3 algorithm field must beat 0.83, especially on synthetic cases. |
 | 2026-11-07 | — | T-021 | — | **The human approved the 19 dev / 9 test split** ("it's fine to use the sessions i gave you for test"). Their note for M3: keyword cues can't reliably show DP or backtracking, so the 0.83 baseline is inflated by algorithms with obvious code signatures. The per-label scores should be read alongside it. |
 | 2026-11-07 | T-017, T-019, T-021, T-023; **M2 ✅** | — | — | **`/test run`, M2 close.** The human confirmed T-017 (checker rules), T-019 (the 20 session files as final), T-021 (the split) and T-023 (the 0.83 keyword baseline). Gates: 434 passed / 23 skipped (T-015 deferred), ruff clean, mypy clean, `checks.py` 20/20. The judging files in the branch diff are the tester's own (tester-owned tasks), not the builder's. M3 is next: `/pm plan`. |
+| 2026-11-07 | — | — | T-024 – T-028 | `/pm plan` M3: 5 tasks, algorithm first (it has a 0.83 bar to beat). Failure explanation stored but unscored until the M4 judge (D-052). `tutor prompts lock` stays deferred (D-053). Estimated dev cost: about $0.30 (algorithm) and $0.65 (failure) per run. Not planned: prompt v2s (after T-028's finding), the timeline (M4), the test split (M7). |
+| 2026-11-07 | T-024 – T-028; **M3 ✅** | — | — | M3 closed: algorithm 0.94 (noise 0.00) @ algorithm-v1; failure LLM-decided 0.89 ±0.11, rule 1.00 @ failure-v1; model openai:gpt-5.5, dataset dev-v1. The human confirmed T-028's 5 findings. Open idea (not yet through `/pm idea`): dataset v2 aimed at cue-free DP / backtracking and more LLM-decided failure cases, then prompt v2s. M3 eval spend ≈ $1.80. |
