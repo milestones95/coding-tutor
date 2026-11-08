@@ -154,7 +154,14 @@ def test_the_runner_records_versions_cost_and_the_sentence_count(root, settings,
     long = " ".join(f"Sentence number {i} happened." for i in range(1, 8))
     client, fake = _client(settings, [{"summary": SUMMARY}, {"summary": long}])
     pred = predictor_named("timeline", settings=settings, client=client)
-    rec = run("timeline", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results")
+    # T-033 made the calibrated judge the suite's default grader; this test is about the predictor's
+    # record, so it names the code-counted grader explicitly (`/test write` correction, 2026-11-08)
+    import sys
+    sys.path.insert(0, str(REPO))
+    from evals.graders.sentence_count import SentenceCount
+
+    rec = run("timeline", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results",
+              graders=[SentenceCount()])
     assert len(fake.calls) == 2
     assert rec["prompt_versions"] == {"timeline": "v1"}
     assert rec["prompt_sha256"] == {"timeline": load_prompt("timeline", "v1").sha256}
