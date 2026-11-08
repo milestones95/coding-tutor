@@ -1105,7 +1105,7 @@ to `analysis.db` (T-027).
 
 ## Tasks — active milestone: M4
 
-Planned 2026-11-07. Order: **T-029 → T-030 → T-031 → T-032 → T-033 → T-034 → T-035**. The
+Planned 2026-11-07. Order: **T-029 → T-030 → T-031 → T-032 → T-033 → T-034 → T-036 → T-035** (T-036 added 2026-11-08). The
 timeline is the hardest field to label and grade (eval plan, build order), so the judge is
 trusted only after it agrees with the human's hand grades at ≥ 85% (rule 8). **Human work in
 M4:** approaches and final approach for the 8 real sessions (T-029), hand grades for 20 timeline
@@ -1122,6 +1122,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 | T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ✅ | arch §8.3, §8.4; rule 8 |
 | T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ⬜ | eval plan "Checking the judge"; rule 8 |
 | T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ⬜ | eval plan "Failure explanation"; D-052 |
+| T-036 | Timeline prompt v2: a general definition of "on the right track"; measured against v1 with the calibrated judge | build | S | required | ⬜ | eval plan "Summary checklist" (first approach on the right track); T-033 finding |
 | T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
 
 ### T-029 · Timeline labels for the real sessions
@@ -1210,6 +1211,16 @@ content in any log (counts only).
    as in T-033.
 3. The human's confirmation is in the log.
 **Not included:** changing the failure prompt.
+
+### T-036 · Timeline prompt v2: define "on the right track"
+**Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** eval plan "Says whether my first approach was on the right track"; finding in T-033's calibration review.
+**Why:** in both T-031 dev runs, timeline-v1 called the first approach "on the right track" on all 5 sessions the human labelled off track (10/10 summaries). The facts were right; v1 never defines the term, and the model reads it as "a sensible idea that could be fixed", where the human means "would pass within the problem's limits if implemented correctly".
+**Done when:**
+1. `prompts/timeline/v2.md` defines "on the right track" as a general rule (an idea that would pass within the problem's limits if implemented correctly; correct-but-too-slow, or needing a rewrite to pass, is not on track). No problem, slug or dataset example is named (rule 9). v1 stays as it is; `tutor.toml` pins v2.
+2. A dev run of v2 graded by the **calibrated** timeline judge, with `checklist.first_approach` and `timeline_checklist` compared to v1 under the same judge version.
+3. No other checklist item drops outside the noise band.
+**Not included:** the failure prompt; any change to labels or the judge; test-split runs.
+**Test assets:** required (`/test write T-036` before `/build`).
 
 ### T-035 · M4 checkpoint
 **Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** M4 checkpoint "Judge agreement ≥ 85% recorded".
@@ -1315,3 +1326,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | T-024 – T-028; **M3 ✅** | — | — | M3 closed: algorithm 0.94 (noise 0.00) @ algorithm-v1; failure LLM-decided 0.89 ±0.11, rule 1.00 @ failure-v1; model openai:gpt-5.5, dataset dev-v1. The human confirmed T-028's 5 findings. Open idea (not yet through `/pm idea`): dataset v2 aimed at cue-free DP / backtracking and more LLM-decided failure cases, then prompt v2s. M3 eval spend ≈ $1.80. |
 | 2026-11-07 | — | — | T-029 – T-035 | `/pm plan` M4: 7 tasks (real-session timeline labels, the timeline suite, the timeline field, runner judge support, two judges, each calibrated on 20 hand grades, checkpoint). Judge model is gpt-5.5 for now (D-058). Human work: 8 timeline labels and 40 hand grades. Not planned: the dataset v2 / prompt v2 idea (still to go through `/pm idea`); the test split (M7). |
 | 2026-11-08 | — | — | — | `/pm idea` dataset v2 (the human asked for a todo after T-030 found 0 corrected sessions in the test split; merges the open T-028 idea): **Deferred**, trigger after M4 ✅ / before M7. |
+| 2026-11-08 | — | — | T-036 | `/pm idea` define "on the right track" in the timeline prompt (the human asked for the task after T-033's review): **Add** as T-036, before the checkpoint so T-035 records the better prompt. Teaches a measured prompt iteration with a calibrated judge; displaces nothing (M4 order gains one S task). |
