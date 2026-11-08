@@ -990,3 +990,15 @@ run (repeat noise is measured at T-035); the set has only one kind of miss ("fir
 the other four items are calibrated on "met" cases only; and the judge is the same model as the
 field (D-058). **Revisit** when T-036 produces summaries with other kinds of mistakes, and at M7
 with a Claude judge.
+
+## D-065 · Failure-explanation judge interfaces · 2026-11-08 · test
+- `evals.graders.failure_explanation_judge.FailureExplanationJudge`: name `failure-explanation-judge`,
+  version `v1`, kind `llm_judge`, field `failure_explanation_judge`. Two items, `consistent` and
+  `no_invented_cause`, each `{reason, met}`. Grades: `explanation_checklist` (share met), then
+  `explanation.<item>`. A session with no explanation (passed) gets no grades.
+- The judge's reference is the failure case's own `expected` (the human's failure type + key facts),
+  not the timeline suite's story, so no dataset file changes. The condensed timeline comes from
+  `ctx.session`, as for the timeline judge (D-062).
+- Pass condition as D-063: agreement ≥ 0.85 item by item, and misses caught ≥ 70%.
+**Why.** The eval plan's checklist for the explanation is exactly these two lines. Reusing the failure
+case's labels keeps `dev-v1` frozen; key facts already say what failed.

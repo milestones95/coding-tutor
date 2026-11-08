@@ -1216,6 +1216,8 @@ content in any log (counts only).
    as in T-033.
 3. The human's confirmation is in the log.
 **Not included:** changing the failure prompt.
+**Log:**
+- 2026-11-08 · `/test write` — `prompts/judges/failure_explanation/v1.md` (2 items: consistent, no_invented_cause; reads the human's failure type + key facts and the condensed timeline), `evals/graders/failure_explanation_judge.py` (`explanation_checklist` + per-item grades; no grades for a passed session), `calibrate_judge.py` now takes `failure_explanation`, prompt pinned in the manifest. `tests/acceptance/test_t034_failure_explanation_judge.py` (12): 9 pass; 3 calibration-set tests fail as expected (no human grades yet). 20 explanations picked from the 65 stored in the three M3 dev runs: one per failing case from `20261108T021736Z-cc3302f2` (13) plus 7 from the other runs, chosen for variety (3 more on the case the field mislabels, the implementation_bug variant, specific-detail variants). Tester proposes grades (6 not-met); the human decides. Runner wiring (`graders_for("failure")`) is not in this task: T-035 needs it.
 
 ### T-036 · Timeline prompt v2: define "on the right track"
 **Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** eval plan "Says whether my first approach was on the right track"; finding in T-033's calibration review.
