@@ -921,3 +921,15 @@ object, because the judge reads it as text. `story.on_track_algorithms` stays ou
 checklist: it says what would have worked, which a summary of what happened never needs (D-039).
 The timeline cases reuse dev-v1's split (seeded draw, same rows), so no session changes split and
 the failure / algorithm cases stay byte-identical; the new files start at `dev-v1` / `test-v1`.
+
+## D-060 · Timeline field interfaces; length is measured, not enforced · 2026-11-08 · test
+`tutor.fields.timeline`: `PROMPT = "timeline"`, `TimelineOutput(summary: str, non-empty)`,
+`timeline(session, *, client, settings, run_id, model=None) -> LLMResult[TimelineOutput]`: one
+structured call whose input contains `render(condense(session))` unchanged (rule 3). Runner:
+`predictor_named("timeline")` → `{"summary"}`, `prompt_versions {"timeline": "v1"}`;
+`graders_for("timeline")` → `[SentenceCount]` until the judge joins (T-033). `analyze --llm` writes
+`session_analysis.timeline_summary` and a `timeline_summary` provenance row (prompt_name
+`timeline`); no migration, 0001 already has both. **The 3–5 sentence length is asked for in the
+prompt but not enforced by the schema**: a schema check would retry until the count fits and the
+`at_most_5_sentences` metric would always read 1.00, hiding how often the model overruns. Code
+counts sentences (`evals/graders/sentence_count.py`), so the judge never does arithmetic.

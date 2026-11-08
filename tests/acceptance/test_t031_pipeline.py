@@ -11,7 +11,8 @@ import json
 
 import pytest
 
-from test_t027_pipeline_llm import A, B, D, Router, _run, env, q  # noqa: F401  (fixture reuse)
+from test_t027_pipeline_llm import A, B, D, Router, _run, q
+from test_t027_pipeline_llm import env as env  # noqa: F401  (the fixture, reused)
 
 SUMMARY = "You tried one idea. It ended as the verdict says."
 
