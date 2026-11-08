@@ -999,7 +999,7 @@ The failure explanation is stored but not scored in M3: it needs the judge built
 | T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ✅ 2026-11-07 `/test run` | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
 | T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Failure reason"; arch §6.3, §7 |
 | T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ✅ 2026-11-07 `/test run` | arch §1, §3.2, analyzer pipeline |
-| T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | ⬜ | M3 checkpoint |
+| T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | 🔄 ran 2026-11-07; awaiting the human's confirmation | M3 checkpoint |
 
 ### T-024 · Algorithm field
 **Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Algorithm type"; arch §6.3, §7, §8.2; D-051.
@@ -1089,6 +1089,19 @@ to `analysis.db` (T-027).
 3. The human confirms the finding.
 **Not included:** prompt v2 (a new task, after the finding); the test split (M7).
 
+**Log**
+- 2026-11-07 `/test` (one pass, at the human's request): `--repeats 3` on both fields.
+  `algorithm algorithm_overlap 0.94 @ prompt algorithm-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.92 (n=13) | errors 0 | $0.2928 | run 20261108T024058Z-27b953d5`
+  and `failure failure_type_exact 0.96 @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | rule 1.00 (n=10), llm 0.93 (n=9) | errors 0 | $0.6867 | run 20261108T024206Z-5e2a1fa7`.
+  The record's `consistency` (0.94, 0.32) compares whole outputs; for failure that includes the explanation's wording, so 0.32 understates it. Type and label consistency, computed from the records, are in Baselines.
+  **Finding** (5 runs per field: 2 single + 3 repeats):
+  1. **Algorithm: one stable miss, no noise.** All 5 runs scored 0.94. algorithm-dev-017 (Valid Palindrome, a recursive two-ends check, labelled `two_pointers`) was answered `dfs_backtracking` 5/5. v1 describes dfs_backtracking as "including plain recursion that explores choices"; recursion that explores no choice is read as backtracking. A rule-level fix exists ("recursion that walks inward from both ends is two_pointers"), but it is unproven on n=1. The human decides: v2 task, relabel, or leave.
+  2. **Algorithm: the label choice varies, the score doesn't.** dev-011 (1 or 2 graph labels) and dev-014 (bfs vs bfs + tree_traversal) change between runs. "Any overlap counts" absorbs it, so it is correct 5/5.
+  3. **Failure: dev-003 is a stable disagreement.** It is right 1/5: `edge_case_missed` 4 times vs the human's `wrong_approach` (real Sort Colors session; an off-by-one loop bound in a selection sort). It's a label-boundary case: is the idea wrong, or an edge case of a workable idea? The human decides whether the label stands.
+  4. **Failure: dev-016 is noise.** It's right 4/5 (`did_not_finish`, once `implementation_bug`): an unfinished LRU Cache that also has real link bugs. Both readings are visible in the session, so this is the source of the ±0.11 band and is not a prompt fix.
+  5. **vs the keyword baseline (the human's DP / backtracking point).** The model beats keywords where the code has no cue: dev-007 (greedy, keyword found nothing) and dev-013 (sliding window, keyword said two_pointers). But in this dev set, the dynamic_programming and dfs_backtracking cases (dev-003, dev-010, dev-011) *do* have cues the keywords catch. So the dev set barely tests the human's concern, and the +0.11 margin rests on 2 cases. That is a coverage gap for the next dataset version (cue-free DP / backtracking), not something to tune.
+  Cost: $0.98. Needs the human's confirmation of findings 1 – 5 (and a decision on 1 and 3) to close.
+
 ---
 
 ## Eval baselines (dev)
@@ -1099,9 +1112,9 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 
 | Metric | Value | Noise band | Prompt | Model | Dataset | Judge | Date |
 |---|---|---|---|---|---|---|---|
-| failure type accuracy (LLM-decided) | **0.78 – 0.89** over 2 runs (0.89, then 0.78; n=9) | ≥ 0.11 seen (1 case flips); measured in T-028 | failure-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
+| failure type accuracy (LLM-decided) | **0.89** median (0.78 – 1.00 over 5 runs; n=9) | **±0.11** = one case (runs: 0.89, 0.78, 0.89, 0.89, 1.00); type consistency 17/19 | failure-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
 | failure type accuracy (rule-decided) | **1.00** (n=10) | 0 (deterministic; consistency 1.00) | — | rules-v1 | dev-v1 | — | 2026-11-07 |
-| algorithm accuracy | **0.94** overall (real 1.00 n=5, synthetic 0.92 n=13) | not yet measured (T-028); two single runs both gave 0.94 | algorithm-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
+| algorithm accuracy | **0.94** overall (real 1.00 n=5, synthetic 0.92 n=13) | **0.00** (0.94 in all 5 runs: 2 single + 3 repeats); label consistency 16/18 | algorithm-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
 | algorithm — keyword baseline | **0.83** overall (real 1.00 n=5, synthetic 0.77 n=13) | 0 (deterministic; consistency 1.00) | — | keyword-v1 | dev-v1 | — | 2026-11-07 |
 | failure explanation (judge) | | | | | dev-v1 | | |
 | timeline checklist (judge) | | | | | dev-v1 | | |
