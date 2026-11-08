@@ -1248,6 +1248,7 @@ content in any log (counts only).
 **Test assets:** required.
 **Log:**
 - 2026-11-08 · `/test write` — `tests/acceptance/test_t037_failure_judge_runner.py` (10): graders_for("failure") order; a fake-LLM failure run judges only the explanation (no call for the passed session), accuracy still the type, `by_metric.explanation_checklist`, `record.judge`, judge cost per row; `_is_calibrated` needs the latest entry for that exact version at ≥ 0.85 *and* `accept` (6 cases); the committed file reads timeline v1 ✓, explanation v2 ✓, explanation v1 ✗. 5 fail as expected, 5 pass.
+- 2026-11-08 · `/test write` correction — `test_t026_failure.py::test_the_runner_records_both_deciders_versions_and_cost` now passes `graders=[FailureTypeExact()]`: T-037 makes the explanation judge a default failure grader, and that test checks the predictor's record, not the default graders (same reason as the T-031 correction).
 
 ### T-035 · M4 checkpoint
 **Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** M4 checkpoint "Judge agreement ≥ 85% recorded".
