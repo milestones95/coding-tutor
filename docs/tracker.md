@@ -20,7 +20,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 | M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ✅ 2026-11-03 (T-012) | Unit tests green on real + hand-built sessions; token budget measured |
 | M2 | Dataset + eval runner: 28 cases (8 real + 20 synthetic, D-045), split, eval runner (adapter deferred to M7, generator dropped: D-048) | ✅ 2026-11-07 (T-023) | Runner writes a versioned result record for a trivial grader |
 | M3 | Algorithm type, failure reason (status is no longer an LLM field) | ✅ 2026-11-07 (T-028) | Dev baseline recorded per field |
-| M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
+| M4 | Timeline summary + judge | ✅ 2026-11-08 | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
 | M6 | Part 2 evals | ⏸ Part 2, after Part 1 (2026-11-03) | All five graders produce a baseline |
 | M7 | Model comparison + test split — **Part 1 only** for now | ⬜ | Comparison table below |
@@ -1103,7 +1103,7 @@ to `analysis.db` (T-027).
   Cost: $0.98. Needs the human's confirmation of findings 1 – 5 (and a decision on 1 and 3) to close.
 - 2026-11-07 **The human confirmed findings 1 – 5.** Labels are unchanged (no decision to relabel dev-003 or dev-017, so `dev-v1` stands), and there is no prompt v2 now. → ✅; **M3 ✅**. Gates at close: 499 passed, 23 skipped; ruff and mypy clean.
 
-## Tasks — active milestone: M4
+## Tasks — M4 (✅ done 2026-11-08)
 
 Planned 2026-11-07. Order: **T-029 → T-030 → T-031 → T-032 → T-033 → T-034 → T-036 → T-037 → T-035** (T-036 added 2026-11-08; T-037 added 2026-11-08, it blocks T-035). The
 timeline is the hardest field to label and grade (eval plan, build order), so the judge is
@@ -1124,7 +1124,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 | T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ✅ | eval plan "Failure explanation"; D-052 |
 | T-036 | Timeline prompt v2: a general definition of "on the right track"; measured against v1 with the calibrated judge | build | S | required | ✅ | eval plan "Summary checklist" (first approach on the right track); T-033 finding |
 | T-037 | Runner: failure suite graded by the explanation judge; "calibrated" needs an accepted decision | build | S | required | ✅ | eval plan "Failure explanation"; rule 8; D-063, D-067 |
-| T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
+| T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ✅ | M4 checkpoint |
 
 ### T-029 · Timeline labels for the real sessions
 **Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "For each session, I write … whether the first approach was on the right track … key facts"; arch §8.1 `timeline` expected.
@@ -1263,6 +1263,7 @@ content in any log (counts only).
 **Log:**
 - 2026-11-08 · `/test write` — `evals/report/repeat_band.py` (per-repeat mean of any metric over the rows that have it; accuracy per repeat; band = max − min) and `tests/acceptance/test_t035_repeat_band.py` (3, hand-built records): all pass. Plan, human-approved ("run everything the right way"): fresh `repeats=3` runs of both judged suites on dev, no reuse of earlier runs; ≈ $5.60.
 - 2026-11-08 · checkpoint runs (3 fresh repeats each, judges calibrated): **failure** `20261108T223407Z-3a7b9478` ($1.55): **explanation checklist 0.97 ±0.04, failure type 0.93 ±0.05 (LLM-decided 0.85, rule 1.00) @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v2, judge failure-explanation-judge-v2**. **timeline** `20261108T223907Z-076b0b7a` ($3.55): **timeline checklist 1.00 (mean 0.997) ±0.01, first approach 0.98 ±0.05, ≤5 sentences 1.00 @ prompt timeline-v3, model openai:gpt-5.5, dataset dev-v3, judge timeline-judge-v1**. 0 errors. Misses read: the explanation judge flagged the unseen `[2,0,1]` input on Sort Colors as the human ruled; the timeline judge's one miss is a Daily Temperatures summary calling a wasteful-implementation start off track (the D-068 line, 1 of 3 repeats). `consistency` (byte-identical outputs across repeats) is 0.00 for timeline and 0.32 for failure: free text never repeats word for word, so it says nothing about quality here. Both judges ≥ 0.85 with misses caught (Done when 1 ✓); baselines with bands and versions in the table (Done when 2 ✓). Caveats carried: timeline-v3 and explanation-judge v2 were each revised after seeing dev, so these dev numbers are optimistic (D-067, D-068); the sealed test split at M7 is the honest check. **Waiting on: the human's confirmation (Done when 3).** Total $5.11.
+- 2026-11-08 · human confirmation ("lets move forward") → `/test run` ✅ — 613 passed; Done when 1–3 met. **M4 closed.** M4 eval spend ≈ $19.
 
 ---
 
@@ -1366,3 +1367,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | — | — | T-029 – T-035 | `/pm plan` M4: 7 tasks (real-session timeline labels, the timeline suite, the timeline field, runner judge support, two judges, each calibrated on 20 hand grades, checkpoint). Judge model is gpt-5.5 for now (D-058). Human work: 8 timeline labels and 40 hand grades. Not planned: the dataset v2 / prompt v2 idea (still to go through `/pm idea`); the test split (M7). |
 | 2026-11-08 | — | — | — | `/pm idea` dataset v2 (the human asked for a todo after T-030 found 0 corrected sessions in the test split; merges the open T-028 idea): **Deferred**, trigger after M4 ✅ / before M7. |
 | 2026-11-08 | — | — | T-036 | `/pm idea` define "on the right track" in the timeline prompt (the human asked for the task after T-033's review): **Add** as T-036, before the checkpoint so T-035 records the better prompt. Teaches a measured prompt iteration with a calibrated judge; displaces nothing (M4 order gains one S task). |
+| 2026-11-08 | T-029 – T-037; **M4 ✅** | — | T-037 | M4 closed. Calibrated judges: timeline-judge v1 (1.00, 4/4 misses), failure-explanation-judge v2 (1.00, 4/4; v1 rejected at 0.90 with 0/4). Baselines (3 repeats): timeline checklist 1.00 ±0.01 @ timeline-v3, dev-v3; explanation checklist 0.97 ±0.04, failure type 0.93 ±0.05 @ failure-v1, dev-v2; model openai:gpt-5.5. Human relabels: syn-003 (D-063), Sort Colors (D-066); definitions D-063, D-068. Caveat: timeline-v3 and explanation-judge v2 were revised on dev; M7's test split is the honest check. M4 eval spend ≈ $19. Next: dataset v2 (Deferred, trigger now met: after M4, before M7), then M5. |
