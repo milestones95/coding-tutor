@@ -39,7 +39,10 @@ def test_every_session_gets_a_timeline_summary_and_provenance(env):
     assert rows == {A: SUMMARY, B: SUMMARY, D: SUMMARY}
     prov = q(env, "SELECT * FROM field_provenance WHERE field = 'timeline_summary'")
     assert {p["session_id"] for p in prov} == {A, B, D}
-    assert all((p["prompt_name"], p["prompt_version"], p["run_id"]) == ("timeline", "v1", "run-tl") for p in prov)
+    from tutor.config import load_settings
+
+    pin = load_settings().prompts["timeline"]   # pinned version, not a literal: T-036 pins timeline v2 (`/test write` correction, 2026-11-08)
+    assert all((p["prompt_name"], p["prompt_version"], p["run_id"]) == ("timeline", pin, "run-tl") for p in prov)
 
 
 def test_the_timeline_reads_the_rendered_condensed_timeline(env):

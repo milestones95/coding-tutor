@@ -21,7 +21,7 @@ SEED = 20261107
 TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
 # A split's version bumps when any of its cases changes (rule 10). timeline/dev-v2: syn-003's story
 # relabelled by the human, 2026-11-08 (a pivot at minute 8, still wrong; D-063).
-VERSIONS = {("timeline", "dev"): "dev-v2"}
+VERSIONS = {("timeline", "dev"): "dev-v3", ("failure", "dev"): "dev-v2"}   # D-063 (timeline v2), D-066
 
 
 def outcome(verdict, passed, total):
@@ -120,7 +120,8 @@ def main():
             written[str(path.relative_to(REPO))] = len(cases)
     manifest = {p: hashlib.sha256((REPO / p).read_bytes()).hexdigest() for p in sorted(written)}
     for p in ("evals/data/sessions/synthetic/specs.jsonl", "evals/data/sessions/real/labels.jsonl",
-              "evals/data/calibration/timeline/v1.jsonl"):   # the human's judge grades are frozen too (D-063)
+              "evals/data/calibration/timeline/v1.jsonl",   # the human's judge grades are frozen too (D-063)
+              "evals/data/calibration/failure_explanation/v1.jsonl"):
         manifest[p] = hashlib.sha256((REPO / p).read_bytes()).hexdigest()
     (DATA / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     # counts only

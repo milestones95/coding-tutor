@@ -200,7 +200,14 @@ def test_the_runner_records_both_deciders_versions_and_cost(root, settings, tmp_
 
     client, fake = _client(settings, [_ans("wrong_approach", "Rescans the stack."), _ans("edge_case_missed")])
     pred = predictor_named("failure", settings=settings, client=client)
-    rec = run("failure", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results")
+    # T-037 adds the explanation judge to the failure suite's default graders; this test is about the
+    # predictor's record, so it names the type grader explicitly (`/test write` correction, 2026-11-08)
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from evals.graders.failure_type_exact import FailureTypeExact
+
+    rec = run("failure", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results",
+              graders=[FailureTypeExact()])
 
     assert len(fake.calls) == 2, "Accepted makes no call"
     assert rec["prompt_versions"] == {"failure": "v1"}

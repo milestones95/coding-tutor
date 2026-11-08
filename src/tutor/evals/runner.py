@@ -45,10 +45,11 @@ def graders_for(suite: str) -> list:
         from evals.graders.algorithm_overlap import AlgorithmOverlap
 
         return [AlgorithmOverlap()]
-    if suite == "failure":
+    if suite == "failure":   # type first (accuracy reads it), then the calibrated explanation judge (D-067)
+        from evals.graders.failure_explanation_judge import FailureExplanationJudge
         from evals.graders.failure_type_exact import FailureTypeExact
 
-        return [FailureTypeExact()]
+        return [FailureTypeExact(), FailureExplanationJudge()]
     if suite == "timeline":   # the calibrated judge; it counts sentences by code itself (D-062, D-064)
         from evals.graders.timeline_judge import TimelineJudge
 
@@ -241,15 +242,22 @@ def _judge_info(judge: Any, client: LLMClient, root: Path) -> dict:
 
 
 def _is_calibrated(name: str, version: str, path: Path) -> bool:
-    """True only when `path` lists this judge's exact version at agreement >= 0.85 (D-061). A missing
-    or unreadable file means uncalibrated: the safe reading, since an uncalibrated number can't decide."""
+    """True only when the latest entry in `path` for this judge's exact version has agreement >= 0.85
+    and the human's decision `accept` (D-061, D-063, T-037). Agreement alone isn't enough: a judge that
+    says "met" to everything can score high and still be rejected for catching none of the misses.
+    The latest entry decides because a re-measurement supersedes the one before it. A missing or
+    unreadable file means uncalibrated: the safe reading, since an uncalibrated number can't decide."""
     try:
         entries = json.loads(path.read_text()).get("entries", [])
     except (FileNotFoundError, json.JSONDecodeError, AttributeError):
         return False
-    return any(isinstance(e, dict) and e.get("judge") == name and e.get("version") == version
-               and isinstance(e.get("agreement"), (int, float)) and e["agreement"] >= CALIBRATED_AT
-               for e in entries)
+    mine = [e for e in entries if isinstance(e, dict) and e.get("judge") == name and e.get("version") == version]
+    if not mine:
+        return False
+    last = mine[-1]
+    agreement = last.get("agreement")
+    return (isinstance(agreement, (int, float)) and agreement >= CALIBRATED_AT
+            and str(last.get("decision", "")).strip().lower() == "accept")
 
 
 def _by_metric(rows: list[dict]) -> dict[str, dict]:
