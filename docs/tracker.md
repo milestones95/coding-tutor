@@ -1201,6 +1201,7 @@ content in any log (counts only).
 **Not included:** the timeline prompt (T-031); test-split outputs.
 **Log:**
 - 2026-11-08 · `/test write` — judge prompt `prompts/judges/timeline/v1.md` (pinned), `evals/graders/timeline_judge.py`, `GradeContext.session` in `evals/graders/base.py`, `evals/calibrate/agreement.py` + `calibrate_judge.py`, `tests/acceptance/test_t033_timeline_judge.py` (11: scoring, code-counted length the judge can't overrule, n/a correction item, judge inputs, prompt pinned with no dataset slug, agreement maths incl. the always-yes check; 9 pass, 2 runner-wiring tests fail as expected and need a short `/build`). Interfaces D-062. Calibration set drafted: 20 dev summaries (all 19 from run `20261108T141431Z-4b33ea4c` + dev-008 from `20261108T141804Z-9a806311`, chosen because it claims a switch that didn't happen); 97 graded items, tester proposes 90 met / 7 not met; awaiting the human's grades (`v1.draft.jsonl`, not committed).
+- 2026-11-08 · human grades — the human reviewed all 20 (notes on #3, #9, #11, #16, #17, #20; the rest confirmed). Their definition of on track (no pivot needed; too slow is off track) is D-063 and goes into T-036. **Dataset change (rule 10):** the human relabelled syn-003 as a pivot at minute 8 to a second, still-wrong approach → `timeline/dev` is now **dev-v2** (failure / algorithm / timeline-test cases byte-identical); spec checker rule relaxed to "wrong_approach ⇒ first approach off track"; T-030 and frozen-dataset tests updated for dev-v2. Calibration set committed and frozen: 95 graded items, 90 met / 5 not met (all "first approach"). Pass condition: agreement ≥ 0.85 and ≥ 70% of the not-met items caught (4 of 5).
 
 ### T-034 · Failure-explanation judge and calibration
 **Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Failure explanation: consistent with the real failure, no invented causes"; D-052.
@@ -1217,7 +1218,7 @@ content in any log (counts only).
 **Why:** in both T-031 dev runs, timeline-v1 called the first approach "on the right track" on all 5 sessions the human labelled off track (10/10 summaries). The facts were right; v1 never defines the term, and the model reads it as "a sensible idea that could be fixed", where the human means "would pass within the problem's limits if implemented correctly".
 **Done when:**
 1. `prompts/timeline/v2.md` defines "on the right track" as a general rule (an idea that would pass within the problem's limits if implemented correctly; correct-but-too-slow, or needing a rewrite to pass, is not on track). No problem, slug or dataset example is named (rule 9). v1 stays as it is; `tutor.toml` pins v2.
-2. A dev run of v2 graded by the **calibrated** timeline judge, with `checklist.first_approach` and `timeline_checklist` compared to v1 under the same judge version.
+2. The prompt states the human's definition (D-063): on track = only bug fixes needed; a pivot to a different algorithm, or too slow, = off track. A dev run of v2 graded by the **calibrated** timeline judge, with `checklist.first_approach` and `timeline_checklist` compared to v1 under the same judge version.
 3. No other checklist item drops outside the noise band.
 **Not included:** the failure prompt; any change to labels or the judge; test-split runs.
 **Test assets:** required (`/test write T-036` before `/build`).

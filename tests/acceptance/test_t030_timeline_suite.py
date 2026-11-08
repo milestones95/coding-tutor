@@ -54,7 +54,8 @@ def test_cases_load_with_the_runner_contract(split):
 
     for c in _cases("timeline", split):
         case = Case.model_validate(c)
-        assert (case.suite, case.split, case.dataset_version) == ("timeline", split, f"{split}-v1")
+        want = "dev-v2" if split == "dev" else "test-v1"   # dev-v2: syn-003 relabel, 2026-11-08 (D-063)
+        assert (case.suite, case.split, case.dataset_version) == ("timeline", split, want)
         assert case.label_source == "human_written"
 
 

@@ -19,6 +19,9 @@ REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "evals" / "data"
 SEED = 20261107
 TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
+# A split's version bumps when any of its cases changes (rule 10). timeline/dev-v2: syn-003's story
+# relabelled by the human, 2026-11-08 (a pivot at minute 8, still wrong; D-063).
+VERSIONS = {("timeline", "dev"): "dev-v2"}
 
 
 def outcome(verdict, passed, total):
@@ -109,14 +112,15 @@ def main():
                 tags = (["near_miss"] if r["near_miss"] else []) + (["rule_decided"] if suite == "failure" and r["status"] in
                         ("Accepted", "Time Limit Exceeded", "Memory Limit Exceeded") else [])
                 cases.append({"case_id": f"{suite}-{sp}-{len(cases) + 1:03d}", "suite": suite, "split": sp,
-                              "dataset_version": f"{sp}-v1", "source": r["source"], "session": r["session"],
+                              "dataset_version": VERSIONS.get((suite, sp), f"{sp}-v1"), "source": r["source"], "session": r["session"],
                               "expected": expected, "label_source": "human_written", "tags": tags, "notes": ""})
             path = DATA / suite / sp / "cases.jsonl"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases))
             written[str(path.relative_to(REPO))] = len(cases)
     manifest = {p: hashlib.sha256((REPO / p).read_bytes()).hexdigest() for p in sorted(written)}
-    for p in ("evals/data/sessions/synthetic/specs.jsonl", "evals/data/sessions/real/labels.jsonl"):
+    for p in ("evals/data/sessions/synthetic/specs.jsonl", "evals/data/sessions/real/labels.jsonl",
+              "evals/data/calibration/timeline/v1.jsonl"):   # the human's judge grades are frozen too (D-063)
         manifest[p] = hashlib.sha256((REPO / p).read_bytes()).hexdigest()
     (DATA / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     # counts only

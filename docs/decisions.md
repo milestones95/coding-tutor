@@ -962,3 +962,22 @@ rendered condensed timeline from a new `GradeContext.session`; the runner has to
 **Agreement** is item by item over the 20-summary calibration set, n/a items skipped. It is reported
 with what an always-yes judge would score and how many of the human's "not met" items the judge
 also caught, because a set where most items are met flatters a judge that always says yes.
+
+## D-063 · "On track" means no pivot needed; syn-003 relabelled; judge must catch the misses · 2026-11-08 · human + test
+**The human's definition** (from the T-033 calibration review): a first approach is **on the right
+track** if it only needs bug fixes to pass; it is **off track** if passing needs a pivot to a different
+algorithm, and too slow counts as not passing ("not meeting the performance constraints is wrong").
+A **course correction** is a pivot to a different approach, whether or not the new one passes. This
+is the rule `timeline/v2` must state (T-036) and the one the judge's "first approach" item applies.
+**syn-003 relabelled** (rule 10, the human's reason): the per-start greedy scan that later swaps in a
+smaller last element counts as a pivot at minute 8 to a second, still-wrong approach. Its story is now
+2 approaches, `corrected: true, at_min: 8`; its failure type stays `wrong_approach`, so the spec
+checker's rule becomes "wrong_approach ⇒ the first approach was off track" (a switch to another idea
+that also fails is still wrong_approach). Only `timeline/dev` changes: **timeline dev-v2**; failure,
+algorithm and timeline test cases are byte-identical and keep their versions. Calibration items 8 and
+20 (that session) become first approach met, no invented correction n/a.
+**Pass condition for a judge** (the human, 2026-11-08): agreement ≥ 0.85 item by item **and** it marks
+not met at least 70% of the items the human marked not met (the human set "5 of 7"; after the relabel
+the set has 5 not-met items, so 4 of 5). An always-yes judge would score 90/95 = 0.95 on this set, so
+agreement alone can't pass a judge. The calibration set `evals/data/calibration/timeline/v1.jsonl` is
+frozen by hash in `evals/data/manifest.json`.
