@@ -995,7 +995,7 @@ The failure explanation is stored but not scored in M3: it needs the judge built
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-024 | Algorithm field: `prompts/algorithm/v1.md` + `fields/algorithm.py`; runner predictor `algorithm` with `--model` | build | M | required | 🔄 built 2026-11-07 | eval plan "Algorithm type"; arch §2, §6.3, §7, §8.2 |
+| T-024 | Algorithm field: `prompts/algorithm/v1.md` + `fields/algorithm.py`; runner predictor `algorithm` with `--model` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Algorithm type"; arch §2, §6.3, §7, §8.2 |
 | T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ⬜ | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
 | T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ⬜ | eval plan "Failure reason"; arch §6.3, §7 |
 | T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ⬜ | arch §1, §3.2, analyzer pipeline |
@@ -1023,6 +1023,7 @@ to `analysis.db` (T-027).
 - 2026-11-07 `/test write` correction (two test bugs found during `/build`; no expectation changed): `AlgorithmLabel.hash_map` → `HASH_MAP` (the enum's member names are uppercase), and the explicit-model test now gives its probe model a price, because the client correctly refuses an unpriced model (T-006).
 
 - 2026-11-07 `/build T-024` → 🔄. `prompts/algorithm/v1.md`: the 19 labels, each with a one-line meaning, and the rules "label what the code does, not what the problem needs" and "tags are hints". It's in the manifest and pinned in `tutor.toml`. `fields/algorithm.py` (`AlgorithmOutput`, 1–2 labels; `algorithm()`, one `structured()` call). `runner.AlgorithmPredictor`: per-case cost and tokens from `last_usage`, and calls logged under the record's run id. The summary line names the prompt and model. `tutor-eval run|estimate --model`; `run` prints the estimate first. Tests: 15 from `/test write` + 5 unit; suite 449 passed / 23 skipped; ruff and mypy clean. **Dev eval:** `algorithm algorithm_overlap 0.94 @ prompt algorithm-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.92 (n=13) | errors 0 | consistency 1.00 | $0.0939 | run 20261108T015121Z-b0f94c13`, vs **0.83 @ keyword-v1** (+0.11). One miss (algorithm-dev-017, syn-019): it predicted `dfs_backtracking` for a recursive two-ends palindrome check labelled `two_pointers`, so the v1 description of dfs_backtracking ("including plain recursion") may be pulling it. Left for T-028's finding, not tuned now. The LLM fixed two keyword misses (dev-007 greedy, dev-013 sliding window). The estimate ($0.45) was 5× the actual: 861 tokens in and 31 out per call on average.
+- 2026-11-07 `/test run` → ✅. Gates: 454 passed, 23 skipped (the T-015 tests, deferred), ruff and mypy clean. The builder's commit `36859db` touches no judging files (the `a7c88a9` test fix is the tester's own). Independent dev rerun: `algorithm algorithm_overlap 0.94 @ prompt algorithm-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — | real 1.00 (n=5), synthetic 0.92 (n=13) | errors 0 | $0.0911 | run 20261108T015430Z-9bbe4850`, the same as the builder's run; +0.11 over 0.83 @ keyword-v1. Noise band: none recorded, and there is no earlier LLM number to regress from; T-028 measures it (3 repeats). Same single miss (algorithm-dev-017). Done-when 1–5 met.
 
 ### T-025 · Failure type rules + grader
 **Milestone:** M3 · **Size:** S · **Owner:** build · **Traces to:** arch §6.3 rule table, §8.3 `by_decider`.
@@ -1085,7 +1086,7 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 |---|---|---|---|---|---|---|---|
 | failure type accuracy (LLM-decided) | | | | | dev-v1 | — | |
 | failure type accuracy (rule-decided) | | | — | — | dev-v1 | — | |
-| algorithm accuracy | | | | | dev-v1 | — | |
+| algorithm accuracy | **0.94** overall (real 1.00 n=5, synthetic 0.92 n=13) | not yet measured (T-028); two single runs both gave 0.94 | algorithm-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
 | algorithm — keyword baseline | **0.83** overall (real 1.00 n=5, synthetic 0.77 n=13) | 0 (deterministic; consistency 1.00) | — | keyword-v1 | dev-v1 | — | 2026-11-07 |
 | failure explanation (judge) | | | | | dev-v1 | | |
 | timeline checklist (judge) | | | | | dev-v1 | | |
