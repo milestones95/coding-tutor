@@ -905,3 +905,88 @@ explanation) is easy to get wrong in either direction.
 **Why.** Without the flag, analyze stays offline and free, as in T-011. Spending money should be
 asked for, not a side effect of refreshing facts. It refines T-027's Done-when ("`tutor analyze
 [--model]`") with an explicit `--llm`.
+
+## D-058 · The judges use gpt-5.5 for now · 2026-11-07 · pm
+A judge of the same model family may favour its own outputs. A Claude judge would avoid that, but
+the Anthropic adapter is deferred to M7 (D-048). Calibration (rule 8) measures the judge against
+the human's grades either way: if gpt-5.5 agrees ≥ 85%, the self-preference worry is answered by
+data. **Revisit** at M7, when the Anthropic adapter exists: re-measure the judge with a Claude
+model on the same calibration set.
+
+## D-059 · Timeline suite: outcome is a verdict string; no on-track algorithms · 2026-11-08 · test
+The checklist's `outcome` is built by `evals/build/build_dataset.py` from the verdict, never typed:
+`"<LeetCode verdict>, p/t tests passed"`, or `"not submitted"`. It is a fact (rule 1), so the
+judge can check "names the final outcome" against data rather than a label. A string, not an
+object, because the judge reads it as text. `story.on_track_algorithms` stays out of the
+checklist: it says what would have worked, which a summary of what happened never needs (D-039).
+The timeline cases reuse dev-v1's split (seeded draw, same rows), so no session changes split and
+the failure / algorithm cases stay byte-identical; the new files start at `dev-v1` / `test-v1`.
+
+## D-060 · Timeline field interfaces; length is measured, not enforced · 2026-11-08 · test
+`tutor.fields.timeline`: `PROMPT = "timeline"`, `TimelineOutput(summary: str, non-empty)`,
+`timeline(session, *, client, settings, run_id, model=None) -> LLMResult[TimelineOutput]`: one
+structured call whose input contains `render(condense(session))` unchanged (rule 3). Runner:
+`predictor_named("timeline")` → `{"summary"}`, `prompt_versions {"timeline": "v1"}`;
+`graders_for("timeline")` → `[SentenceCount]` until the judge joins (T-033). `analyze --llm` writes
+`session_analysis.timeline_summary` and a `timeline_summary` provenance row (prompt_name
+`timeline`); no migration, 0001 already has both. **The 3–5 sentence length is asked for in the
+prompt but not enforced by the schema**: a schema check would retry until the count fits and the
+`at_most_5_sentences` metric would always read 1.00, hiding how often the model overruns. Code
+counts sentences (`evals/graders/sentence_count.py`), so the judge never does arithmetic.
+
+## D-061 · Judge graders in the runner: interface, cost, calibration file · 2026-11-08 · test
+An `llm_judge` grader carries `field` (the `LLMClient` field: it routes the model through
+`llm.fields.<field>` / `llm.default` and names the logged calls), `run_id` (set by the runner to
+the record's, like a predictor) and `last_usage` (set by each `grade()`), and calls
+`ctx.client.structured` inside `grade()`. `run(..., graders=None, judge_client=None)`: both default
+(`graders_for(suite)`, `LLMClient(settings)`) and are injectable for tests. Each row gets
+`judge_cost_usd`; `cost_usd_total` = predictor + judge, so a run's price is honest. A judge that
+raises makes its row an error (`"judge: …"`), never a crashed run. `aggregates.by_metric =
+{metric: {mean, n}}` over rows without an error, because a judge emits several checklist metrics
+and `accuracy` reads only the first grade. `record["judge"]` names the first judge with its
+provider/model and `calibrated`, which is true only when `evals/calibration.json` (`{"entries":
+[{judge, version, agreement, n, decision}]}`, tester-owned, starts empty) lists that exact judge
+version at agreement ≥ 0.85 (rule 8). A missing file means uncalibrated.
+
+## D-062 · Timeline judge: five judged items, length by code, item-level agreement · 2026-11-08 · test
+`evals/graders/timeline_judge.py` (`timeline-judge` v1, `prompts/judges/timeline/v1.md`) judges five
+checklist items, each with a one-sentence reason before `met`: approaches, first approach (agrees
+with the human's account; if off track, whether and roughly when they switched), no invented
+correction, final approach and outcome, no invented events. "5 sentences or fewer" is counted by
+code and the judge is never asked. "No invented correction" is left out of a case's score when the
+person did switch approach, rather than counted as met, so it can't inflate the score or the
+agreement. The judge reads the human's account (it is a grader; the field never sees labels) and the
+rendered condensed timeline from a new `GradeContext.session`; the runner has to pass the case's
+`Session` there and `graders_for("timeline")` returns the judge (a small builder step, tested in
+`test_t033_timeline_judge.py`). Metric: `timeline_checklist` = share of applicable items met.
+**Agreement** is item by item over the 20-summary calibration set, n/a items skipped. It is reported
+with what an always-yes judge would score and how many of the human's "not met" items the judge
+also caught, because a set where most items are met flatters a judge that always says yes.
+
+## D-063 · "On track" means no pivot needed; syn-003 relabelled; judge must catch the misses · 2026-11-08 · human + test
+**The human's definition** (from the T-033 calibration review): a first approach is **on the right
+track** if it only needs bug fixes to pass; it is **off track** if passing needs a pivot to a different
+algorithm, and too slow counts as not passing ("not meeting the performance constraints is wrong").
+A **course correction** is a pivot to a different approach, whether or not the new one passes. This
+is the rule `timeline/v2` must state (T-036) and the one the judge's "first approach" item applies.
+**syn-003 relabelled** (rule 10, the human's reason): the per-start greedy scan that later swaps in a
+smaller last element counts as a pivot at minute 8 to a second, still-wrong approach. Its story is now
+2 approaches, `corrected: true, at_min: 8`; its failure type stays `wrong_approach`, so the spec
+checker's rule becomes "wrong_approach ⇒ the first approach was off track" (a switch to another idea
+that also fails is still wrong_approach). Only `timeline/dev` changes: **timeline dev-v2**; failure,
+algorithm and timeline test cases are byte-identical and keep their versions. Calibration items 8 and
+20 (that session) become first approach met, no invented correction n/a.
+**Pass condition for a judge** (the human, 2026-11-08): agreement ≥ 0.85 item by item **and** it marks
+not met at least 70% of the items the human marked not met (the human set "5 of 7"; after the relabel
+the set has 5 not-met items, so 4 of 5). An always-yes judge would score 90/95 = 0.95 on this set, so
+agreement alone can't pass a judge. The calibration set `evals/data/calibration/timeline/v1.jsonl` is
+frozen by hash in `evals/data/manifest.json`.
+
+## D-064 · timeline-judge v1 is calibrated · 2026-11-08 · test
+On the human's 20 graded summaries (95 items), timeline-judge v1 on openai:gpt-5.5 agreed on every
+item (1.00; an always-yes judge would score 0.95) and caught all 5 items the human marked not met,
+so it passes D-063's condition and is recorded `accept` in `evals/calibration.json`. Caveats: one
+run (repeat noise is measured at T-035); the set has only one kind of miss ("first approach"), so
+the other four items are calibrated on "met" cases only; and the judge is the same model as the
+field (D-058). **Revisit** when T-036 produces summaries with other kinds of mistakes, and at M7
+with a Claude judge.

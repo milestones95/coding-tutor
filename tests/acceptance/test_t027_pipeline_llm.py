@@ -10,6 +10,9 @@ Tester-owned (`/test write T-027`, 2026-11-07). Interfaces (D-057):
         session_analysis (failure_type, failure_type_source, failure_explanation,
         condenser_version), session_algorithms (one row per label) and field_provenance (one row
         per field that made a call; a passed session's failure field makes none).
+    T-031 (2026-11-08, `/test write`): `--llm` also writes the timeline field
+    (session_analysis.timeline_summary + a `timeline_summary` provenance row per session), so the
+    call and provenance counts below include it.
     Re-running replaces a session's rows (no duplicates). An LLM error in one field of one
     session is logged to pipeline.jsonl as `llm_field_failed` {session_id, field, error}, leaves
     that field NULL / without rows, and the run goes on. A config error (e.g. an unpriced model)
@@ -63,6 +66,8 @@ class Router(FakeAdapter):
             raise LLMProviderError("provider down", retryable=False)
         if "algorithms" in json.dumps(kw["schema"]):
             self.script = [{"algorithms": ["hash_map", "two_pointers"]}]
+        elif "summary" in json.dumps(kw["schema"]):   # T-031 adds the timeline field
+            self.script = [{"summary": "You tried one idea. It ended as the verdict says."}]
         else:
             self.script = [{"failure_type": "implementation_bug", "explanation": "An index is off by one."}]
         return super().structured(**kw)
@@ -119,17 +124,19 @@ def test_a_passed_session_makes_no_failure_call(env):
     fake = Router()
     _run(env, fake)
     failure_calls = [c for c in fake.calls if "failure_type" in json.dumps(c["schema"])]
-    assert len(failure_calls) == 2 and len(fake.calls) == 5, "3 algorithm calls + 2 failure calls (A passed)"
+    assert len(failure_calls) == 2 and len(fake.calls) == 8, "3 algorithm + 2 failure (A passed) + 3 timeline calls"
 
 
 def test_provenance_names_prompt_model_run_and_call(env):
     _run(env, Router(), run_id="run-prov")
     prov = q(env, "SELECT * FROM field_provenance ORDER BY session_id, field")
     assert {(p["session_id"], p["field"]) for p in prov} == {(A, "algorithm"), (B, "algorithm"), (B, "failure"),
-                                                            (D, "algorithm"), (D, "failure")}
+                                                            (D, "algorithm"), (D, "failure"),
+                                                            (A, "timeline_summary"), (B, "timeline_summary"),
+                                                            (D, "timeline_summary")}
     assert all((p["prompt_version"], p["provider"], p["model"], p["run_id"]) == ("v1", "openai", "gpt-5.5", "run-prov")
                for p in prov)
-    assert {p["prompt_name"] for p in prov} == {"algorithm", "failure"}
+    assert {p["prompt_name"] for p in prov} == {"algorithm", "failure", "timeline"}
     logged = {json.loads(x)["call_id"] for x in (env / "logs" / "llm_calls.jsonl").read_text().splitlines()}
     assert {p["call_id"] for p in prov} <= logged, "call_id joins to llm_calls.jsonl"
 
@@ -140,7 +147,7 @@ def test_rerunning_replaces_rows_without_duplicates(env):
     assert len(q(env, "SELECT * FROM session_analysis")) == 3
     assert len(q(env, "SELECT * FROM session_algorithms")) == 6
     prov = q(env, "SELECT run_id FROM field_provenance")
-    assert len(prov) == 5 and {p["run_id"] for p in prov} == {"run-2"}
+    assert len(prov) == 8 and {p["run_id"] for p in prov} == {"run-2"}
 
 
 def test_an_llm_error_leaves_that_field_null_and_the_run_goes_on(env):

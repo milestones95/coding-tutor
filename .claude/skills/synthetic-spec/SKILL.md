@@ -75,8 +75,8 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    **On-track algorithms** (`story.on_track_algorithms`, D-039): when the first approach was off
    track, 1–2 labels for what *would* have worked. It makes "off track" a checkable claim. Use
    `null` when the first approach was on track. Labels only, never code: the eval plan rules out an
-   expected approach with code. It is never shown to a model. `wrong_approach` always means off
-   track and never corrected.
+   expected approach with code. It is never shown to a model. `wrong_approach` always means the
+   first approach was off track; a switch to another idea that also fails is still `wrong_approach` (D-063).
 8. **Language**: `python3` only for now (D-042). A Python *Compile Error* on LeetCode means a
    `SyntaxError`/`IndentationError`; a misspelt name is a Runtime Error.
    **Shape**: `duration_min` (2–60, usually 10–30) and `runs` (0–20), consistent with the story. A course

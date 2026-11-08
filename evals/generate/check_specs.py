@@ -147,8 +147,10 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
             elif on is False and corr is False and isinstance(algos, list) and set(ota) == set(algos):
                 # Never switched, yet the final code already does what would have worked.
                 warn.append("off track and never corrected, yet the final code's algorithms equal the on-track ones")
-            if ft == "wrong_approach" and not (on is False and corr is False):
-                err.append("wrong_approach ⇒ the first approach was off track and never corrected")
+            # wrong_approach: the first approach was off track; a switch to another idea that also can't
+            # solve the problem is still wrong_approach (D-063, the human's call on syn-003, 2026-11-08)
+            if ft == "wrong_approach" and on is not False:
+                err.append("wrong_approach ⇒ the first approach was off track")
             if on is True and isinstance(ap, list) and len(ap) > 1:
                 warn.append("first approach on track but several approaches listed: is that a refinement, not a change?")
             if on is False and corr is True and isinstance(ap, list) and len(ap) < 2:

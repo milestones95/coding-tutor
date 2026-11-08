@@ -125,10 +125,10 @@ UPSERT_TIMELINE = """INSERT INTO condensed_timelines (session_id, condenser_vers
 
 
 UPSERT_ANALYSIS = """INSERT INTO session_analysis (session_id, failure_type, failure_type_source, failure_explanation,
-  condenser_version, updated_at) VALUES (?, ?, ?, ?, ?, ?)
+  timeline_summary, condenser_version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(session_id) DO UPDATE SET failure_type = excluded.failure_type,
     failure_type_source = excluded.failure_type_source, failure_explanation = excluded.failure_explanation,
-    condenser_version = excluded.condenser_version, updated_at = excluded.updated_at"""
+    timeline_summary = excluded.timeline_summary, condenser_version = excluded.condenser_version, updated_at = excluded.updated_at"""
 DELETE_ALGORITHMS = "DELETE FROM session_algorithms WHERE session_id = ?"
 INSERT_ALGORITHM = "INSERT INTO session_algorithms (session_id, label) VALUES (?, ?)"
 DELETE_PROVENANCE = "DELETE FROM field_provenance WHERE session_id = ?"
@@ -148,7 +148,7 @@ class _LLMRows:
 
 def _llm_rows(sessions: list[Session], c_versions: dict[str, str], settings: Settings, *, run_id: str,
               client: LLMClient, model: ModelRef | None, now: str, log: Path) -> _LLMRows:
-    """Run the failure and algorithm fields, the same functions the eval runner calls (§8.2).
+    """Run the failure, algorithm and timeline fields, the same functions the eval runner calls (§8.2).
 
     One field failing on one session is logged and left NULL; the others still land (D-057).
     """
@@ -156,14 +156,18 @@ def _llm_rows(sessions: list[Session], c_versions: dict[str, str], settings: Set
     from tutor.fields.algorithm import prompt_for as algo_prompt
     from tutor.fields.failure import PROMPT as FAIL, failure
     from tutor.fields.failure import prompt_for as fail_prompt
+    from tutor.fields.timeline import PROMPT as TL, timeline
+    from tutor.fields.timeline import prompt_for as tl_prompt
 
-    prompts = {ALGO: algo_prompt(settings), FAIL: fail_prompt(settings)}
+    prompts = {ALGO: algo_prompt(settings), FAIL: fail_prompt(settings), TL: tl_prompt(settings)}
+    # field_provenance.field names the column, which for the timeline differs from its prompt name
+    prov_field = {ALGO: "algorithm", FAIL: "failure", TL: "timeline_summary"}
     refs = {f: client.model_for(f, model) for f in prompts}
     out = _LLMRows([], [], [], [])
 
     def prov(sid: str, field: str, call_id: str) -> tuple:
         p, ref = prompts[field], refs[field]
-        return (sid, field, p.name, p.version, ref.provider, ref.model, run_id, call_id, now)
+        return (sid, prov_field[field], p.name, p.version, ref.provider, ref.model, run_id, call_id, now)
 
     for s in sessions:
         sid = s.session_id
@@ -176,7 +180,16 @@ def _llm_rows(sessions: list[Session], c_versions: dict[str, str], settings: Set
         except LLMError as e:
             out.errors += 1
             log_event("llm_field_failed", run_id=run_id, path=log, session_id=sid, field=FAIL, error=f"{type(e).__name__}: {e}")
-        out.analysis.append((sid, ftype, fsource, fexpl, c_versions[sid], now))
+        summary = None
+        try:
+            tr = timeline(s, client=client, settings=settings, run_id=run_id, model=model)
+            summary = tr.output.summary
+            out.provenance.append(prov(sid, TL, tr.call_id))
+        except LLMError as e:
+            out.errors += 1
+            log_event("llm_field_failed", run_id=run_id, path=log, session_id=sid, field=prov_field[TL],
+                      error=f"{type(e).__name__}: {e}")
+        out.analysis.append((sid, ftype, fsource, fexpl, summary, c_versions[sid], now))
         out.clear.append((sid,))
         try:
             ar = algorithm(s, client=client, settings=settings, run_id=run_id, model=model)
@@ -209,14 +222,14 @@ def _loader(settings: Settings, run_id: str) -> CaptureLoader:
 
 def analyze(settings: Settings, *, run_id: str, since: date | None = None, llm: bool = False,
             client: LLMClient | None = None, model: ModelRef | None = None) -> AnalyzeReport:
-    """Facts and timelines always; with `llm=True` also the failure and algorithm fields (D-057)."""
+    """Facts and timelines always; with `llm=True` also the failure, algorithm and timeline fields (D-057, D-060)."""
     con = open_analysis_db(settings)
     try:
         log = Path(settings.paths.logs) / "pipeline.jsonl"
         now = _now()
         if llm:   # a config error (no key, no price) stops the run before any call or write
             client = client or LLMClient(settings)
-            for field in ("failure", "algorithm"):
+            for field in ("failure", "algorithm", "timeline"):
                 client.price_for(field, model)
         problems, sessions, timelines = {}, [], []
         loaded: list[Session] = []

@@ -20,6 +20,7 @@ class GradeContext(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
     trajectory_path: Path | None = None   # agent suite
     client: Any = None                    # llm_judge graders only
+    session: Any = None                   # the case's Session, for judges that read the timeline (D-062)
 
 
 class Grader(Protocol):

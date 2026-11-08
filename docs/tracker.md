@@ -1103,6 +1103,139 @@ to `analysis.db` (T-027).
   Cost: $0.98. Needs the human's confirmation of findings 1 – 5 (and a decision on 1 and 3) to close.
 - 2026-11-07 **The human confirmed findings 1 – 5.** Labels are unchanged (no decision to relabel dev-003 or dev-017, so `dev-v1` stands), and there is no prompt v2 now. → ✅; **M3 ✅**. Gates at close: 499 passed, 23 skipped; ruff and mypy clean.
 
+## Tasks — active milestone: M4
+
+Planned 2026-11-07. Order: **T-029 → T-030 → T-031 → T-032 → T-033 → T-034 → T-036 → T-035** (T-036 added 2026-11-08). The
+timeline is the hardest field to label and grade (eval plan, build order), so the judge is
+trusted only after it agrees with the human's hand grades at ≥ 85% (rule 8). **Human work in
+M4:** approaches and final approach for the 8 real sessions (T-029), hand grades for 20 timeline
+summaries (T-033) and 20 failure explanations (T-034). Judge model: `openai:gpt-5.5`, the same
+model as the fields, because the Anthropic adapter is deferred to M7 (D-048). Calibration measures
+whether that matters (D-058). Estimated dev cost: timeline ≈ $0.40 per run, the judge ≈ $0.40 per
+graded run; the checkpoint with 3 repeats ≈ $3.
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-029 | Timeline labels for the 8 real sessions: approaches, final approach (the human's) | test | M | required | ✅ | eval plan "Dataset", "Summary checklist"; arch §8.1 |
+| T-030 | `timeline` suite: dev/test `cases.jsonl` on the existing split, frozen by hash | test | S | required | ✅ | arch §8.1; D-050 |
+| T-031 | Timeline field: `prompts/timeline/v1.md` + `fields/timeline.py`; runner predictor; `analyze --llm` writes `timeline_summary` | build | M | required | ✅ | eval plan "Timeline summary"; arch §6.3, §7 |
+| T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ✅ | arch §8.3, §8.4; rule 8 |
+| T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ✅ | eval plan "Checking the judge"; rule 8 |
+| T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ⬜ | eval plan "Failure explanation"; D-052 |
+| T-036 | Timeline prompt v2: a general definition of "on the right track"; measured against v1 with the calibrated judge | build | S | required | ⬜ | eval plan "Summary checklist" (first approach on the right track); T-033 finding |
+| T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
+
+### T-029 · Timeline labels for the real sessions
+**Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "For each session, I write … whether the first approach was on the right track … key facts"; arch §8.1 `timeline` expected.
+**Done when:**
+1. Each of the 8 real sessions in `evals/data/sessions/real/labels.jsonl` has `story.approaches[]`
+   (in order, plain words) and `story.final_approach`. The tester proposes them from the session;
+   the human confirms or corrects each one.
+2. `course_correction` and `key_facts` (already the human's, T-020) are unchanged, or changed with a
+   written reason.
+3. The human's confirmation is in the log.
+**Not included:** the synthetic sessions (their specs already have the story); the test split's
+content in any log (counts only).
+
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t029_real_timeline_labels.py` (5 tests): approaches and final approach present for all 8, a correction means ≥ 2 approaches, the T-020 labels pinned by hash. 2 fail as expected (no approaches yet), 3 pass. Tester proposes the 6 dev sessions' labels; the 2 test-split sessions are written by the human without the tester opening them.
+- 2026-11-08 · human confirmation — the human confirmed the tester's 6 dev-session proposals (approaches + final approach) and wrote the 2 test-split sessions' labels by hand; the tester did not open them. T-020 labels unchanged (hash pin passes). Manifest rebuilt: only `labels.jsonl`'s hash changed; every cases file is byte-identical, so `dev-v1`/`test-v1` stand. Tests 504 passed, ruff + mypy clean. Awaiting `/test run`.
+- 2026-11-08 · `/test run` ✅ — contract 72, acceptance 332, unit 100 passed; ruff + mypy clean. Diff is labels, manifest, the T-029 test and tracker only (no application code; no builder diff). No eval run: no LLM field changed, and the failure/algorithm cases are byte-identical. Human confirmation in the log above.
+
+### T-030 · Timeline suite
+**Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1.
+**Done when:**
+1. `evals/data/timeline/{dev,test}/cases.jsonl` holds one case per session. Each session stays in the
+   split it has in dev-v1, so no test session moves. `expected = {checklist: {approaches,
+   course_correction, final_approach, outcome}, key_facts}`; `outcome` comes from the verdict (a fact).
+2. The timeline files are added to `evals/data/manifest.json`, and the frozen-dataset contract test covers them.
+3. `dataset_version` is `dev-v1` / `test-v1` (a new suite; no existing case changes).
+**Not included:** grading (T-033).
+**Log:**
+- 2026-11-08 · `/test write` — `evals/build/build_dataset.py` now also writes `evals/data/timeline/{dev,test}/cases.jsonl` (19 dev / 9 test, one per session, same split as dev-v1; outcome from the verdict, D-059); manifest updated; failure/algorithm cases byte-identical. `tests/acceptance/test_t030_timeline_suite.py` (10 tests) and the frozen-dataset contract test now covers the timeline suite: 13 pass. No new labels: the checklist is assembled from the human's confirmed specs and T-029 labels. Needs the human's confirmation of the assembled suite to close.
+- 2026-11-08 · human confirmation — the human accepted the assembled suite (asked for /test run after reviewing the summary; the corrected-session gap went to Deferred as dataset v2).
+- 2026-11-08 · `/test run` ✅ — contract 72, acceptance 342, unit 100 passed; ruff + mypy clean. Diff: builder script, timeline cases, manifest, tests, docs; no application code. failure/algorithm cases unchanged, so the M3 baselines stand. No eval run: no LLM field exists for this suite yet (T-031).
+
+### T-031 · Timeline field
+**Milestone:** M4 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Timeline summary … 3–5 sentences"; arch §6.3, §7.
+**Done when:**
+1. `timeline(session, *, client, settings, run_id, model=None)` makes one structured call on
+   `render(condense(session))` (rule 3) and returns a 3–5 sentence summary.
+2. The prompt follows §7 and is pinned. The contract checks that no label from `expected` reaches it.
+3. The runner predictor `timeline` writes a result record (ungraded until T-033, apart from the
+   sentence count). `tutor analyze --llm` fills `timeline_summary` plus a `timeline_summary`
+   provenance row.
+4. One dev run, recorded with versions.
+**Not included:** the judge (T-032, T-033); tuning.
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t031_timeline.py` (6: one call, the one condenser's render, empty summary retried, logging, prompt pinned and length-stating with no dataset slug, runner record with versions/cost/sentence grade), `tests/acceptance/test_t031_pipeline.py` (5: summary + provenance per session, rendered input, a timeline error NULLs only that field, nothing without --llm, schema already has the column), `tests/contract/test_timeline_input.py` (no `expected` label or case text reaches the model), grader `evals/graders/sentence_count.py` + `tests/acceptance/test_t031_sentence_grader.py` (14, pass). **Changed with reason:** `test_t027_pipeline_llm.py` — its Router now answers the timeline schema and its call/provenance counts include the timeline field (5→8), because T-031 adds a third field to `analyze --llm`. Interfaces D-060. 13 fail as expected (no `tutor.fields.timeline`, no `timeline` predictor, nothing written); 14 grader tests pass.
+- 2026-11-08 · `/build` — `prompts/timeline/v1.md` (pinned, manifest), `src/tutor/fields/timeline.py`, `TimelinePredictor` + `graders_for("timeline")`, `analyze --llm` writes `timeline_summary` + provenance (call order failure → timeline → algorithm; each field fails alone) and price-checks the timeline up front. Unit: `tests/unit/test_timeline_field.py` (5), `test_pipeline_llm_rows.py` updated for the third field (+1). 546 passed; ruff + mypy clean. Dev run `20261108T141431Z-4b33ea4c`: **timeline at_most_5_sentences 1.00 @ prompt timeline-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge —** (real 1.00 n=6, synthetic 1.00 n=13), errors 0, $0.44. Not tuned (out of scope). Seen for T-033, not acted on: on the Sort Colors dev case the summary calls the first approach on track, where the human's label says off track.
+- 2026-11-08 · `/test run` ✅ — contract 73, acceptance 367, unit 106 passed; ruff + mypy + `prompts check` clean. Builder diff touches no judging file; failure/algorithm field code and prompts unchanged (manifest only gained `timeline/v1.md`, keys re-sorted). Tester dev run `20261108T141804Z-9a806311`: timeline at_most_5_sentences **1.00** @ prompt timeline-v1, model openai:gpt-5.5, dataset dev-v1, condenser c1, judge — (real 1.00 n=6, synthetic 1.00 n=13), errors 0, $0.44; matches the builder's run. Content is unscored until the judge (T-033).
+
+### T-032 · Runner support for judge graders
+**Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** arch §8.3 `judge`, §8.4 `GradeContext.client`; rule 8.
+**Done when:**
+1. A grader with `kind == "llm_judge"` receives `GradeContext(client=…)`. Its calls are logged and
+   their cost is added to the record.
+2. `record["judge"] = {name, version, provider, model, calibrated}`. `calibrated` is true only if
+   `evals/calibration.json` lists that judge version with agreement ≥ 0.85.
+3. `summary_line` prints `judge <name>-<version>` and `(uncalibrated)` when it applies.
+**Not included:** any judge prompt (tester-owned, T-033).
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t032_judge_runner.py` (16: judge gets the injected client; calls logged under the record's run id; judge cost per row and in the total; a failing judge is a scored error; `by_metric`; `record["judge"]` with provider/model; `calibrated` needs the exact version at ≥ 0.85, 6 cases; `summary_line` judge name and `(uncalibrated)`; the committed calibration file is well formed) and `evals/calibration.json` (empty `entries`). Interfaces D-061; `by_metric` added because a judge emits several metrics and `accuracy` reads only the first. 15 fail as expected (`run()` takes no `graders`), 1 passes.
+- 2026-11-08 · `/build` — `run(..., graders=None, judge_client=None)`: judges get `GradeContext(client=…)` and the record's `run_id`; per-row `judge_cost_usd` folded into `cost_usd_total`; a raising judge is a scored `judge: …` error; `aggregates.by_metric`; `record["judge"]` via `_judge_info` / `_is_calibrated` (exact version, ≥ 0.85, missing or malformed file = uncalibrated); `summary_line` prints `judge <name>-<version> (uncalibrated)`. Unit: `tests/unit/test_runner_judge_internals.py` (4). 566 passed; ruff + mypy clean. No eval run: no field or prompt changed, and suites with no judge still print `judge —`.
+- 2026-11-08 · `/test run` ✅ — contract 73, acceptance 383, unit 110 passed; ruff + mypy clean. Builder diff: runner, its unit test, tracker; no judging file. Free regression check through the changed runner: algorithm keyword baseline 0.83 @ keyword-v1, dev-v1, judge — (= baseline); failure rule-decided 1.00 @ rules-v1, dev-v1, judge — (= baseline). $0.
+
+### T-033 · Timeline judge and calibration
+**Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Summary checklist", "Checking the judge".
+**Done when:**
+1. `prompts/judges/timeline/v1.md` grades the six checklist items one by one: every approach;
+   first-approach / course-correction; no invented correction; final approach and outcome; no
+   invented events; ≤ 5 sentences, counted by code, not the judge. Metric: % of items met.
+2. Calibration set: 20 timeline summaries from **dev** runs. The tester proposes a grade per item;
+   the human decides every one. Agreement is measured item by item.
+3. The agreement is recorded in `evals/calibration.json`, the tracker's Judge calibration table and
+   `docs/decisions.md`. If it is under 85%, the judge is revised (v2) and re-measured; the summaries
+   are never edited to fit the judge.
+4. The human's confirmation is in the log.
+**Not included:** the timeline prompt (T-031); test-split outputs.
+**Log:**
+- 2026-11-08 · `/test write` — judge prompt `prompts/judges/timeline/v1.md` (pinned), `evals/graders/timeline_judge.py`, `GradeContext.session` in `evals/graders/base.py`, `evals/calibrate/agreement.py` + `calibrate_judge.py`, `tests/acceptance/test_t033_timeline_judge.py` (11: scoring, code-counted length the judge can't overrule, n/a correction item, judge inputs, prompt pinned with no dataset slug, agreement maths incl. the always-yes check; 9 pass, 2 runner-wiring tests fail as expected and need a short `/build`). Interfaces D-062. Calibration set drafted: 20 dev summaries (all 19 from run `20261108T141431Z-4b33ea4c` + dev-008 from `20261108T141804Z-9a806311`, chosen because it claims a switch that didn't happen); 97 graded items, tester proposes 90 met / 7 not met; awaiting the human's grades (`v1.draft.jsonl`, not committed).
+- 2026-11-08 · human grades — the human reviewed all 20 (notes on #3, #9, #11, #16, #17, #20; the rest confirmed). Their definition of on track (no pivot needed; too slow is off track) is D-063 and goes into T-036. **Dataset change (rule 10):** the human relabelled syn-003 as a pivot at minute 8 to a second, still-wrong approach → `timeline/dev` is now **dev-v2** (failure / algorithm / timeline-test cases byte-identical); spec checker rule relaxed to "wrong_approach ⇒ first approach off track"; T-030 and frozen-dataset tests updated for dev-v2. Calibration set committed and frozen: 95 graded items, 90 met / 5 not met (all "first approach"). Pass condition: agreement ≥ 0.85 and ≥ 70% of the not-met items caught (4 of 5).
+- 2026-11-08 · calibration run `20261108T154739Z-dd1be3e6`: **timeline-judge v1 @ openai:gpt-5.5 agreement 1.00 (n=95), misses caught 5/5** (pass condition D-063: ≥ 0.85 and ≥ 4/5), $0.64. Reasons read for the misses and the relabelled session: each names the disagreement with the account. Recorded in `evals/calibration.json` (accept), the Judge calibration table and D-064. One run: the judge's own repeat noise is measured at T-035. Left for `/build`: the 2 runner-wiring tests (session in `GradeContext`, `graders_for("timeline")` → the judge).
+- 2026-11-08 · `/test write` correction — `test_t031_timeline.py::test_the_runner_records_versions_cost_and_the_sentence_count` now passes `graders=[SentenceCount()]`: T-033 makes the judge the timeline suite's default grader, and that test checks the predictor's record, not the default grader.
+- 2026-11-08 · `/build` — runner builds `GradeContext(client, session)` per case; `graders_for("timeline")` → `[TimelineJudge()]`. Unit +1 (a case that fails to load isn't graded). 578 passed; ruff + mypy clean. Judged dev run `20261108T155454Z-386d4dd4`: **timeline checklist 0.95 @ prompt timeline-v1, model openai:gpt-5.5, dataset dev-v2, judge timeline-judge-v1 (calibrated)**; first approach 0.74, every other item 1.00; the misses are the same 5 sessions as the calibration set. $1.04 (field $0.44 + judge $0.60).
+- 2026-11-08 · `/test run` ✅ — contract 73, acceptance 394, unit 111 passed; ruff + mypy + `prompts check` clean. Builder diff: runner + its unit test only (the T-031 test correction was a logged `/test write`). Done when: judge grades the 6 items (5 judged, length by code) ✓; 20 dev summaries, every grade the human's ✓; agreement in `calibration.json`, tracker, D-064 ✓; human confirmation in the log ✓. Tester judged run `20261108T160313Z-73d36a5c`: **timeline checklist 0.93 @ prompt timeline-v1, model openai:gpt-5.5, dataset dev-v2, judge timeline-judge-v1 (calibrated)** vs 0.95 in the builder's run; the field's fresh summaries moved two cases (Sort Colors now also claims a switch; Number of LIS says "never switched", against the relabel), and the judge's reasons for both are right. No band yet (T-035). $1.08.
+
+### T-034 · Failure-explanation judge and calibration
+**Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Failure explanation: consistent with the real failure, no invented causes"; D-052.
+**Done when:**
+1. `prompts/judges/failure_explanation/v1.md` grades two items: consistent with the real failure, and
+   no invented cause.
+2. 20 explanations from the stored M3 dev records, hand-graded by the human; agreement is recorded
+   as in T-033.
+3. The human's confirmation is in the log.
+**Not included:** changing the failure prompt.
+
+### T-036 · Timeline prompt v2: define "on the right track"
+**Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** eval plan "Says whether my first approach was on the right track"; finding in T-033's calibration review.
+**Why:** in both T-031 dev runs, timeline-v1 called the first approach "on the right track" on all 5 sessions the human labelled off track (10/10 summaries). The facts were right; v1 never defines the term, and the model reads it as "a sensible idea that could be fixed", where the human means "would pass within the problem's limits if implemented correctly".
+**Done when:**
+1. `prompts/timeline/v2.md` defines "on the right track" as a general rule (an idea that would pass within the problem's limits if implemented correctly; correct-but-too-slow, or needing a rewrite to pass, is not on track). No problem, slug or dataset example is named (rule 9). v1 stays as it is; `tutor.toml` pins v2.
+2. The prompt states the human's definition (D-063): on track = only bug fixes needed; a pivot to a different algorithm, or too slow, = off track. A dev run of v2 graded by the **calibrated** timeline judge, with `checklist.first_approach` and `timeline_checklist` compared to v1 under the same judge version.
+3. No other checklist item drops outside the noise band.
+**Not included:** the failure prompt; any change to labels or the judge; test-split runs.
+**Test assets:** required (`/test write T-036` before `/build`).
+
+### T-035 · M4 checkpoint
+**Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** M4 checkpoint "Judge agreement ≥ 85% recorded".
+**Done when:**
+1. Both judges are recorded at ≥ 85% agreement (or the shortfall is written up as a finding).
+2. Timeline checklist and failure explanation baselines on dev, with `--repeats 3`, noise band and
+   versions (prompt, model, dataset, judge) in Baselines.
+3. The human confirms.
+**Not included:** prompt v2s; the test split (M7).
+
 ---
 
 ## Eval baselines (dev)
@@ -1118,7 +1251,8 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 | algorithm accuracy | **0.94** overall (real 1.00 n=5, synthetic 0.92 n=13) | **0.00** (0.94 in all 5 runs: 2 single + 3 repeats); label consistency 16/18 | algorithm-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
 | algorithm — keyword baseline | **0.83** overall (real 1.00 n=5, synthetic 0.77 n=13) | 0 (deterministic; consistency 1.00) | — | keyword-v1 | dev-v1 | — | 2026-11-07 |
 | failure explanation (judge) | | | | | dev-v1 | | |
-| timeline checklist (judge) | | | | | dev-v1 | | |
+| timeline ≤ 5 sentences (code-counted) | **1.00** (real 1.00 n=6, synthetic 1.00 n=13; 18 × 4 sentences, 1 × 3) | 1.00 in both runs so far (builder + tester); 3-repeat band at T-035 | timeline-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-08 |
+| timeline checklist (judge) | **0.95** (real 0.97 n=6, synthetic 0.94 n=13); first approach **0.74** (14/19: misses 003, 009, 011, 016, 017), every other item 1.00 | 2 runs: 0.95, 0.93 (first approach 0.74, 0.68); 3-repeat band at T-035 | timeline-v1 | openai:gpt-5.5 | dev-v2 | timeline-judge-v1 (calibrated, D-064) | 2026-11-08 |
 | agent exact answers | | | | | fixture-v1 | — | |
 | agent pattern recall (judge) | | | | | fixture-v1 | | |
 | agent grounding | | | | | fixture-v1 | — | |
@@ -1127,6 +1261,7 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 
 | Judge | Version | Agreement with hand labels | n | Date |
 |---|---|---|---|---|
+| timeline-judge (openai:gpt-5.5) | v1 | **1.00** item by item (always-yes would get 0.95); misses caught **5/5**; per item 20/20, 20/20, 15/15, 20/20, 20/20 | 95 items / 20 summaries | 2026-11-08 |
 
 ## Test-split log
 
@@ -1155,6 +1290,7 @@ Every item has a trigger: the condition that would make it worth doing.
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
 | `tutor prompts lock` (write manifest entries by command) | M3 adds only two prompts; the contract test catches any wrong hash (re-checked 2026-11-07, D-053) | A hand-entered hash causes a wrong commit, or more than 5 prompt versions exist |
 | `algorithm_labels` table instead of the label CHECK (D-050) | One label gap so far ("sorting"), handled with no label | A second label needs adding: do this migration instead, then labels are rows |
+| **Dataset v2:** more course-corrected sessions (the test split has 0 of 3, T-030), cue-free DP / backtracking (T-028), more LLM-decided failure cases; re-split, then prompt v2s against it | Doesn't block M4: dev holds all 3 corrected sessions, so the timeline judge is still calibrated and measured. Doing it now delays T-031–T-035 and would change dev-v1 mid-milestone, breaking comparison with the M3 baselines | **After M4 ✅, before M7's test-split run.** M7's test score can't measure course-correction reporting with 0 corrected cases; it becomes a task in the M5-replacement slot (Part 2 is deferred) |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
 ## Dropped
@@ -1194,3 +1330,6 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | T-017, T-019, T-021, T-023; **M2 ✅** | — | — | **`/test run`, M2 close.** The human confirmed T-017 (checker rules), T-019 (the 20 session files as final), T-021 (the split) and T-023 (the 0.83 keyword baseline). Gates: 434 passed / 23 skipped (T-015 deferred), ruff clean, mypy clean, `checks.py` 20/20. The judging files in the branch diff are the tester's own (tester-owned tasks), not the builder's. M3 is next: `/pm plan`. |
 | 2026-11-07 | — | — | T-024 – T-028 | `/pm plan` M3: 5 tasks, algorithm first (it has a 0.83 bar to beat). Failure explanation stored but unscored until the M4 judge (D-052). `tutor prompts lock` stays deferred (D-053). Estimated dev cost: about $0.30 (algorithm) and $0.65 (failure) per run. Not planned: prompt v2s (after T-028's finding), the timeline (M4), the test split (M7). |
 | 2026-11-07 | T-024 – T-028; **M3 ✅** | — | — | M3 closed: algorithm 0.94 (noise 0.00) @ algorithm-v1; failure LLM-decided 0.89 ±0.11, rule 1.00 @ failure-v1; model openai:gpt-5.5, dataset dev-v1. The human confirmed T-028's 5 findings. Open idea (not yet through `/pm idea`): dataset v2 aimed at cue-free DP / backtracking and more LLM-decided failure cases, then prompt v2s. M3 eval spend ≈ $1.80. |
+| 2026-11-07 | — | — | T-029 – T-035 | `/pm plan` M4: 7 tasks (real-session timeline labels, the timeline suite, the timeline field, runner judge support, two judges, each calibrated on 20 hand grades, checkpoint). Judge model is gpt-5.5 for now (D-058). Human work: 8 timeline labels and 40 hand grades. Not planned: the dataset v2 / prompt v2 idea (still to go through `/pm idea`); the test split (M7). |
+| 2026-11-08 | — | — | — | `/pm idea` dataset v2 (the human asked for a todo after T-030 found 0 corrected sessions in the test split; merges the open T-028 idea): **Deferred**, trigger after M4 ✅ / before M7. |
+| 2026-11-08 | — | — | T-036 | `/pm idea` define "on the right track" in the timeline prompt (the human asked for the task after T-033's review): **Add** as T-036, before the checkpoint so T-035 records the better prompt. Teaches a measured prompt iteration with a calibrated judge; displaces nothing (M4 order gains one S task). |
