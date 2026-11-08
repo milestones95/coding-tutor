@@ -1120,7 +1120,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 | T-030 | `timeline` suite: dev/test `cases.jsonl` on the existing split, frozen by hash | test | S | required | ✅ | arch §8.1; D-050 |
 | T-031 | Timeline field: `prompts/timeline/v1.md` + `fields/timeline.py`; runner predictor; `analyze --llm` writes `timeline_summary` | build | M | required | ✅ | eval plan "Timeline summary"; arch §6.3, §7 |
 | T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ✅ | arch §8.3, §8.4; rule 8 |
-| T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ⬜ | eval plan "Checking the judge"; rule 8 |
+| T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | 🔄 | eval plan "Checking the judge"; rule 8 |
 | T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ⬜ | eval plan "Failure explanation"; D-052 |
 | T-036 | Timeline prompt v2: a general definition of "on the right track"; measured against v1 with the calibrated judge | build | S | required | ⬜ | eval plan "Summary checklist" (first approach on the right track); T-033 finding |
 | T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
@@ -1204,6 +1204,7 @@ content in any log (counts only).
 - 2026-11-08 · human grades — the human reviewed all 20 (notes on #3, #9, #11, #16, #17, #20; the rest confirmed). Their definition of on track (no pivot needed; too slow is off track) is D-063 and goes into T-036. **Dataset change (rule 10):** the human relabelled syn-003 as a pivot at minute 8 to a second, still-wrong approach → `timeline/dev` is now **dev-v2** (failure / algorithm / timeline-test cases byte-identical); spec checker rule relaxed to "wrong_approach ⇒ first approach off track"; T-030 and frozen-dataset tests updated for dev-v2. Calibration set committed and frozen: 95 graded items, 90 met / 5 not met (all "first approach"). Pass condition: agreement ≥ 0.85 and ≥ 70% of the not-met items caught (4 of 5).
 - 2026-11-08 · calibration run `20261108T154739Z-dd1be3e6`: **timeline-judge v1 @ openai:gpt-5.5 agreement 1.00 (n=95), misses caught 5/5** (pass condition D-063: ≥ 0.85 and ≥ 4/5), $0.64. Reasons read for the misses and the relabelled session: each names the disagreement with the account. Recorded in `evals/calibration.json` (accept), the Judge calibration table and D-064. One run: the judge's own repeat noise is measured at T-035. Left for `/build`: the 2 runner-wiring tests (session in `GradeContext`, `graders_for("timeline")` → the judge).
 - 2026-11-08 · `/test write` correction — `test_t031_timeline.py::test_the_runner_records_versions_cost_and_the_sentence_count` now passes `graders=[SentenceCount()]`: T-033 makes the judge the timeline suite's default grader, and that test checks the predictor's record, not the default grader.
+- 2026-11-08 · `/build` — runner builds `GradeContext(client, session)` per case; `graders_for("timeline")` → `[TimelineJudge()]`. Unit +1 (a case that fails to load isn't graded). 578 passed; ruff + mypy clean. Judged dev run `20261108T155454Z-386d4dd4`: **timeline checklist 0.95 @ prompt timeline-v1, model openai:gpt-5.5, dataset dev-v2, judge timeline-judge-v1 (calibrated)**; first approach 0.74, every other item 1.00; the misses are the same 5 sessions as the calibration set. $1.04 (field $0.44 + judge $0.60).
 
 ### T-034 · Failure-explanation judge and calibration
 **Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Failure explanation: consistent with the real failure, no invented causes"; D-052.
@@ -1250,7 +1251,7 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 | algorithm — keyword baseline | **0.83** overall (real 1.00 n=5, synthetic 0.77 n=13) | 0 (deterministic; consistency 1.00) | — | keyword-v1 | dev-v1 | — | 2026-11-07 |
 | failure explanation (judge) | | | | | dev-v1 | | |
 | timeline ≤ 5 sentences (code-counted) | **1.00** (real 1.00 n=6, synthetic 1.00 n=13; 18 × 4 sentences, 1 × 3) | 1.00 in both runs so far (builder + tester); 3-repeat band at T-035 | timeline-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-08 |
-| timeline checklist (judge) | | | | | dev-v1 | | |
+| timeline checklist (judge) | **0.95** (real 0.97 n=6, synthetic 0.94 n=13); first approach **0.74** (14/19: misses 003, 009, 011, 016, 017), every other item 1.00 | not measured yet (1 run; T-035) | timeline-v1 | openai:gpt-5.5 | dev-v2 | timeline-judge-v1 (calibrated, D-064) | 2026-11-08 |
 | agent exact answers | | | | | fixture-v1 | — | |
 | agent pattern recall (judge) | | | | | fixture-v1 | | |
 | agent grounding | | | | | fixture-v1 | — | |
