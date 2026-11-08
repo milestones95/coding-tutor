@@ -981,3 +981,12 @@ not met at least 70% of the items the human marked not met (the human set "5 of 
 the set has 5 not-met items, so 4 of 5). An always-yes judge would score 90/95 = 0.95 on this set, so
 agreement alone can't pass a judge. The calibration set `evals/data/calibration/timeline/v1.jsonl` is
 frozen by hash in `evals/data/manifest.json`.
+
+## D-064 · timeline-judge v1 is calibrated · 2026-11-08 · test
+On the human's 20 graded summaries (95 items), timeline-judge v1 on openai:gpt-5.5 agreed on every
+item (1.00; an always-yes judge would score 0.95) and caught all 5 items the human marked not met,
+so it passes D-063's condition and is recorded `accept` in `evals/calibration.json`. Caveats: one
+run (repeat noise is measured at T-035); the set has only one kind of miss ("first approach"), so
+the other four items are calibrated on "met" cases only; and the judge is the same model as the
+field (D-058). **Revisit** when T-036 produces summaries with other kinds of mistakes, and at M7
+with a Claude judge.
