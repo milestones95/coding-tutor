@@ -892,3 +892,16 @@ the rule bucket.
   `last_usage` is None when no call was made.
 **Why.** §6.3 has the rule table but not the seam, and the too_slow case (rule type + LLM
 explanation) is easy to get wrong in either direction.
+
+## D-057 · `tutor analyze --llm` is opt-in · 2026-11-07 · tester
+- `analyze(settings, *, run_id, since=None, llm=False, client=None, model=None)`;
+  `AnalyzeReport.llm_errors`. CLI: `tutor analyze [--since] [--llm [--model PROVIDER:MODEL]]`.
+- With `--llm`, the failure and algorithm fields run through the same functions the runner calls,
+  writing `session_analysis`, `session_algorithms` and `field_provenance`. There is one provenance
+  row per field that made a call: a passed session's failure field makes none, so it gets no row
+  (its `call_id` is NOT NULL). Re-running replaces a session's rows.
+- An LLM error in one field: logged as `llm_field_failed`; that field is left NULL or without rows; the run
+  continues. A config error (e.g. an unpriced model) raises before anything is written.
+**Why.** Without the flag, analyze stays offline and free, as in T-011. Spending money should be
+asked for, not a side effect of refreshing facts. It refines T-027's Done-when ("`tutor analyze
+[--model]`") with an explicit `--llm`.

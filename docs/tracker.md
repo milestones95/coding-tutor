@@ -1073,6 +1073,9 @@ to `analysis.db` (T-027).
 4. Acceptance tests run on a hand-built session with the fake client; no network.
 **Not included:** the timeline summary (M4); re-analysis triggers.
 
+**Log**
+- 2026-11-07 `/test write` — `tests/acceptance/test_t027_pipeline_llm.py` (8, fake LLM that answers by schema): fields written for passed / unknown / wrong-answer sessions (rule `none`, LLM type and explanation, labels, condenser_version); no failure call for a passed session; provenance names prompt, model, run and a `call_id` that joins to `llm_calls.jsonl`; a re-run replaces rows; an LLM error leaves one field NULL, the run goes on, and `llm_field_failed` is logged; a config error writes nothing; without `--llm` there are no calls and no LLM rows; the CLI has `--llm` and `--model`. Interfaces in D-057 (opt-in `--llm`). All 8 fail for the right reason. The T-011 tests stay unchanged (analyze without `--llm`).
+
 ### T-028 · M3 checkpoint
 **Milestone:** M3 · **Size:** S · **Owner:** test · **Traces to:** M3 checkpoint "dev baseline recorded per field".
 **Done when:**
