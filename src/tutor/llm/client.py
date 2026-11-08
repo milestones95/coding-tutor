@@ -28,7 +28,7 @@ from tutor.config import Settings
 from tutor.llm.adapters import Adapter, AdapterResponse
 from tutor.llm.errors import LLMConfigError, LLMOutputInvalid, LLMProviderError
 from tutor.llm.messages import Message
-from tutor.llm.pricing import DEFAULT_PRICING, price_for
+from tutor.llm.pricing import DEFAULT_PRICING, Price, price_for
 from tutor.logs import log_event
 from tutor.prompts import LoadedPrompt
 
@@ -103,6 +103,10 @@ class LLMClient:
         self._bodies_dir = settings.paths.logs / "llm_bodies"
 
     # ------------------------------------------------------------ setup checks
+
+    def price_for(self, field: str, model: ModelRef | None = None) -> Price:
+        """The price a call for `field` would be billed at; LLMConfigError if the model has none."""
+        return price_for(self._pricing_path, str(self.model_for(field, model)))
 
     def model_for(self, field: str, model: ModelRef | None = None) -> ModelRef:
         """The model a call for `field` will use: `model`, else `llm.fields.<field>`, else `llm.default`."""

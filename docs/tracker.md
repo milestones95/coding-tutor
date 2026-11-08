@@ -998,7 +998,7 @@ The failure explanation is stored but not scored in M3: it needs the judge built
 | T-024 | Algorithm field: `prompts/algorithm/v1.md` + `fields/algorithm.py`; runner predictor `algorithm` with `--model` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Algorithm type"; arch §2, §6.3, §7, §8.2 |
 | T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ✅ 2026-11-07 `/test run` | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
 | T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Failure reason"; arch §6.3, §7 |
-| T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ⬜ | arch §1, §3.2, analyzer pipeline |
+| T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | 🔄 built 2026-11-07 | arch §1, §3.2, analyzer pipeline |
 | T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | ⬜ | M3 checkpoint |
 
 ### T-024 · Algorithm field
@@ -1075,6 +1075,7 @@ to `analysis.db` (T-027).
 
 **Log**
 - 2026-11-07 `/test write` — `tests/acceptance/test_t027_pipeline_llm.py` (8, fake LLM that answers by schema): fields written for passed / unknown / wrong-answer sessions (rule `none`, LLM type and explanation, labels, condenser_version); no failure call for a passed session; provenance names prompt, model, run and a `call_id` that joins to `llm_calls.jsonl`; a re-run replaces rows; an LLM error leaves one field NULL, the run goes on, and `llm_field_failed` is logged; a config error writes nothing; without `--llm` there are no calls and no LLM rows; the CLI has `--llm` and `--model`. Interfaces in D-057 (opt-in `--llm`). All 8 fail for the right reason. The T-011 tests stay unchanged (analyze without `--llm`).
+- 2026-11-07 `/build T-027` → 🔄. `pipeline.analyze(..., llm, client, model)`: with `llm`, `client.price_for` checks both fields first (a config error writes nothing); `_llm_rows` runs `failure()` and `algorithm()` per session (the runner's functions), catches `LLMError` per field (logged as `llm_field_failed`, field left NULL), and builds the `session_analysis` upserts, a delete + insert for `session_algorithms` and `field_provenance`, all in the facts' one transaction. `FailureResult.call_id`; `LLMClient.price_for`; `tutor analyze --llm --model`. Tests: 8 from `/test write` + 3 unit; T-011 / T-012 unchanged and passing; suite 499 passed / 23 skipped; ruff and mypy clean. Dev eval: n/a (field functions unchanged). Not run on real data: that costs money and is the human's call.
 
 ### T-028 · M3 checkpoint
 **Milestone:** M3 · **Size:** S · **Owner:** test · **Traces to:** M3 checkpoint "dev baseline recorded per field".

@@ -48,6 +48,7 @@ class FailureOutput(BaseModel):
 class FailureResult(BaseModel):
     output: FailureOutput
     usage: Usage | None   # None when no call was made (a passed session)
+    call_id: str | None = None   # joins to llm_calls.jsonl; None when no call was made
 
 
 def prompt_for(settings: Settings) -> LoadedPrompt:
@@ -89,4 +90,4 @@ def failure(session: Session, *, client: LLMClient, settings: Settings, run_id: 
     else:
         out = FailureOutput(failure_type=FailureType(r.output.failure_type), source="llm",
                             explanation=r.output.explanation)
-    return FailureResult(output=out, usage=r.usage)
+    return FailureResult(output=out, usage=r.usage, call_id=r.call_id)

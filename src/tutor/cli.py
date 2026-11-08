@@ -37,6 +37,9 @@ def _tutor_parser() -> argparse.ArgumentParser:
     an = sub.add_parser("analyze", help="load captured sessions, write facts + condensed timelines to analysis.db")
     an.add_argument("--since", type=date.fromisoformat, default=None, metavar="YYYY-MM-DD",
                     help="only sessions that started on or after this date (in time.timezone)")
+    an.add_argument("--llm", action="store_true",
+                    help="also run the failure and algorithm fields (LLM calls; costs money)")
+    an.add_argument("--model", default=None, metavar="PROVIDER:MODEL", help="model for --llm (default: llm.default)")
     an.set_defaults(handler=_analyze)
     rb = sub.add_parser("rebuild-timelines", help="re-condense every analyzed session (after a condenser change)")
     rb.set_defaults(handler=_rebuild)
@@ -109,13 +112,17 @@ def _analyze(args: argparse.Namespace) -> int:
     from tutor.config import load_settings
     from tutor.logs import new_run_id
 
+    from tutor.llm import LLMConfigError, ModelRef
+
     run_id = new_run_id()
     try:
-        report = analyze(load_settings(), run_id=run_id, since=args.since)
-    except _pipeline_errors() as e:
+        model = ModelRef.parse(args.model) if args.model else None
+        report = analyze(load_settings(), run_id=run_id, since=args.since, llm=args.llm, model=model)
+    except _pipeline_errors() + (LLMConfigError,) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    print(f"analyze {run_id}: {report.stored} sessions stored")
+    extra = f", {report.llm_errors} LLM field errors (see pipeline.jsonl)" if args.llm else ""
+    print(f"analyze {run_id}: {report.stored} sessions stored{extra}")
     return 0
 
 
