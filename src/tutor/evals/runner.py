@@ -230,14 +230,59 @@ def estimate(suite: str, split: str, *, predictor: Predictor, repeats: int = 1, 
     return {"cases": len(cases), "calls": len(cases) * repeats, "cost_usd": round(len(cases) * repeats * per_call, 6)}
 
 
+CALIBRATED_AT = 0.85   # rule 8: a judge's numbers count only at this agreement with the human's grades
+
+
+def _judge_info(judge: Any, client: LLMClient, root: Path) -> dict:
+    """record["judge"] (§8.3): who judged, on which model, and whether that exact version is calibrated."""
+    ref = client.model_for(judge.field)
+    return {"name": judge.name, "version": judge.version, "provider": ref.provider, "model": ref.model,
+            "calibrated": _is_calibrated(judge.name, judge.version, root / "calibration.json")}
+
+
+def _is_calibrated(name: str, version: str, path: Path) -> bool:
+    """True only when `path` lists this judge's exact version at agreement >= 0.85 (D-061). A missing
+    or unreadable file means uncalibrated: the safe reading, since an uncalibrated number can't decide."""
+    try:
+        entries = json.loads(path.read_text()).get("entries", [])
+    except (FileNotFoundError, json.JSONDecodeError, AttributeError):
+        return False
+    return any(isinstance(e, dict) and e.get("judge") == name and e.get("version") == version
+               and isinstance(e.get("agreement"), (int, float)) and e["agreement"] >= CALIBRATED_AT
+               for e in entries)
+
+
+def _by_metric(rows: list[dict]) -> dict[str, dict]:
+    """Mean and count per metric over rows that ran: a judge emits several checklist metrics, and
+    `accuracy` reads only the first grade (D-061)."""
+    values: dict[str, list[float]] = {}
+    for r in rows:
+        if r["error"]:
+            continue
+        for g in r["grades"]:
+            values.setdefault(g["metric"], []).append(g["value"])
+    return {m: {"mean": sum(v) / len(v), "n": len(v)} for m, v in values.items()}
+
+
 def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, repeats: int = 1,
-        milestone: str | None = None, root: Path | None = None, results_dir: Path | None = None) -> dict:
+        milestone: str | None = None, root: Path | None = None, results_dir: Path | None = None,
+        graders: list | None = None, judge_client: LLMClient | None = None) -> dict:
     root = root or DEFAULT_ROOT
     cases = load_cases(suite, split, root=root, milestone=milestone)   # refuses a locked test split first
-    graders = graders_for(suite)
+    _evals_importable()
+    from evals.graders.base import GradeContext
+
+    graders = graders if graders is not None else graders_for(suite)
+    judges = [g for g in graders if getattr(g, "kind", None) == "llm_judge"]
     run_id, started = new_run_id(), _now()
     if hasattr(predictor, "run_id"):
         predictor.run_id = run_id      # the field's logged calls carry the record's run id
+    ctx = None
+    if judges:
+        judge_client = judge_client or LLMClient(settings)
+        ctx = GradeContext(client=judge_client)
+        for j in judges:
+            j.run_id = run_id          # judge calls are logged under the same run id
     rows: list[dict] = []
     for case in cases:
         session, load_error = None, None
@@ -255,10 +300,25 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                 except Exception as e:  # a failing predictor is a scored error, not a crashed run
                     error = f"{type(e).__name__}: {e}"
             usage = getattr(predictor, "last_usage", None) if error is None else None
-            grades = [] if error else [g.model_dump() for gr in graders for g in gr.grade(case, output, None)]
+            grades: list[dict] = []
+            judge_cost = 0.0
+            if error is None:
+                for gr in graders:
+                    is_judge = gr in judges
+                    try:
+                        grades += [g.model_dump() for g in gr.grade(case, output, ctx)]
+                    except Exception as e:   # a failing judge is a scored error, not a crashed run
+                        error = f"judge: {type(e).__name__}: {e}" if is_judge else f"grader: {type(e).__name__}: {e}"
+                        grades = []
+                    finally:
+                        ju = getattr(gr, "last_usage", None) if is_judge else None
+                        judge_cost += ju.cost_usd if ju else 0.0
+                    if error:
+                        break
             rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source,
                          "decider": "rule" if "rule_decided" in case.tags else "llm", "output": output,
                          "grades": grades, "error": error, "cost_usd": usage.cost_usd if usage else 0.0,
+                         "judge_cost_usd": judge_cost,
                          "latency_ms": int((time.monotonic() - t0) * 1000),
                          "input_tokens": usage.input_tokens if usage else 0,
                          "output_tokens": usage.output_tokens if usage else 0})
@@ -286,7 +346,9 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
         "model": predictor.ref.model if hasattr(predictor, "ref") else f"{predictor.name}@{predictor.version}",
         "prompt_versions": dict(getattr(predictor, "prompt_versions", {})),
         "prompt_sha256": dict(getattr(predictor, "prompt_sha256", {})),
-        "condenser_version": CONDENSER_VERSION, "judge": None, "repeats": repeats,
+        "condenser_version": CONDENSER_VERSION,
+        "judge": _judge_info(judges[0], judge_client, root) if judges and judge_client else None,
+        "repeats": repeats,
         "metric": graders[0].name,
         "cases": [] if split == "test" else rows,      # rule 2: test runs keep aggregates only
         "aggregates": {
@@ -296,9 +358,10 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                           for src in ("real", "synthetic")},
             "consistency": consistency,
             "errors": sum(1 for r in rows if r["error"]),
+            "by_metric": _by_metric(rows),
             **aggregates_extra,
         },
-        "cost_usd_total": round(sum(r["cost_usd"] for r in rows), 6),
+        "cost_usd_total": round(sum(r["cost_usd"] + r["judge_cost_usd"] for r in rows), 6),
     }
     out = (results_dir or root / "results")
     (out / suite).mkdir(parents=True, exist_ok=True)
@@ -306,6 +369,12 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
     with (out / "index.jsonl").open("a", encoding="utf-8") as f:
         f.write(json.dumps({k: v for k, v in record.items() if k != "cases"}, ensure_ascii=False) + "\n")
     return record
+
+
+def _judge_label(judge: dict | None) -> str:
+    if not judge:
+        return "—"
+    return f"{judge['name']}-{judge['version']}" + ("" if judge.get("calibrated") else " (uncalibrated)")
 
 
 def summary_line(record: dict) -> str:
@@ -323,5 +392,5 @@ def summary_line(record: dict) -> str:
         made_by = f"predictor {record['model']}"
     return (f"{record['suite']} {record['metric']} {fmt(a['accuracy'])} @ {made_by}, "
             f"dataset {record['dataset_version']}, condenser {record['condenser_version']}, "
-            f"judge {record['judge'] or '—'} | {', '.join(parts)} | errors {a['errors']} | "
+            f"judge {_judge_label(record['judge'])} | {', '.join(parts)} | errors {a['errors']} | "
             f"consistency {fmt(a['consistency'])} | ${record['cost_usd_total']:.4f} | run {record['run_id']}")
