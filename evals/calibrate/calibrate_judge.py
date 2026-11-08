@@ -54,7 +54,7 @@ def main(argv=None) -> int:
         human.append(r["human"])
         judged.append({i: getattr(o, i).met for i in ITEMS})
         out.append({"item_id": r["item_id"], "human": r["human"], "judge": o.model_dump()})
-    res = {"judge": f"timeline-judge", "version": a.version, "model": str(ref), "run_id": judge.run_id,
+    res = {"judge": "timeline-judge", "version": a.version, "model": str(ref), "run_id": judge.run_id,
            **agreement(human, judged), "by_item": by_item(human, judged), "cost_usd": round(cost, 4), "items": out}
     dest = REPO / "evals/results/calibration" / f"timeline-judge-{a.version}-{judge.run_id}.json"
     dest.parent.mkdir(parents=True, exist_ok=True)
