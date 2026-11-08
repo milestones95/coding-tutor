@@ -1103,6 +1103,104 @@ to `analysis.db` (T-027).
   Cost: $0.98. Needs the human's confirmation of findings 1 – 5 (and a decision on 1 and 3) to close.
 - 2026-11-07 **The human confirmed findings 1 – 5.** Labels are unchanged (no decision to relabel dev-003 or dev-017, so `dev-v1` stands), and there is no prompt v2 now. → ✅; **M3 ✅**. Gates at close: 499 passed, 23 skipped; ruff and mypy clean.
 
+## Tasks — active milestone: M4
+
+Planned 2026-11-07. Order: **T-029 → T-030 → T-031 → T-032 → T-033 → T-034 → T-035**. The
+timeline is the hardest field to label and grade (eval plan, build order), so the judge is
+trusted only after it agrees with the human's hand grades at ≥ 85% (rule 8). **Human work in
+M4:** approaches and final approach for the 8 real sessions (T-029), hand grades for 20 timeline
+summaries (T-033) and 20 failure explanations (T-034). Judge model: `openai:gpt-5.5`, the same
+model as the fields, because the Anthropic adapter is deferred to M7 (D-048). Calibration measures
+whether that matters (D-058). Estimated dev cost: timeline ≈ $0.40 per run, the judge ≈ $0.40 per
+graded run; the checkpoint with 3 repeats ≈ $3.
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-029 | Timeline labels for the 8 real sessions: approaches, final approach (the human's) | test | M | required | ⬜ | eval plan "Dataset", "Summary checklist"; arch §8.1 |
+| T-030 | `timeline` suite: dev/test `cases.jsonl` on the existing split, frozen by hash | test | S | required | ⬜ | arch §8.1; D-050 |
+| T-031 | Timeline field: `prompts/timeline/v1.md` + `fields/timeline.py`; runner predictor; `analyze --llm` writes `timeline_summary` | build | M | required | ⬜ | eval plan "Timeline summary"; arch §6.3, §7 |
+| T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ⬜ | arch §8.3, §8.4; rule 8 |
+| T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ⬜ | eval plan "Checking the judge"; rule 8 |
+| T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ⬜ | eval plan "Failure explanation"; D-052 |
+| T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
+
+### T-029 · Timeline labels for the real sessions
+**Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "For each session, I write … whether the first approach was on the right track … key facts"; arch §8.1 `timeline` expected.
+**Done when:**
+1. Each of the 8 real sessions in `evals/data/sessions/real/labels.jsonl` has `story.approaches[]`
+   (in order, plain words) and `story.final_approach`. The tester proposes them from the session;
+   the human confirms or corrects each one.
+2. `course_correction` and `key_facts` (already the human's, T-020) are unchanged, or changed with a
+   written reason.
+3. The human's confirmation is in the log.
+**Not included:** the synthetic sessions (their specs already have the story); the test split's
+content in any log (counts only).
+
+### T-030 · Timeline suite
+**Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1.
+**Done when:**
+1. `evals/data/timeline/{dev,test}/cases.jsonl` holds one case per session. Each session stays in the
+   split it has in dev-v1, so no test session moves. `expected = {checklist: {approaches,
+   course_correction, final_approach, outcome}, key_facts}`; `outcome` comes from the verdict (a fact).
+2. The timeline files are added to `evals/data/manifest.json`, and the frozen-dataset contract test covers them.
+3. `dataset_version` is `dev-v1` / `test-v1` (a new suite; no existing case changes).
+**Not included:** grading (T-033).
+
+### T-031 · Timeline field
+**Milestone:** M4 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Timeline summary … 3–5 sentences"; arch §6.3, §7.
+**Done when:**
+1. `timeline(session, *, client, settings, run_id, model=None)` makes one structured call on
+   `render(condense(session))` (rule 3) and returns a 3–5 sentence summary.
+2. The prompt follows §7 and is pinned. The contract checks that no label from `expected` reaches it.
+3. The runner predictor `timeline` writes a result record (ungraded until T-033, apart from the
+   sentence count). `tutor analyze --llm` fills `timeline_summary` plus a `timeline_summary`
+   provenance row.
+4. One dev run, recorded with versions.
+**Not included:** the judge (T-032, T-033); tuning.
+
+### T-032 · Runner support for judge graders
+**Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** arch §8.3 `judge`, §8.4 `GradeContext.client`; rule 8.
+**Done when:**
+1. A grader with `kind == "llm_judge"` receives `GradeContext(client=…)`. Its calls are logged and
+   their cost is added to the record.
+2. `record["judge"] = {name, version, provider, model, calibrated}`. `calibrated` is true only if
+   `evals/calibration.json` lists that judge version with agreement ≥ 0.85.
+3. `summary_line` prints `judge <name>-<version>` and `(uncalibrated)` when it applies.
+**Not included:** any judge prompt (tester-owned, T-033).
+
+### T-033 · Timeline judge and calibration
+**Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Summary checklist", "Checking the judge".
+**Done when:**
+1. `prompts/judges/timeline/v1.md` grades the six checklist items one by one: every approach;
+   first-approach / course-correction; no invented correction; final approach and outcome; no
+   invented events; ≤ 5 sentences, counted by code, not the judge. Metric: % of items met.
+2. Calibration set: 20 timeline summaries from **dev** runs. The tester proposes a grade per item;
+   the human decides every one. Agreement is measured item by item.
+3. The agreement is recorded in `evals/calibration.json`, the tracker's Judge calibration table and
+   `docs/decisions.md`. If it is under 85%, the judge is revised (v2) and re-measured; the summaries
+   are never edited to fit the judge.
+4. The human's confirmation is in the log.
+**Not included:** the timeline prompt (T-031); test-split outputs.
+
+### T-034 · Failure-explanation judge and calibration
+**Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Failure explanation: consistent with the real failure, no invented causes"; D-052.
+**Done when:**
+1. `prompts/judges/failure_explanation/v1.md` grades two items: consistent with the real failure, and
+   no invented cause.
+2. 20 explanations from the stored M3 dev records, hand-graded by the human; agreement is recorded
+   as in T-033.
+3. The human's confirmation is in the log.
+**Not included:** changing the failure prompt.
+
+### T-035 · M4 checkpoint
+**Milestone:** M4 · **Size:** S · **Owner:** test · **Traces to:** M4 checkpoint "Judge agreement ≥ 85% recorded".
+**Done when:**
+1. Both judges are recorded at ≥ 85% agreement (or the shortfall is written up as a finding).
+2. Timeline checklist and failure explanation baselines on dev, with `--repeats 3`, noise band and
+   versions (prompt, model, dataset, judge) in Baselines.
+3. The human confirms.
+**Not included:** prompt v2s; the test split (M7).
+
 ---
 
 ## Eval baselines (dev)
@@ -1194,3 +1292,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | T-017, T-019, T-021, T-023; **M2 ✅** | — | — | **`/test run`, M2 close.** The human confirmed T-017 (checker rules), T-019 (the 20 session files as final), T-021 (the split) and T-023 (the 0.83 keyword baseline). Gates: 434 passed / 23 skipped (T-015 deferred), ruff clean, mypy clean, `checks.py` 20/20. The judging files in the branch diff are the tester's own (tester-owned tasks), not the builder's. M3 is next: `/pm plan`. |
 | 2026-11-07 | — | — | T-024 – T-028 | `/pm plan` M3: 5 tasks, algorithm first (it has a 0.83 bar to beat). Failure explanation stored but unscored until the M4 judge (D-052). `tutor prompts lock` stays deferred (D-053). Estimated dev cost: about $0.30 (algorithm) and $0.65 (failure) per run. Not planned: prompt v2s (after T-028's finding), the timeline (M4), the test split (M7). |
 | 2026-11-07 | T-024 – T-028; **M3 ✅** | — | — | M3 closed: algorithm 0.94 (noise 0.00) @ algorithm-v1; failure LLM-decided 0.89 ±0.11, rule 1.00 @ failure-v1; model openai:gpt-5.5, dataset dev-v1. The human confirmed T-028's 5 findings. Open idea (not yet through `/pm idea`): dataset v2 aimed at cue-free DP / backtracking and more LLM-decided failure cases, then prompt v2s. M3 eval spend ≈ $1.80. |
+| 2026-11-07 | — | — | T-029 – T-035 | `/pm plan` M4: 7 tasks (real-session timeline labels, the timeline suite, the timeline field, runner judge support, two judges, each calibrated on 20 hand grades, checkpoint). Judge model is gpt-5.5 for now (D-058). Human work: 8 timeline labels and 40 hand grades. Not planned: the dataset v2 / prompt v2 idea (still to go through `/pm idea`); the test split (M7). |

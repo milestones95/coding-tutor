@@ -905,3 +905,10 @@ explanation) is easy to get wrong in either direction.
 **Why.** Without the flag, analyze stays offline and free, as in T-011. Spending money should be
 asked for, not a side effect of refreshing facts. It refines T-027's Done-when ("`tutor analyze
 [--model]`") with an explicit `--llm`.
+
+## D-058 · The judges use gpt-5.5 for now · 2026-11-07 · pm
+A judge of the same model family may favour its own outputs. A Claude judge would avoid that, but
+the Anthropic adapter is deferred to M7 (D-048). Calibration (rule 8) measures the judge against
+the human's grades either way: if gpt-5.5 agrees ≥ 85%, the self-preference worry is answered by
+data. **Revisit** at M7, when the Anthropic adapter exists: re-measure the judge with a Claude
+model on the same calibration set.
