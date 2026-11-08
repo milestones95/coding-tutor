@@ -45,6 +45,10 @@ def graders_for(suite: str) -> list:
         from evals.graders.algorithm_overlap import AlgorithmOverlap
 
         return [AlgorithmOverlap()]
+    if suite == "failure":
+        from evals.graders.failure_type_exact import FailureTypeExact
+
+        return [FailureTypeExact()]
     raise NotImplementedError(f"no graders for suite {suite!r} yet (failure: M3, timeline: M4)")
 
 
@@ -86,6 +90,28 @@ class AlgorithmPredictor:
         return {"labels": [a.value for a in result.output.algorithms]}
 
 
+class FailureRulesPredictor:
+    """Failure type from the rules alone (`rules-v1`, D-055): it measures the rule-decided half of
+    the failure suite before the LLM exists. A status no rule decides raises, so the runner scores
+    that case as an error."""
+
+    name, version = "failure_rules", "rules-v1"
+
+    def __init__(self, settings: Settings):
+        self._settings = settings
+        self.run_id = new_run_id()
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.deterministic import status
+        from tutor.fields.failure import failure_rule
+
+        st = status(session, settings=self._settings, run_id=self.run_id).status
+        ft = failure_rule(st)
+        if ft is None:
+            raise LookupError(f"no rule decides status {st.value!r}; the LLM field does (T-026)")
+        return {"failure_type": ft.value, "source": "rule", "explanation": None}
+
+
 def predictor_named(name: str, *, settings: Settings | None = None, client: LLMClient | None = None,
                     model: ModelRef | None = None) -> Predictor:
     _evals_importable()
@@ -97,7 +123,11 @@ def predictor_named(name: str, *, settings: Settings | None = None, client: LLMC
         if settings is None:
             raise ValueError("the algorithm predictor needs settings")
         return AlgorithmPredictor(settings, client=client, model=model)
-    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm")
+    if name == "failure_rules":
+        if settings is None:
+            raise ValueError("the failure_rules predictor needs settings")
+        return FailureRulesPredictor(settings)
+    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm, failure_rules")
 
 
 def _git() -> tuple[str, bool]:
@@ -145,7 +175,8 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                     error = f"{type(e).__name__}: {e}"
             usage = getattr(predictor, "last_usage", None) if error is None else None
             grades = [] if error else [g.model_dump() for gr in graders for g in gr.grade(case, output, None)]
-            rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source, "output": output,
+            rows.append({"case_id": case.case_id, "repeat": rep, "source": case.source,
+                         "decider": "rule" if "rule_decided" in case.tags else "llm", "output": output,
                          "grades": grades, "error": error, "cost_usd": usage.cost_usd if usage else 0.0,
                          "latency_ms": int((time.monotonic() - t0) * 1000),
                          "input_tokens": usage.input_tokens if usage else 0,
@@ -161,6 +192,11 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
         by_case.setdefault(r["case_id"], []).append(json.dumps(r["output"], sort_keys=True))
     consistency = (sum(len(set(v)) == 1 for v in by_case.values()) / len(by_case)) if by_case else None
     sha, dirty = _git()
+    aggregates_extra: dict = {}
+    if suite == "failure":   # §8.1: rule- and LLM-decided accuracy apart; the decider comes from the case (D-055)
+        aggregates_extra["by_decider"] = {
+            d: {"accuracy": accuracy([r for r in rows if r["decider"] == d]),
+                "n": len({r["case_id"] for r in rows if r["decider"] == d})} for d in ("rule", "llm")}
     record = {
         "run_id": run_id, "suite": suite, "split": split,
         "dataset_version": cases[0].dataset_version if cases else f"{split}-v1",
@@ -179,6 +215,7 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
                           for src in ("real", "synthetic")},
             "consistency": consistency,
             "errors": sum(1 for r in rows if r["error"]),
+            **aggregates_extra,
         },
         "cost_usd_total": round(sum(r["cost_usd"] for r in rows), 6),
     }
@@ -196,6 +233,8 @@ def summary_line(record: dict) -> str:
 
     a = record["aggregates"]
     parts = [f"{src} {fmt(a['by_source'][src]['accuracy'])} (n={a['by_source'][src]['n']})" for src in ("real", "synthetic")]
+    if "by_decider" in a:
+        parts += [f"{d} {fmt(a['by_decider'][d]['accuracy'])} (n={a['by_decider'][d]['n']})" for d in ("rule", "llm")]
     if record["prompt_versions"]:   # an LLM predictor: name the prompt and the model (rule 7)
         prompts = ", ".join(f"{n}-{v}" for n, v in record["prompt_versions"].items())
         made_by = f"prompt {prompts}, model {record['provider']}:{record['model']}"
