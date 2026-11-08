@@ -996,7 +996,7 @@ The failure explanation is stored but not scored in M3: it needs the judge built
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-024 | Algorithm field: `prompts/algorithm/v1.md` + `fields/algorithm.py`; runner predictor `algorithm` with `--model` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Algorithm type"; arch §2, §6.3, §7, §8.2 |
-| T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ⬜ | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
+| T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | 🔄 built 2026-11-07 | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
 | T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ⬜ | eval plan "Failure reason"; arch §6.3, §7 |
 | T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ⬜ | arch §1, §3.2, analyzer pipeline |
 | T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | ⬜ | M3 checkpoint |
@@ -1039,6 +1039,7 @@ to `analysis.db` (T-027).
 
 **Log**
 - 2026-11-07 `/test write` — `evals/graders/failure_type_exact.py` (tester grader) and `tests/acceptance/test_t025_failure_rules.py` (16): FailureType = the CHECK list; the rules for all 7 statuses; 5 grader cases (exact match; a missing type scores 0; the explanation is not graded); the rules predictor through the runner (rule 1.00 n=2, llm 0.00 n=1, 1 error, summary shows both); the decider split taken from the case, not the output; the algorithm suite has no split. Interfaces in D-055. 10 fail for the right reason (missing `FailureType`, `fields/failure.py`, failure graders and predictor); the 6 grader and no-split tests pass.
+- 2026-11-07 `/build T-025` → 🔄. `models.FailureType`; `fields/failure.py` (`RULES`, `failure_rule`); runner: `graders_for("failure")`, `FailureRulesPredictor` (`rules-v1`, uses `deterministic.status`), each row's `decider` taken from the case's `rule_decided` tag, `aggregates.by_decider`, and the summary line shows both halves. Tests: 16 from `/test write` + 3 unit; suite 473 passed / 23 skipped; ruff and mypy clean. **Dev eval (rules only):** `failure failure_type_exact 0.53 @ predictor failure_rules@rules-v1, dataset dev-v1, condenser c1, judge — | real 0.83 (n=6), synthetic 0.38 (n=13), rule 1.00 (n=10), llm 0.00 (n=9) | errors 9 | $0.0000`. The rules agree with every rule-decided human label; the 9 LLM cases are errors until T-026.
 
 ### T-026 · Failure field (LLM part)
 **Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Failure reason"; arch §6.3, §7.
