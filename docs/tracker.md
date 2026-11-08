@@ -1180,6 +1180,8 @@ content in any log (counts only).
    `evals/calibration.json` lists that judge version with agreement ≥ 0.85.
 3. `summary_line` prints `judge <name>-<version>` and `(uncalibrated)` when it applies.
 **Not included:** any judge prompt (tester-owned, T-033).
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t032_judge_runner.py` (16: judge gets the injected client; calls logged under the record's run id; judge cost per row and in the total; a failing judge is a scored error; `by_metric`; `record["judge"]` with provider/model; `calibrated` needs the exact version at ≥ 0.85, 6 cases; `summary_line` judge name and `(uncalibrated)`; the committed calibration file is well formed) and `evals/calibration.json` (empty `entries`). Interfaces D-061; `by_metric` added because a judge emits several metrics and `accuracy` reads only the first. 15 fail as expected (`run()` takes no `graders`), 1 passes.
 
 ### T-033 · Timeline judge and calibration
 **Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Summary checklist", "Checking the judge".

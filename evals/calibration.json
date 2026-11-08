@@ -1,0 +1,4 @@
+{
+  "_comment": "Judge calibration (rule 8; architecture §8.4). Tester-owned. One entry per judge version, written after the human hand-grades its calibration set: {judge, version, agreement, n, decision}. A judge's metrics count only when its exact version has agreement >= 0.85.",
+  "entries": []
+}

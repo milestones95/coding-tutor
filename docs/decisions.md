@@ -933,3 +933,17 @@ structured call whose input contains `render(condense(session))` unchanged (rule
 prompt but not enforced by the schema**: a schema check would retry until the count fits and the
 `at_most_5_sentences` metric would always read 1.00, hiding how often the model overruns. Code
 counts sentences (`evals/graders/sentence_count.py`), so the judge never does arithmetic.
+
+## D-061 · Judge graders in the runner: interface, cost, calibration file · 2026-11-08 · test
+An `llm_judge` grader carries `field` (the `LLMClient` field: it routes the model through
+`llm.fields.<field>` / `llm.default` and names the logged calls), `run_id` (set by the runner to
+the record's, like a predictor) and `last_usage` (set by each `grade()`), and calls
+`ctx.client.structured` inside `grade()`. `run(..., graders=None, judge_client=None)`: both default
+(`graders_for(suite)`, `LLMClient(settings)`) and are injectable for tests. Each row gets
+`judge_cost_usd`; `cost_usd_total` = predictor + judge, so a run's price is honest. A judge that
+raises makes its row an error (`"judge: …"`), never a crashed run. `aggregates.by_metric =
+{metric: {mean, n}}` over rows without an error, because a judge emits several checklist metrics
+and `accuracy` reads only the first grade. `record["judge"]` names the first judge with its
+provider/model and `calibrated`, which is true only when `evals/calibration.json` (`{"entries":
+[{judge, version, agreement, n, decision}]}`, tester-owned, starts empty) lists that exact judge
+version at agreement ≥ 0.85 (rule 8). A missing file means uncalibrated.
