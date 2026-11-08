@@ -1,11 +1,12 @@
 {
   "evals/data/algorithm/dev/cases.jsonl": "6198dd164f3a5005a7e6b066225b441db0bc2635bf0a73f069616391210ee632",
   "evals/data/algorithm/test/cases.jsonl": "3c666f4242696de06ea7e85577bfdd7e184456434531c04768f5e03478f7d6d9",
-  "evals/data/failure/dev/cases.jsonl": "164d065ae6bf2ba1a46cf5fe227eef4a871532da69c64db3b64344c1e4c97a18",
+  "evals/data/failure/dev/cases.jsonl": "aa67745e2201993683ed1c38af22ca1d0a45b3e5fc56d5669446c6b95de62ad5",
   "evals/data/failure/test/cases.jsonl": "2f5b71c60d39f674964ae96b6ab713ab0a7205aabd0e2aa24e7ea65141e1f91c",
-  "evals/data/timeline/dev/cases.jsonl": "a492e3c3b55233a1bc0e49da27c51825039b6e0cd20bd3deef23178ae8393aab",
+  "evals/data/timeline/dev/cases.jsonl": "c717c1c58206f39d23daad07e5aee260a48e0e69f74143d72feb7ad89c079e9f",
   "evals/data/timeline/test/cases.jsonl": "5968d782335dc46ac3debec5ac6f81888c9a223cd045db804e68d4c68877ae76",
   "evals/data/sessions/synthetic/specs.jsonl": "f4bb9780464d14503d0990457368de3d4594d4fe812159b89ecc0edd5f285d95",
-  "evals/data/sessions/real/labels.jsonl": "dc0ac83e45114696560d98e1dab0bf64a291382e8b23f8448a21f20a62dd5799",
-  "evals/data/calibration/timeline/v1.jsonl": "e9d5986ef4d1397db70aed35d61b5a444b20622e8a8c24029aa31f364cdded28"
+  "evals/data/sessions/real/labels.jsonl": "6a3ecc3ca549e57ba1feb882ec4ccf13d21314e5e09dcf8fa1fac40d59b80596",
+  "evals/data/calibration/timeline/v1.jsonl": "6ab22187182c0a54665bf01a4929334ca9e99e8bdd4f9402d34031fc74cd7116",
+  "evals/data/calibration/failure_explanation/v1.jsonl": "4222ca65fa2c58c94da4d8799e67950aa741b5dce67b88df73152ffc091aa0da"
 }

@@ -44,7 +44,7 @@ def score(judged: dict[str, bool]) -> list[Grade]:
 
 
 class FailureExplanationJudge:
-    name, version, kind, field = "failure-explanation-judge", "v1", "llm_judge", "failure_explanation_judge"
+    name, version, kind, field = "failure-explanation-judge", "v2", "llm_judge", "failure_explanation_judge"   # v1 rejected (D-067)
 
     def __init__(self) -> None:
         self.run_id = "unset"

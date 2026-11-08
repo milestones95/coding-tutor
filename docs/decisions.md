@@ -1002,3 +1002,40 @@ with a Claude judge.
 - Pass condition as D-063: agreement ≥ 0.85 item by item, and misses caught ≥ 70%.
 **Why.** The eval plan's checklist for the explanation is exactly these two lines. Reusing the failure
 case's labels keeps `dev-v1` frozen; key facts already say what failed.
+
+## D-066 · Sort Colors relabelled: implementation_bug, first approach on track · 2026-11-08 · human
+The real Sort Colors session (dev; failure-dev-003 / timeline-dev-003) was labelled `wrong_approach`,
+first approach off track, never corrected. Calibrating the explanation judge showed the field blaming
+an off-by-one in `while L < R` in 4 of 5 runs. The tester ran the final code on every 0/1/2 array up
+to length 8: as written it is wrong on 4,033 of 9,840; with `L <= R` it is wrong on none. LeetCode's
+constraint is n ≤ 300 (the human's screenshot), so the O(n²) idea passes. By the human's own
+definition (D-063: on track = only bug fixes needed) the idea was on track.
+New labels (the human's): failure type `implementation_bug` (it breaks ordinary inputs like `[1,0]`,
+not a corner case); course correction `{on_track: true, corrected: null}`; `on_track_algorithms`
+null; final approach names the `L < R` bug. Key facts and algorithms unchanged.
+Effects: `failure/dev` → **dev-v2**, `timeline/dev` → **dev-v3** (every other cases file
+byte-identical; test split untouched); T-020 label pin re-pinned in the T-029 test; timeline
+calibration item cal-tl-03 `first_approach` → met (the summary called it on track), so that set has
+4 misses, and timeline-judge v1 was re-measured (D-067). Baselines measured on failure dev-v1 /
+timeline dev-v2 are re-measured at T-035.
+**Why.** Rule 10: an expected label changes only with a written reason. Here the eval exposed a
+wrong label, not a wrong output: the model was right and the label was not.
+
+## D-067 · failure-explanation-judge v2 is calibrated; v1 rejected · 2026-11-08 · test
+Calibration set: 20 explanations from stored M3 dev runs, 40 graded items, the human's grades (4 not
+met, all on Sort Colors: three name the input `[2,0,1]`, which the timeline never shows; one says the
+idea itself can't sort).
+- **v1 @ openai:gpt-5.5: agreement 0.90 (n=40), misses caught 0/4**, the same as always-yes (0.90):
+  rejected by D-063. Its reasons: it accepted an input worked out from an output, and read "the
+  idea can't sort" as a bug.
+- **v2** adds two general rules: a specific input/output/value counts only if written in the
+  timeline; and the "could the idea work" line in both directions. **v2 @ openai:gpt-5.5: agreement
+  1.00 (n=40), misses caught 4/4.** Run `20261108T214135Z-b3cedb3e`, $0.61.
+- timeline-judge v1 re-measured on its updated set: **1.00 (n=95), misses caught 4/4**, run
+  `20261108T213904Z-76a37ed6`, $0.63. Still calibrated.
+**Caveat.** v2 was revised after seeing v1 miss these items and re-measured on the same 20, so 1.00
+is optimistic, and all 4 misses come from one session. The rules are general (rule 9), but a fresh
+hand-graded set from T-035's runs would show whether v2 generalises.
+**Found:** `runner._is_calibrated` reads only `agreement`, so a judge entry with `decision: reject`
+(like v1's 0.90) would count as calibrated. v1 is no longer used, but the runner should honour
+`decision` and misses caught. Builder work, alongside wiring the judge into `graders_for("failure")`.

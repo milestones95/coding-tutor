@@ -19,7 +19,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 LABELS = REPO / "evals" / "data" / "sessions" / "real" / "labels.jsonl"
-T020_PIN = "d1ee3acc563ba292170e8d6a50ed6a0c2e017de9bc8ccf801e2fed68d7c95808"
+# re-pinned 2026-11-08 (`/test write` correction): Sort Colors relabelled by the human, reason in D-066
+T020_PIN = "db5dcd67e0719ee2d01424c7377a239cc544d00d17b1b8c6b45c4fbe83908344"
 
 
 def _rows():

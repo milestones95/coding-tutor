@@ -1121,7 +1121,7 @@ graded run; the checkpoint with 3 repeats ≈ $3.
 | T-031 | Timeline field: `prompts/timeline/v1.md` + `fields/timeline.py`; runner predictor; `analyze --llm` writes `timeline_summary` | build | M | required | ✅ | eval plan "Timeline summary"; arch §6.3, §7 |
 | T-032 | Runner support for LLM-judge graders: client in `GradeContext`, judge versions in the record, `(uncalibrated)` from `evals/calibration.json` | build | S | required | ✅ | arch §8.3, §8.4; rule 8 |
 | T-033 | Timeline judge + calibration: `prompts/judges/timeline/v1.md`, checklist grader, 20 hand-graded summaries, agreement recorded | test | M | required | ✅ | eval plan "Checking the judge"; rule 8 |
-| T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ⬜ | eval plan "Failure explanation"; D-052 |
+| T-034 | Failure-explanation judge + calibration: 20 hand-graded explanations from the stored M3 runs | test | M | required | ✅ | eval plan "Failure explanation"; D-052 |
 | T-036 | Timeline prompt v2: a general definition of "on the right track"; measured against v1 with the calibrated judge | build | S | required | ⬜ | eval plan "Summary checklist" (first approach on the right track); T-033 finding |
 | T-035 | M4 checkpoint: timeline checklist and explanation baselines on dev with calibrated judges, 3 repeats | test | S | required | ⬜ | M4 checkpoint |
 
@@ -1218,6 +1218,9 @@ content in any log (counts only).
 **Not included:** changing the failure prompt.
 **Log:**
 - 2026-11-08 · `/test write` — `prompts/judges/failure_explanation/v1.md` (2 items: consistent, no_invented_cause; reads the human's failure type + key facts and the condensed timeline), `evals/graders/failure_explanation_judge.py` (`explanation_checklist` + per-item grades; no grades for a passed session), `calibrate_judge.py` now takes `failure_explanation`, prompt pinned in the manifest. `tests/acceptance/test_t034_failure_explanation_judge.py` (12): 9 pass; 3 calibration-set tests fail as expected (no human grades yet). 20 explanations picked from the 65 stored in the three M3 dev runs: one per failing case from `20261108T021736Z-cc3302f2` (13) plus 7 from the other runs, chosen for variety (3 more on the case the field mislabels, the implementation_bug variant, specific-detail variants). Tester proposes grades (6 not-met); the human decides. Runner wiring (`graders_for("failure")`) is not in this task: T-035 needs it.
+- 2026-11-08 · human grades — the human reviewed all 20 in the review file (notes on 16; #6, #13, #18 confirmed with "go ahead"). Rulings: an input the timeline never shows is invented even if right (#2–#4); #17 (implementation_bug wording for a did_not_finish session, same cause) is consistent. #14's note — the explanation could tell the person the fix — is a failure-prompt idea, logged under Deferred. **Dataset change (rule 10):** the human relabelled Sort Colors `implementation_bug`, first approach on track (D-066): `failure/dev` → dev-v2, `timeline/dev` → dev-v3, T-020 pin re-pinned (`/test write` correction), timeline cal-tl-03 `first_approach` → met. Calibration set committed and frozen in the manifest: 40 items, 36 met / 4 not met.
+- 2026-11-08 · calibration — **failure-explanation-judge v1 @ openai:gpt-5.5: 0.90 (n=40), misses caught 0/4 → rejected** (`20261108T213704Z-7a947e9b`, $0.63). v2 (two general rules, D-067): **1.00 (n=40), misses caught 4/4 → accepted** (`20261108T214135Z-b3cedb3e`, $0.61); optimistic, since tuned and measured on the same set. **timeline-judge v1 re-measured after the relabel: 1.00 (n=95), 4/4** (`20261108T213904Z-76a37ed6`, $0.63). Recorded in `evals/calibration.json`, the Judge calibration table, D-067. Found for `/build`: `_is_calibrated` ignores `decision`/misses caught; `graders_for("failure")` doesn't run the judge yet. Both needed before T-035.
+- 2026-11-08 · `/test run` ✅ — all gates pass (see the commit); ruff + mypy + `prompts check` clean. Done when: judge prompt grades the 2 items ✓ (v2); 20 explanations from stored M3 dev records, human-graded, agreement recorded as in T-033 ✓; human confirmation in the log ✓. No builder diff. Eval spend this task: $1.87.
 
 ### T-036 · Timeline prompt v2: define "on the right track"
 **Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** eval plan "Says whether my first approach was on the right track"; finding in T-033's calibration review.
@@ -1252,7 +1255,7 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 | failure type accuracy (rule-decided) | **1.00** (n=10) | 0 (deterministic; consistency 1.00) | — | rules-v1 | dev-v1 | — | 2026-11-07 |
 | algorithm accuracy | **0.94** overall (real 1.00 n=5, synthetic 0.92 n=13) | **0.00** (0.94 in all 5 runs: 2 single + 3 repeats); label consistency 16/18 | algorithm-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-07 |
 | algorithm — keyword baseline | **0.83** overall (real 1.00 n=5, synthetic 0.77 n=13) | 0 (deterministic; consistency 1.00) | — | keyword-v1 | dev-v1 | — | 2026-11-07 |
-| failure explanation (judge) | | | | | dev-v1 | | |
+| failure explanation (judge) | not yet run: judge calibrated (D-067), runner wiring pending | — | failure-v1 | openai:gpt-5.5 | dev-v2 | failure-explanation-judge-v2 | — |
 | timeline ≤ 5 sentences (code-counted) | **1.00** (real 1.00 n=6, synthetic 1.00 n=13; 18 × 4 sentences, 1 × 3) | 1.00 in both runs so far (builder + tester); 3-repeat band at T-035 | timeline-v1 | openai:gpt-5.5 | dev-v1 | — | 2026-11-08 |
 | timeline checklist (judge) | **0.95** (real 0.97 n=6, synthetic 0.94 n=13); first approach **0.74** (14/19: misses 003, 009, 011, 016, 017), every other item 1.00 | 2 runs: 0.95, 0.93 (first approach 0.74, 0.68); 3-repeat band at T-035 | timeline-v1 | openai:gpt-5.5 | dev-v2 | timeline-judge-v1 (calibrated, D-064) | 2026-11-08 |
 | agent exact answers | | | | | fixture-v1 | — | |
@@ -1264,6 +1267,9 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 | Judge | Version | Agreement with hand labels | n | Date |
 |---|---|---|---|---|
 | timeline-judge (openai:gpt-5.5) | v1 | **1.00** item by item (always-yes would get 0.95); misses caught **5/5**; per item 20/20, 20/20, 15/15, 20/20, 20/20 | 95 items / 20 summaries | 2026-11-08 |
+| timeline-judge (openai:gpt-5.5) | v1, re-measured after the Sort Colors relabel (D-066) | **1.00** (always-yes 0.96); misses caught **4/4** | 95 items / 20 summaries | 2026-11-08 |
+| failure-explanation-judge (openai:gpt-5.5) | v1 | 0.90 (always-yes 0.90); misses caught **0/4** → **rejected** | 40 items / 20 explanations | 2026-11-08 |
+| failure-explanation-judge (openai:gpt-5.5) | v2 | **1.00** (always-yes 0.90); misses caught **4/4**; optimistic: revised on this set (D-067) | 40 items / 20 explanations | 2026-11-08 |
 
 ## Test-split log
 
@@ -1285,6 +1291,7 @@ Every item has a trigger: the condition that would make it worth doing.
 
 | Idea | Why not now | Trigger |
 |---|---|---|
+| Failure explanation tells the person the fix (the human's note on T-034 #14: "make the right branch mirror the left…") | The eval plan asks for the cause, not a fix; T-034 excludes the failure prompt | A failure-prompt v2 task, or the eval plan adds "actionable" to the explanation checklist |
 | "Expected approach" with code snippet | Out of scope in eval plan | Plan revised to include it |
 | Running code via LeetCode API | Out of scope; verdict already comes from capture | — |
 | Per-session planning / coding / debugging minutes | Open question in eval plan | After M6, if aggregate questions fail for lack of data |

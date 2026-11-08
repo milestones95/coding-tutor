@@ -2,7 +2,7 @@
 Tester-owned (`/test write T-034`, 2026-11-08). Interfaces (D-065):
 
     evals.graders.failure_explanation_judge.FailureExplanationJudge
-        name "failure-explanation-judge", version "v1", kind "llm_judge", field "failure_explanation_judge";
+        name "failure-explanation-judge", version "v2" (v1 rejected, D-067), kind "llm_judge", field "failure_explanation_judge";
         grade(case, output, ctx) needs ctx.client and ctx.session when there is an explanation, and
         returns no grades when there is none (a passed session, §6.3).
         Grades: explanation_checklist (share of the 2 items met) first, then explanation.<item>.
@@ -77,7 +77,7 @@ def test_both_items_met_scores_one(settings):
     assert order == ["explanation_checklist", "explanation.consistent", "explanation.no_invented_cause"]
     assert g["explanation_checklist"] == 1.0
     assert (judge.name, judge.version, judge.kind, judge.field) == (
-        "failure-explanation-judge", "v1", "llm_judge", "failure_explanation_judge")
+        "failure-explanation-judge", "v2", "llm_judge", "failure_explanation_judge")   # v1 rejected at calibration (D-067)
     assert judge.last_usage is not None
 
 
@@ -122,9 +122,9 @@ def test_the_judge_needs_the_session(settings):
 def test_the_judge_prompt_is_pinned_and_checks_both_items():
     from tutor.prompts import load_prompt
 
-    p = load_prompt("judges/failure_explanation", "v1")
-    assert json.loads((REPO / "prompts" / "manifest.json").read_text()).get("judges/failure_explanation/v1.md") == p.sha256
-    text = (REPO / "prompts" / "judges" / "failure_explanation" / "v1.md").read_text()
+    p = load_prompt("judges/failure_explanation", "v2")
+    assert json.loads((REPO / "prompts" / "manifest.json").read_text()).get("judges/failure_explanation/v2.md") == p.sha256
+    text = (REPO / "prompts" / "judges" / "failure_explanation" / "v2.md").read_text()
     assert all(i in text for i in ITEMS)
     slugs = {json.loads(r)["problem"]["slug"] for r in (SYN / "specs.jsonl").read_text().splitlines() if r.strip()}
     assert not [s for s in slugs if s in text], "rule 9: no dataset problem named"
