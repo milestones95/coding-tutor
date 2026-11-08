@@ -49,10 +49,10 @@ def graders_for(suite: str) -> list:
         from evals.graders.failure_type_exact import FailureTypeExact
 
         return [FailureTypeExact()]
-    if suite == "timeline":   # the judge joins in T-033 (D-060)
-        from evals.graders.sentence_count import SentenceCount
+    if suite == "timeline":   # the calibrated judge; it counts sentences by code itself (D-062, D-064)
+        from evals.graders.timeline_judge import TimelineJudge
 
-        return [SentenceCount()]
+        return [TimelineJudge()]
     raise NotImplementedError(f"no graders for suite {suite!r} yet (failure: M3, timeline: M4)")
 
 
@@ -277,10 +277,8 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
     run_id, started = new_run_id(), _now()
     if hasattr(predictor, "run_id"):
         predictor.run_id = run_id      # the field's logged calls carry the record's run id
-    ctx = None
     if judges:
         judge_client = judge_client or LLMClient(settings)
-        ctx = GradeContext(client=judge_client)
         for j in judges:
             j.run_id = run_id          # judge calls are logged under the same run id
     rows: list[dict] = []
@@ -303,6 +301,8 @@ def run(suite: str, split: str, *, predictor: Predictor, settings: Settings, rep
             grades: list[dict] = []
             judge_cost = 0.0
             if error is None:
+                # per case: judges that read the timeline need this case's Session (D-062)
+                ctx = GradeContext(client=judge_client if judges else None, session=session)
                 for gr in graders:
                     is_judge = gr in judges
                     try:
