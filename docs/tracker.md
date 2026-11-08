@@ -1260,6 +1260,8 @@ content in any log (counts only).
    versions (prompt, model, dataset, judge) in Baselines.
 3. The human confirms.
 **Not included:** prompt v2s; the test split (M7).
+**Log:**
+- 2026-11-08 · `/test write` — `evals/report/repeat_band.py` (per-repeat mean of any metric over the rows that have it; accuracy per repeat; band = max − min) and `tests/acceptance/test_t035_repeat_band.py` (3, hand-built records): all pass. Plan, human-approved ("run everything the right way"): fresh `repeats=3` runs of both judged suites on dev, no reuse of earlier runs; ≈ $5.60.
 
 ---
 
