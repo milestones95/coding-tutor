@@ -66,7 +66,7 @@ def test_algorithm_returns_the_labels_from_one_structured_call(settings):
 
     client, fake = _client(settings, [{"algorithms": ["hash_map"]}])
     r = algorithm(_session(), client=client, settings=settings, run_id="r1")
-    assert r.output.algorithms == [AlgorithmLabel.hash_map]
+    assert r.output.algorithms == [AlgorithmLabel.HASH_MAP]
     assert len(fake.calls) == 1 and r.attempts == 1
 
 
@@ -99,11 +99,15 @@ def test_the_call_is_logged_with_field_and_prompt_version(settings):
     assert rows[-1]["run_id"] == "r-log"
 
 
-def test_an_explicit_model_is_used(settings):
+def test_an_explicit_model_is_used(settings, tmp_path):
     from tutor.fields.algorithm import algorithm
+    from tutor.llm import LLMClient
     from tutor.llm.client import ModelRef
 
-    client, fake = _client(settings, [{"algorithms": ["hash_map"]}])
+    pricing = tmp_path / "pricing.toml"   # the client refuses an unpriced model (T-006), so price the probe one
+    pricing.write_text('[models."openai:gpt-other"]\ninput_per_mtok = 1.0\noutput_per_mtok = 2.0\nas_of = \"2026-11-07\"\n')
+    fake = FakeAdapter([{"algorithms": ["hash_map"]}])
+    client = LLMClient(settings, adapters={"openai": fake}, pricing_path=pricing, sleep=lambda s: None)
     algorithm(_session(), client=client, settings=settings, run_id="r1", model=ModelRef.parse("openai:gpt-other"))
     assert fake.calls[0]["model"] == "gpt-other"
 
