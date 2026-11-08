@@ -19,7 +19,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 | M0 | Foundation: capture in repo + submit fix, config, logging, LLM client (OpenAI), models, read-only loader | ✅ 2026-11-03 (T-007) | One captured session loads, validates, and one logged LLM call runs |
 | M1 | Deterministic pieces: condenser, problem, time to finish, attempted at, **status** (D-014), `analysis.db` | ✅ 2026-11-03 (T-012) | Unit tests green on real + hand-built sessions; token budget measured |
 | M2 | Dataset + eval runner: 28 cases (8 real + 20 synthetic, D-045), split, eval runner (adapter deferred to M7, generator dropped: D-048) | ✅ 2026-11-07 (T-023) | Runner writes a versioned result record for a trivial grader |
-| M3 | Algorithm type, failure reason (status is no longer an LLM field) | ⬜ | Dev baseline recorded per field |
+| M3 | Algorithm type, failure reason (status is no longer an LLM field) | ✅ 2026-11-07 (T-028) | Dev baseline recorded per field |
 | M4 | Timeline summary + judge | ⬜ | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
 | M6 | Part 2 evals | ⏸ Part 2, after Part 1 (2026-11-03) | All five graders produce a baseline |
@@ -985,7 +985,7 @@ breakdown. M3: algorithm and failure-reason fields with dev baselines. M4: timel
 judge calibration. M5–M6 (Part 2) deferred until Part 1 is done (human, 2026-11-03).
 M7: Gemini adapter, Part 1 model comparison, first test-split run.
 
-## Tasks — active milestone: M3
+## Tasks — M3 (✅ done 2026-11-07)
 
 Planned 2026-11-07. Order: **T-024 → T-025 → T-026 → T-027 → T-028**. Algorithm first, because it
 already has a bar to beat (keyword baseline 0.83). Model: `openai:gpt-5.5` (D-018). Estimated dev
@@ -999,7 +999,7 @@ The failure explanation is stored but not scored in M3: it needs the judge built
 | T-025 | Failure type rules + `FailureType`; `failure_type_exact` grader with rule/LLM split | build | S | required | ✅ 2026-11-07 `/test run` | eval plan "Failure type"; arch §6.3, §8.1, §8.3 |
 | T-026 | Failure field (LLM part): `prompts/failure/v1.md` + `fields/failure.py`, type + explanation in one call; runner predictor `failure` | build | M | required | ✅ 2026-11-07 `/test run` | eval plan "Failure reason"; arch §6.3, §7 |
 | T-027 | `tutor analyze` writes algorithms and failure fields to `analysis.db` | build | M | required | ✅ 2026-11-07 `/test run` | arch §1, §3.2, analyzer pipeline |
-| T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | 🔄 ran 2026-11-07; awaiting the human's confirmation | M3 checkpoint |
+| T-028 | M3 checkpoint: both baselines with noise bands; a written finding on dev misses vs the keyword baseline | test | S | required | ✅ 2026-11-07 `/test run` (the human confirmed) | M3 checkpoint |
 
 ### T-024 · Algorithm field
 **Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Algorithm type"; arch §6.3, §7, §8.2; D-051.
@@ -1101,6 +1101,7 @@ to `analysis.db` (T-027).
   4. **Failure: dev-016 is noise.** It's right 4/5 (`did_not_finish`, once `implementation_bug`): an unfinished LRU Cache that also has real link bugs. Both readings are visible in the session, so this is the source of the ±0.11 band and is not a prompt fix.
   5. **vs the keyword baseline (the human's DP / backtracking point).** The model beats keywords where the code has no cue: dev-007 (greedy, keyword found nothing) and dev-013 (sliding window, keyword said two_pointers). But in this dev set, the dynamic_programming and dfs_backtracking cases (dev-003, dev-010, dev-011) *do* have cues the keywords catch. So the dev set barely tests the human's concern, and the +0.11 margin rests on 2 cases. That is a coverage gap for the next dataset version (cue-free DP / backtracking), not something to tune.
   Cost: $0.98. Needs the human's confirmation of findings 1 – 5 (and a decision on 1 and 3) to close.
+- 2026-11-07 **The human confirmed findings 1 – 5.** Labels are unchanged (no decision to relabel dev-003 or dev-017, so `dev-v1` stands), and there is no prompt v2 now. → ✅; **M3 ✅**. Gates at close: 499 passed, 23 skipped; ruff and mypy clean.
 
 ---
 
@@ -1192,3 +1193,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-07 | — | T-021 | — | **The human approved the 19 dev / 9 test split** ("it's fine to use the sessions i gave you for test"). Their note for M3: keyword cues can't reliably show DP or backtracking, so the 0.83 baseline is inflated by algorithms with obvious code signatures. The per-label scores should be read alongside it. |
 | 2026-11-07 | T-017, T-019, T-021, T-023; **M2 ✅** | — | — | **`/test run`, M2 close.** The human confirmed T-017 (checker rules), T-019 (the 20 session files as final), T-021 (the split) and T-023 (the 0.83 keyword baseline). Gates: 434 passed / 23 skipped (T-015 deferred), ruff clean, mypy clean, `checks.py` 20/20. The judging files in the branch diff are the tester's own (tester-owned tasks), not the builder's. M3 is next: `/pm plan`. |
 | 2026-11-07 | — | — | T-024 – T-028 | `/pm plan` M3: 5 tasks, algorithm first (it has a 0.83 bar to beat). Failure explanation stored but unscored until the M4 judge (D-052). `tutor prompts lock` stays deferred (D-053). Estimated dev cost: about $0.30 (algorithm) and $0.65 (failure) per run. Not planned: prompt v2s (after T-028's finding), the timeline (M4), the test split (M7). |
+| 2026-11-07 | T-024 – T-028; **M3 ✅** | — | — | M3 closed: algorithm 0.94 (noise 0.00) @ algorithm-v1; failure LLM-decided 0.89 ±0.11, rule 1.00 @ failure-v1; model openai:gpt-5.5, dataset dev-v1. The human confirmed T-028's 5 findings. Open idea (not yet through `/pm idea`): dataset v2 aimed at cue-free DP / backtracking and more LLM-decided failure cases, then prompt v2s. M3 eval spend ≈ $1.80. |
