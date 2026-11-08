@@ -1166,6 +1166,8 @@ content in any log (counts only).
    provenance row.
 4. One dev run, recorded with versions.
 **Not included:** the judge (T-032, T-033); tuning.
+**Log:**
+- 2026-11-08 · `/test write` — `tests/acceptance/test_t031_timeline.py` (6: one call, the one condenser's render, empty summary retried, logging, prompt pinned and length-stating with no dataset slug, runner record with versions/cost/sentence grade), `tests/acceptance/test_t031_pipeline.py` (5: summary + provenance per session, rendered input, a timeline error NULLs only that field, nothing without --llm, schema already has the column), `tests/contract/test_timeline_input.py` (no `expected` label or case text reaches the model), grader `evals/graders/sentence_count.py` + `tests/acceptance/test_t031_sentence_grader.py` (14, pass). **Changed with reason:** `test_t027_pipeline_llm.py` — its Router now answers the timeline schema and its call/provenance counts include the timeline field (5→8), because T-031 adds a third field to `analyze --llm`. Interfaces D-060. 13 fail as expected (no `tutor.fields.timeline`, no `timeline` predictor, nothing written); 14 grader tests pass.
 
 ### T-032 · Runner support for judge graders
 **Milestone:** M4 · **Size:** S · **Owner:** build · **Traces to:** arch §8.3 `judge`, §8.4 `GradeContext.client`; rule 8.
