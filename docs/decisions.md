@@ -863,3 +863,17 @@ hash causes a wrong commit, or there are more than 5 prompt versions.
 - `tutor-eval run|estimate --model PROVIDER:MODEL`.
 **Why.** §6.3 and §8.2 name the inputs and flags but not the Python seam, so the builder would
 otherwise have to invent one.
+
+## D-055 · Failure-rule interfaces, and the decider comes from the case · 2026-11-07 · tester
+- `FailureType` in `models.py`. `fields/failure.py: failure_rule(status) -> FailureType | None`
+  (passed → none, failed_too_slow → too_slow, else None).
+- `evals/graders/failure_type_exact.py` (tester): exact match on `failure_type`; the explanation is
+  ungraded until M4 (D-052).
+- `predictor_named("failure_rules")` (`rules-v1`) applies the rules alone and raises for any other
+  status. It measures the rule-decided half before the LLM exists. Output shape for the failure
+  suite: `{"failure_type", "source", "explanation"}`.
+- `aggregates.by_decider = {"rule": {accuracy, n}, "llm": {accuracy, n}}` for the failure suite.
+  The split uses each **case's** `rule_decided` tag, never the output's `source`.
+**Why.** §8.1 asks for accuracy split by decider, so the rules can't inflate the LLM's number. If
+the split read the output, a model that labelled its own answers "rule" could move its cases into
+the rule bucket.

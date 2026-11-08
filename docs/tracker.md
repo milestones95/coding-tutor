@@ -1037,6 +1037,9 @@ to `analysis.db` (T-027).
    accuracy with versions.
 **Not included:** the LLM call (T-026).
 
+**Log**
+- 2026-11-07 `/test write` — `evals/graders/failure_type_exact.py` (tester grader) and `tests/acceptance/test_t025_failure_rules.py` (16): FailureType = the CHECK list; the rules for all 7 statuses; 5 grader cases (exact match; a missing type scores 0; the explanation is not graded); the rules predictor through the runner (rule 1.00 n=2, llm 0.00 n=1, 1 error, summary shows both); the decider split taken from the case, not the output; the algorithm suite has no split. Interfaces in D-055. 10 fail for the right reason (missing `FailureType`, `fields/failure.py`, failure graders and predictor); the 6 grader and no-split tests pass.
+
 ### T-026 · Failure field (LLM part)
 **Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** eval plan "Failure reason"; arch §6.3, §7.
 **Done when:**
