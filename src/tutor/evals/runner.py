@@ -90,6 +90,41 @@ class AlgorithmPredictor:
         return {"labels": [a.value for a in result.output.algorithms]}
 
 
+class FailurePredictor:
+    """The failure field as a runner predictor (D-056). `last_usage` is None for a session that
+    made no call (passed), so its row costs nothing."""
+
+    name = "failure"
+
+    def __init__(self, settings: Settings, *, client: LLMClient | None = None, model: ModelRef | None = None):
+        from tutor.fields.failure import PROMPT, prompt_for
+
+        self._settings, self._model = settings, model
+        self._client = client or LLMClient(settings)
+        prompt = prompt_for(settings)
+        self.version = prompt.version
+        self.prompt_versions = {PROMPT: prompt.version}
+        self.prompt_sha256 = {PROMPT: prompt.sha256}
+        self.ref = self._client.model_for(PROMPT, model)
+        self.provider = self.ref.provider
+        self.run_id = new_run_id()
+        self.last_usage: Usage | None = None
+
+    @property
+    def est_cost_per_call(self) -> float:
+        # ~3,000 tokens in (prompt + a condensed timeline), ~100 out; passed sessions make no call
+        return price_for(DEFAULT_PRICING, str(self.ref)).cost(3000, 100)
+
+    def __call__(self, session: Any) -> dict:
+        from tutor.fields.failure import failure
+
+        self.last_usage = None
+        r = failure(session, client=self._client, settings=self._settings, run_id=self.run_id, model=self._model)
+        self.last_usage = r.usage
+        o = r.output
+        return {"failure_type": o.failure_type.value, "source": o.source, "explanation": o.explanation}
+
+
 class FailureRulesPredictor:
     """Failure type from the rules alone (`rules-v1`, D-055): it measures the rule-decided half of
     the failure suite before the LLM exists. A status no rule decides raises, so the runner scores
@@ -123,11 +158,15 @@ def predictor_named(name: str, *, settings: Settings | None = None, client: LLMC
         if settings is None:
             raise ValueError("the algorithm predictor needs settings")
         return AlgorithmPredictor(settings, client=client, model=model)
+    if name == "failure":
+        if settings is None:
+            raise ValueError("the failure predictor needs settings")
+        return FailurePredictor(settings, client=client, model=model)
     if name == "failure_rules":
         if settings is None:
             raise ValueError("the failure_rules predictor needs settings")
         return FailureRulesPredictor(settings)
-    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm, failure_rules")
+    raise ValueError(f"unknown predictor {name!r}; available: keyword_baseline, algorithm, failure, failure_rules")
 
 
 def _git() -> tuple[str, bool]:
