@@ -947,3 +947,18 @@ and `accuracy` reads only the first grade. `record["judge"]` names the first jud
 provider/model and `calibrated`, which is true only when `evals/calibration.json` (`{"entries":
 [{judge, version, agreement, n, decision}]}`, tester-owned, starts empty) lists that exact judge
 version at agreement ≥ 0.85 (rule 8). A missing file means uncalibrated.
+
+## D-062 · Timeline judge: five judged items, length by code, item-level agreement · 2026-11-08 · test
+`evals/graders/timeline_judge.py` (`timeline-judge` v1, `prompts/judges/timeline/v1.md`) judges five
+checklist items, each with a one-sentence reason before `met`: approaches, first approach (agrees
+with the human's account; if off track, whether and roughly when they switched), no invented
+correction, final approach and outcome, no invented events. "5 sentences or fewer" is counted by
+code and the judge is never asked. "No invented correction" is left out of a case's score when the
+person did switch approach, rather than counted as met, so it can't inflate the score or the
+agreement. The judge reads the human's account (it is a grader; the field never sees labels) and the
+rendered condensed timeline from a new `GradeContext.session`; the runner has to pass the case's
+`Session` there and `graders_for("timeline")` returns the judge (a small builder step, tested in
+`test_t033_timeline_judge.py`). Metric: `timeline_checklist` = share of applicable items met.
+**Agreement** is item by item over the 20-summary calibration set, n/a items skipped. It is reported
+with what an always-yes judge would score and how many of the human's "not met" items the judge
+also caught, because a set where most items are met flatters a judge that always says yes.

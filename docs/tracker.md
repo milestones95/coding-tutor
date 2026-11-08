@@ -1198,6 +1198,8 @@ content in any log (counts only).
    are never edited to fit the judge.
 4. The human's confirmation is in the log.
 **Not included:** the timeline prompt (T-031); test-split outputs.
+**Log:**
+- 2026-11-08 · `/test write` — judge prompt `prompts/judges/timeline/v1.md` (pinned), `evals/graders/timeline_judge.py`, `GradeContext.session` in `evals/graders/base.py`, `evals/calibrate/agreement.py` + `calibrate_judge.py`, `tests/acceptance/test_t033_timeline_judge.py` (11: scoring, code-counted length the judge can't overrule, n/a correction item, judge inputs, prompt pinned with no dataset slug, agreement maths incl. the always-yes check; 9 pass, 2 runner-wiring tests fail as expected and need a short `/build`). Interfaces D-062. Calibration set drafted: 20 dev summaries (all 19 from run `20261108T141431Z-4b33ea4c` + dev-008 from `20261108T141804Z-9a806311`, chosen because it claims a switch that didn't happen); 97 graded items, tester proposes 90 met / 7 not met; awaiting the human's grades (`v1.draft.jsonl`, not committed).
 
 ### T-034 · Failure-explanation judge and calibration
 **Milestone:** M4 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Failure explanation: consistent with the real failure, no invented causes"; D-052.
