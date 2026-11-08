@@ -877,3 +877,18 @@ otherwise have to invent one.
 **Why.** §8.1 asks for accuracy split by decider, so the rules can't inflate the LLM's number. If
 the split read the output, a model that labelled its own answers "rule" could move its cases into
 the rule bucket.
+
+## D-056 · Failure-field interfaces the T-026 tests pin · 2026-11-07 · tester
+- `fields/failure.failure(session, *, client, settings, run_id, model=None) -> FailureResult(output:
+  FailureOutput(failure_type, source, explanation), usage: Usage | None)`.
+- **passed**: `none`, rule, explanation NULL, and no call. **failed_too_slow**: `too_slow` by rule,
+  plus one call for the explanation only (§6.3: explanation is LLM unless passed); the model's type
+  is discarded. **Every other status**: one call, `source: "llm"`.
+- The model's type list leaves out `none`, because only Accepted is `none` and Accepted never
+  reaches the model. A `none` answer is invalid and retried. not_submitted and unknown are named
+  as such in the prompt.
+- Input: `render(condense(session))` (rule 3) plus the verdict, test counts and error text (§6.3).
+- `predictor_named("failure", ...)`: output `{failure_type, source, explanation}`, and
+  `last_usage` is None when no call was made.
+**Why.** §6.3 has the rule table but not the seam, and the too_slow case (rule type + LLM
+explanation) is easy to get wrong in either direction.

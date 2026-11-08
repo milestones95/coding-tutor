@@ -1056,6 +1056,9 @@ to `analysis.db` (T-027).
 5. Contract: the human's labels (`expected`) never reach the prompt; one condenser.
 **Not included:** judging the explanation (M4).
 
+**Log**
+- 2026-11-07 `/test write` — `tests/acceptance/test_t026_failure.py` (12): passed → none by rule with no call; too_slow keeps the rule type and takes only the LLM explanation; wrong answer decided by the model; the model may not answer `none` (3 statuses); not submitted / unknown named in the prompt; the input is `render(condense())` unchanged plus verdict, counts and error; logged with field and prompt version; prompt pinned, in the manifest, offering all 5 non-none types and naming no dataset problem; runner record (deciders split, versions, $0 for the no-call case, cost 0.04); no key fact, note or label reaches the model. Interfaces in D-056. All 12 fail for the right reason (no `failure()`, prompt or predictor).
+
 ### T-027 · Pipeline writes the LLM fields
 **Milestone:** M3 · **Size:** M · **Owner:** build · **Traces to:** arch §1, §3.2 (`session_analysis.failure_*`, `session_algorithms`).
 **Done when:**
