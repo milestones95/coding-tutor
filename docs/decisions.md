@@ -846,3 +846,20 @@ entered by hand, and the manifest contract test fails on any mismatch. The cost 
 one failed test.
 **Why.** It's tooling that teaches nothing about harnesses or evals. New trigger: a hand-entered
 hash causes a wrong commit, or there are more than 5 prompt versions.
+
+## D-054 · Algorithm-field interfaces the T-024 tests pin · 2026-11-07 · tester
+- `tutor.fields.algorithm.algorithm(session, *, client, settings, run_id, model=None) ->
+  LLMResult[AlgorithmOutput]`, where `AlgorithmOutput.algorithms` holds 1–2 `AlgorithmLabel`s.
+  It returns the whole `LLMResult`, not just the output, so the runner gets tokens and cost
+  without a second path. The prompt version comes from `settings.prompts["algorithm"]`.
+- The input is the final snapshot's code plus the problem title, difficulty and tags. It never
+  includes the verdict, test counts, runs, errors or earlier snapshots (contract
+  `test_algorithm_input.py`).
+- `predictor_named(name, *, settings=None, client=None, model=None)`. An LLM predictor outputs
+  `{"labels": [...]}` (the grader's shape) and exposes `.provider`, `.prompt_versions`,
+  `.prompt_sha256` and `.last_usage`. The record's `model` is the model id; `summary_line` prints
+  `prompt <name>-<version>, model <provider>:<model>` (rule 7). The keyword baseline keeps
+  `name@version`.
+- `tutor-eval run|estimate --model PROVIDER:MODEL`.
+**Why.** §6.3 and §8.2 name the inputs and flags but not the Python seam, so the builder would
+otherwise have to invent one.

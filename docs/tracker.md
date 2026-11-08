@@ -1018,6 +1018,9 @@ The failure explanation is stored but not scored in M3: it needs the judge built
 **Not included:** tuning past v1 (that comes after the baseline); the noise band (T-028); writing
 to `analysis.db` (T-027).
 
+**Log**
+- 2026-11-07 `/test write` — `tests/contract/test_algorithm_input.py` (1: no verdict, test count, run result or earlier code reaches the model, checked with sentinels) and `tests/acceptance/test_t024_algorithm.py` (14: labels from one call; final code, title and tags in the input; 0, 3 or unknown labels retried; logged with field and prompt version; explicit model; prompt pinned and in the manifest; every label offered and no dataset problem named; runner record names provider, model, prompt version and sha, cost and tokens per case, accuracy; no label reaches the field; provider error scored, not a crash; `predictor_named` takes a model; `--model` flag). Interfaces in D-054. All 15 fail for the right reason: the module, prompt and flag are missing.
+
 ### T-025 · Failure type rules + grader
 **Milestone:** M3 · **Size:** S · **Owner:** build · **Traces to:** arch §6.3 rule table, §8.3 `by_decider`.
 **Done when:**
