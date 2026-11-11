@@ -23,7 +23,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 | M4 | Timeline summary + judge | ✅ 2026-11-08 | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
 | M6 | Part 2 evals | ⏸ Part 2, after Part 1 (2026-11-03) | All five graders produce a baseline |
-| M7 | Model comparison + test split — **Part 1 only** for now | ⬜ | Comparison table below |
+| M7 | Model comparison + test split — **Part 1 only** for now; dataset v2 first (T-038 – T-041) | 🔄 planned 2026-11-11 | Comparison table below |
 
 ---
 
@@ -1267,6 +1267,58 @@ content in any log (counts only).
 
 ---
 
+## Tasks — active milestone: M7 (Part 1): dataset v2, model comparison, first test-split run
+
+Planned 2026-11-11 (`/pm plan`). Dataset v2 comes first because M7's test score can't measure
+course-correction reporting while the test split holds 0 corrected sessions (T-030), and because
+LLM-decided failure type has only 9 dev cases (one case = ±0.11). **Rules for v2:** no existing
+session changes split (dev stays dev, test stays sealed); new sessions only; every label the human's.
+**Human work:** approve 8 specs, review 8 session files, confirm the split. Estimated eval spend:
+T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20).
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-038 | Dataset v2 specs: 8 new synthetic specs aimed at the gaps, approved by the human | test | M | required | ⬜ | eval plan "Dataset"; Deferred row (T-028, T-030 findings) |
+| T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | ⬜ | eval plan "Dataset"; D-048; arch §8.5 |
+| T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ⬜ | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
+| T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ⬜ | eval plan "measure a baseline"; tuning rules |
+| — | *Then, planned after T-041:* Anthropic adapter (T-015, tests already written), model comparison table, Claude judge recalibration (D-064 revisit), `/test run milestone` on the sealed split | | | | | eval plan "Model comparison"; build order step 6 |
+
+### T-038 · Dataset v2 specs
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Cover every failure type…; include a few sessions where the first approach was already right"; T-028 finding (cue-free DP / backtracking); T-030 finding (0 corrected sessions in test).
+**Done when:**
+1. 8 new specs in `specs.jsonl` (`syn-021`+ ids continue; no problem reused), drafted with the `synthetic-spec` skill, each approved by the human in the log. Together they hold at least:
+   - 3 course-corrected sessions (2 of them intended for test);
+   - 2 dynamic-programming or backtracking sessions whose story gives no naming cue (no `memo`/`dp`/`backtrack`-style names in the final code);
+   - 4 failing sessions whose type the model decides (not Accepted, not TLE/MLE): spread over edge_case_missed, implementation_bug, wrong_approach, did_not_finish;
+   - 1 Compile Error (the one status with 0 cases).
+2. `check_specs.py --with-real` reports no errors and no new skew lines.
+3. The intended split of each new spec is recorded in the log by count only for test-bound specs.
+**Not included:** session files (T-039); any change to an existing spec or label.
+
+### T-039 · Session files for the new specs
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Traces to:** D-048 (the human writes or approves each file; an AI drafter is Claude, named in `meta.json`); arch §8.5.
+**Done when:**
+1. 8 `evals/data/sessions/synthetic/syn-0nn.json` + `.meta.json`, each passing `evals/generate/checks.py`, its final code checked by the human on LeetCode where a verdict is claimed.
+2. The human confirms each file in the log (test-bound files by count only).
+**Not included:** splitting (T-040).
+
+### T-040 · Dataset v2 build and freeze
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1; rule 2, rule 10.
+**Done when:**
+1. The 8 new sessions are added to the failure, algorithm and timeline suites; every existing case keeps its split and its expected values byte-for-byte (a contract test proves it).
+2. The test split holds ≥ 2 course-corrected sessions; counts per split by status reported, test by count only.
+3. All six cases files get a new `dataset_version` (`dev-v3`/`dev-v4`/`test-v2` per suite), the manifest and frozen-dataset tests updated, the reason in `docs/decisions.md`.
+**Not included:** any eval run (T-041).
+
+### T-041 · Dev re-baseline on dataset v2
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "measure a baseline, then set targets".
+**Done when:**
+1. Fresh `repeats=3` dev runs of algorithm, failure (type + explanation) and timeline with the current prompts (algorithm-v1, failure-v1, timeline-v3), gpt-5.5, and the calibrated judges; each metric with its noise band and versions in Baselines.
+2. Every new-case miss is read and named in the log (no prompt changes in this task).
+3. The human confirms.
+**Not included:** prompt v2s (only if T-041 shows a miss pattern, through `/pm idea`); the test split.
+
 ## Eval baselines (dev)
 
 Every number names its versions. Noise band = spread across 3 runs of the same version.
@@ -1324,7 +1376,6 @@ Every item has a trigger: the condition that would make it worth doing.
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
 | `tutor prompts lock` (write manifest entries by command) | M3 adds only two prompts; the contract test catches any wrong hash (re-checked 2026-11-07, D-053) | A hand-entered hash causes a wrong commit, or more than 5 prompt versions exist |
 | `algorithm_labels` table instead of the label CHECK (D-050) | One label gap so far ("sorting"), handled with no label | A second label needs adding: do this migration instead, then labels are rows |
-| **Dataset v2:** more course-corrected sessions (the test split has 0 of 3, T-030), cue-free DP / backtracking (T-028), more LLM-decided failure cases; re-split, then prompt v2s against it | Doesn't block M4: dev holds all 3 corrected sessions, so the timeline judge is still calibrated and measured. Doing it now delays T-031–T-035 and would change dev-v1 mid-milestone, breaking comparison with the M3 baselines | **After M4 ✅, before M7's test-split run.** M7's test score can't measure course-correction reporting with 0 corrected cases; it becomes a task in the M5-replacement slot (Part 2 is deferred) |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
 ## Dropped
@@ -1368,3 +1419,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-08 | — | — | — | `/pm idea` dataset v2 (the human asked for a todo after T-030 found 0 corrected sessions in the test split; merges the open T-028 idea): **Deferred**, trigger after M4 ✅ / before M7. |
 | 2026-11-08 | — | — | T-036 | `/pm idea` define "on the right track" in the timeline prompt (the human asked for the task after T-033's review): **Add** as T-036, before the checkpoint so T-035 records the better prompt. Teaches a measured prompt iteration with a calibrated judge; displaces nothing (M4 order gains one S task). |
 | 2026-11-08 | T-029 – T-037; **M4 ✅** | — | T-037 | M4 closed. Calibrated judges: timeline-judge v1 (1.00, 4/4 misses), failure-explanation-judge v2 (1.00, 4/4; v1 rejected at 0.90 with 0/4). Baselines (3 repeats): timeline checklist 1.00 ±0.01 @ timeline-v3, dev-v3; explanation checklist 0.97 ±0.04, failure type 0.93 ±0.05 @ failure-v1, dev-v2; model openai:gpt-5.5. Human relabels: syn-003 (D-063), Sort Colors (D-066); definitions D-063, D-068. Caveat: timeline-v3 and explanation-judge v2 were revised on dev; M7's test split is the honest check. M4 eval spend ≈ $19. Next: dataset v2 (Deferred, trigger now met: after M4, before M7), then M5. |
+| 2026-11-11 | — | — | T-038 – T-041 | `/pm plan` M7 (Part 1): dataset v2 first (moved out of Deferred, trigger met: M4 ✅). 8 new synthetic sessions aimed at the gaps (corrected sessions for test, cue-free DP/backtracking, LLM-decided failures, Compile Error), added without moving any existing session, then a 3-repeat dev re-baseline. Adapter, comparison and test-split run planned after T-041. Not planned: prompt v2s (only on evidence from T-041), Part 2. |
