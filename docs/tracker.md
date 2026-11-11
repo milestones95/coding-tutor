@@ -1290,8 +1290,8 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 1. 8 new specs in `specs.jsonl` (`syn-021`+ ids continue; no problem reused), drafted with the `synthetic-spec` skill, each approved by the human in the log. Together they hold at least:
    - 3 course-corrected sessions (2 of them intended for test);
    - 2 dynamic-programming or backtracking sessions whose story gives no naming cue (no `memo`/`dp`/`backtrack`-style names in the final code);
-   - 4 failing sessions whose type the model decides (not Accepted, not TLE/MLE): spread over edge_case_missed, implementation_bug, wrong_approach, did_not_finish;
-   - 1 Compile Error (the one status with 0 cases).
+   - 4 failing sessions whose type the model decides (not Accepted, not TLE/MLE): spread over edge_case_missed, implementation_bug, wrong_approach, did_not_finish.
+   (Compile Error dropped 2026-11-11: LeetCode reports a Python SyntaxError as Runtime Error, D-069.)
 2. `check_specs.py --with-real` reports no errors and no new skew lines.
 3. The intended split of each new spec is recorded in the log by count only for test-bound specs.
 **Not included:** session files (T-039); any change to an existing spec or label.

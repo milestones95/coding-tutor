@@ -1050,3 +1050,15 @@ right and the slowness comes from how it is implemented (an unneeded copy, using
 structure the wrong way). Adding a memo to plain recursion is a new technique, so that stays off
 track (the existing label). Labels unchanged; `timeline/v3` states the refined rule.
 **Why.** It keeps D-063's core ("only bug fixes needed") and the human's existing labels consistent.
+
+## D-069 · Python never ends in Compile Error on LeetCode · 2026-11-11 · human
+A real capture (Majority Element, 2026-11-11) has a run with `SyntaxError: invalid syntax` stored as
+**Runtime Error**, and the human confirmed LeetCode itself shows Runtime Error for it. The capture DB
+has 0 Compile Error events among ~120. This corrects D-042's note that a Python Compile Error means a
+SyntaxError.
+**Effects.** Compile Error is not a coverage gap for this python3-only dataset: `check_specs.py`
+leaves it out of the status coverage and rejects a python3 spec that claims it; the
+`synthetic-spec` skill says so. T-038 drops its Compile Error spec. The verdict list itself keeps
+Compile Error (the loader and condenser still accept it if another language ever appears).
+**Why.** A synthetic case must match what the real capture produces (session-format); a python3
+Compile Error session would test a shape that never occurs.
