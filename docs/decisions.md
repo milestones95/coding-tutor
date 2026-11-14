@@ -1080,3 +1080,14 @@ label needs adding", is met.
 `sorting`: that changes an existing dev label (rule 10), so it is the human's call, recorded in T-042's
 log either way.
 **Supersedes.** D-050 (the "no label" half; its deferred table is now built).
+
+## D-071 · Label enforcement in analysis.db uses triggers, not only REFERENCES · 2026-11-14 · build
+**Decision.** Migration 0003 makes `session_algorithms.label` REFERENCE `algorithm_labels(label)` and
+adds BEFORE INSERT / BEFORE UPDATE OF label triggers that RAISE(ABORT) on an unknown label. The
+trigger bodies are written on one line each.
+**Why.** SQLite enforces REFERENCES only on a connection that ran `PRAGMA foreign_keys = ON`; the
+pipeline's connection doesn't, and the T-042 test opens a plain connection. The triggers keep the
+guarantee the old CHECK gave on every connection. One line per body because `migrate.py` refuses a
+line that is only `END;` (it reads as a transaction statement, which would break the
+one-transaction rule). Removing the triggers would silently let off-list labels in.
+**Supersedes.** —
