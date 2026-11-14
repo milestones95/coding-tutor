@@ -78,14 +78,14 @@ def test_dw1_0002_exists_with_a_header_about_existing_rows():
 
 def test_dw2_a_fresh_db_migrates_to_version_2(tmp_path, settings):
     path = tmp_path / "fresh.db"
-    assert migrate(path, settings=settings) == [1, 2]
+    assert migrate(path, settings=settings)[:2] == [1, 2]  # `/test write T-042` correction, 2026-11-14: 0003 adds algorithm_labels (D-070)
     assert migrate(path, settings=settings) == [], "a second run applies nothing"
 
 
 def test_dw2_a_version_1_db_upgrades_to_2(v1_with_rows, settings):
-    assert migrate(v1_with_rows, settings=settings) == [2]
+    assert migrate(v1_with_rows, settings=settings)[0] == 2
     versions = [v for (v,) in sqlite3.connect(v1_with_rows).execute("SELECT version FROM schema_migrations ORDER BY 1")]
-    assert versions == [1, 2]
+    assert versions[:2] == [1, 2]
 
 
 # ---------------------------------------------------------------- Done-when 3: rows kept, labels checked
@@ -120,4 +120,4 @@ def test_dw3_the_primary_key_and_index_survive(v1_with_rows, settings):
 def test_dw3_algorithm_label_enum_has_the_19_labels():
     from tutor.models import AlgorithmLabel
 
-    assert {a.value for a in AlgorithmLabel} == set(OLD_LABELS) | {"prefix_sum"}
+    assert {a.value for a in AlgorithmLabel} >= set(OLD_LABELS) | {"prefix_sum"}   # T-042 adds sorting (D-070)

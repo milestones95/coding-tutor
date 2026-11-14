@@ -30,6 +30,7 @@ ALGO_WORDS = {  # label → words that name it in prose (code identifiers like `
     "trie": ["prefix tree"], "union_find": ["union-find", "union find", "disjoint set"],
     "graph_topological_sort": ["topological"], "bit_manipulation": ["bit manipulation"], "math": [],
     "prefix_sum": ["prefix sum", "prefix product"],
+    "sorting": ["sorting algorithm", "sort-based", "sort based"],  # D-070
 }
 GIVEAWAY = re.compile(r"(?i)\b(bug|should be|should use|instead of|too slow|o\(n\^?2\)|o\(n²\)|overflow check|"
                       r"brute[- ]force|wrong approach|edge case)\b")

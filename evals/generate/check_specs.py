@@ -33,7 +33,7 @@ FAILURE_TYPES = {"edge_case_missed", "wrong_approach", "too_slow", "implementati
 ALGORITHMS = {"hash_map", "two_pointers", "sliding_window", "binary_search", "stack", "heap", "bfs",
               "dfs_backtracking", "dynamic_programming", "greedy", "intervals", "linked_list",
               "tree_traversal", "trie", "union_find", "graph_topological_sort", "bit_manipulation", "math",
-              "prefix_sum"}  # prefix_sum: D-044
+              "prefix_sum", "sorting"}  # prefix_sum: D-044; sorting: D-070 (the human added it, adopted by `/test write T-042`)
 # Python only for now (human, 2026-11-07, D-042). Widening this is a recorded decision.
 LANGUAGES = {"python3"}
 SPLITS = {"dev", "test", "unassigned"}

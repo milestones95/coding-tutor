@@ -1290,7 +1290,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Done when:**
 1. 8 new specs in `specs.jsonl` (`syn-021`+ ids continue; no problem reused), drafted with the `synthetic-spec` skill, each approved by the human in the log. Together they hold at least:
    - 3 course-corrected sessions (2 of them intended for test);
-   - 2 dynamic-programming or backtracking sessions whose story gives no naming cue (no `memo`/`dp`/`backtrack`-style names in the final code);
+   - ~~2 cue-free dynamic-programming or backtracking sessions~~ dropped 2026-11-14 by the human ("let's not worry about dp/backtracking specifically");
    - 4 failing sessions whose type the model decides (not Accepted, not TLE/MLE): spread over edge_case_missed, implementation_bug, wrong_approach, did_not_finish.
    (Compile Error dropped 2026-11-11: LeetCode reports a Python SyntaxError as Runtime Error, D-069.)
 2. `check_specs.py --with-real` reports no errors and no new skew lines.
@@ -1331,6 +1331,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Not included:** any other new label; changing any other existing label; an eval run (T-041).
 **Log:**
 - 2026-11-14 `/pm idea` keep `sorting` (the human): **Add** as T-042. The human's checker-only edit (`check_specs.py:36`) is uncommitted; `/test write T-042` adopts it with the reason, since `evals/generate/` is tester-owned.
+- 2026-11-14 `/test write T-042`: `tests/acceptance/test_t042_sorting_label.py` (14: migration 0003 keeps rows, `algorithm_labels` holds the 20, an off-list label refused on a plain connection with no PRAGMA, a new label is a row insert, PK and index kept, architecture and skill list it, prompt v2 pinned and = v1 + one `sorting` line, v1 unchanged, no dataset problem named) and `tests/contract/test_label_lists.py` (4: enum = pinned prompt = migrated table = spec checker = session checker = keyword baseline). Tester-owned lists updated: the human's `check_specs.py` edit adopted with its reason; `checks.py` giveaway words and the keyword baseline (now `keyword-v2`, cues `.sort(` / `sorted(`) gain `sorting`; the `synthetic-spec` skill lists it. Corrections (pinned version instead of v1, migration lists as prefixes): T-008 (2 lines), T-014 (4), T-024 (3). Suite: 14 fail for the right reason (no 0003, no table, enum and prompt lack `sorting`) + `test_frozen_dataset` (specs changed; T-040); 615 pass. All 27 synthetic sessions still pass `checks.py`.
 
 ## Eval baselines (dev)
 

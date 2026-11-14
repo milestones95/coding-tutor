@@ -118,17 +118,21 @@ def test_an_explicit_model_is_used(settings, tmp_path):
 def test_the_prompt_is_a_versioned_file_pinned_in_config(settings):
     from tutor.prompts import load_prompt
 
-    assert settings.prompts.get("algorithm") == "v1", "tutor.toml [prompts] pins algorithm = \"v1\""
-    p = load_prompt("algorithm", "v1")
+    # `/test write T-042` correction, 2026-11-14: the pinned version, not v1 (algorithm v2 adds sorting, D-070)
+    pin = settings.prompts.get("algorithm")
+    assert pin and pin.startswith("v"), "tutor.toml [prompts] pins an algorithm version"
+    p = load_prompt("algorithm", pin)
     manifest = json.loads((REPO / "prompts" / "manifest.json").read_text())
-    assert manifest.get("algorithm/v1.md") == p.sha256
+    assert manifest.get(f"algorithm/{pin}.md") == p.sha256
     assert "final_code" in p.variables
 
 
 def test_the_prompt_lists_every_label_and_no_dataset_example():
     from tutor.models import AlgorithmLabel
 
-    text = (REPO / "prompts" / "algorithm" / "v1.md").read_text()
+    from tutor.config import load_settings
+
+    text = (REPO / "prompts" / "algorithm" / f"{load_settings().prompts['algorithm']}.md").read_text()
     missing = [a.value for a in AlgorithmLabel if a.value not in text]
     assert not missing, f"the prompt must offer every label: {missing}"
     slugs = {json.loads(r)["problem"]["slug"] for r in (SYN / "specs.jsonl").read_text().splitlines() if r.strip()}
@@ -167,8 +171,9 @@ def test_the_runner_records_versions_cost_and_accuracy_for_the_llm_predictor(roo
     rec = run("algorithm", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results")
 
     assert (rec["provider"], rec["model"]) == ("openai", "gpt-5.5")
-    assert rec["prompt_versions"] == {"algorithm": "v1"}
-    assert rec["prompt_sha256"] == {"algorithm": load_prompt("algorithm", "v1").sha256}
+    pin = settings.prompts["algorithm"]   # `/test write T-042` correction: the pinned version
+    assert rec["prompt_versions"] == {"algorithm": pin}
+    assert rec["prompt_sha256"] == {"algorithm": load_prompt("algorithm", pin).sha256}
     assert rec["aggregates"]["accuracy"] == 0.5 and rec["aggregates"]["errors"] == 0
     assert [c["output"] for c in rec["cases"]] == [{"labels": ["two_pointers"]}, {"labels": ["heap"]}]
     # FakeAdapter bills 1000 in / 500 out per call; gpt-5.5 is $5 / $30 per 1M → $0.02 per call
