@@ -1286,7 +1286,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
 | T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
 | T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "measure a baseline"; tuning rules |
-| T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | ⬜ | eval plan "Model comparison"; build order step 6 |
+| T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | 🔄 | eval plan "Model comparison"; build order step 6 |
 | T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | ⬜ | eval plan "Model comparison" |
 | T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ⬜ | eval plan "test split"; rule 2 |
 | — | *Option, the human decides after T-043:* a Sonnet judge. Needs first: `_is_calibrated` to match the judge's **model** as well as name and version (today a judge pointed at another model would read as calibrated off gpt-5.5's entry, found 2026-11-14), then calibration on the existing 20-item sets, then re-grading both models' saved outputs (judge calls only, ≈ $1–2) for a 2×2 of models × judges | | | | | rule 8; D-064 |
@@ -1367,6 +1367,15 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 2. The Model comparison table holds both models: per-field accuracy with noise band, cost per session, latency, consistency, and each metric real-only and synthetic-only (the synthetic sessions were drafted with Claude Opus 5.5, D-018: a synthetic-only advantage that real-only doesn't show is read as generator bias).
 3. Every case where the two models disagree is named in the log. The human confirms.
 **Not included:** prompt changes for Claude (the prompts are shared); the test split (T-045).
+**Log:**
+- 2026-11-14 Sonnet 5.5 runs, 3 repeats each ($4.50 including the gpt-5.5 judges; the field calls cost $0.19 + $0.33 + $0.66). Table above. Where the models disagree:
+  - **algorithm:** none; both miss only dev-017.
+  - **failure type:** Sonnet also misses failure-dev-016 (syn-016, labelled did_not_finish → implementation_bug in all 3); on Sort Colors (dev-003) it says wrong_approach where gpt-5.5 says edge_case_missed (label implementation_bug).
+  - **explanation:** Sonnet loses on invented detail in dev-003, -010, -012, -014, -016, -018 (judge-graded, in some repeats), consistent 0.92 vs 1.00.
+  - **timeline:** Sonnet worse on dev-008 (syn-003) and dev-016 (syn-016): first approach misread in all 3, plus one over-length summary (code-counted) and one invented event each; slightly worse on -005, -009, -011; better on -004 (Coin Change) and -010 (Daily Temperatures), gpt-5.5's two misses.
+  - **Generator bias (D-018):** not seen. Sonnet does no better on the Claude-drafted synthetic sessions; it is lower there than on real ones (failure 0.92 vs 0.83 real equal to gpt's 0.83; timeline 0.94 synthetic vs 0.98 real).
+  - **Judge bias:** can't be ruled out (gpt-5.5 judges). The code-counted and exact-match metrics don't depend on it: failure type 0.89 vs 0.95 and the ≤ 5-sentence item 0.96 vs 1.00 favour gpt-5.5 too.
+  - Waiting on the human's confirmation; the Opus 5.5 run (T-044) waits on the human's approval.
 
 ## Eval baselines (dev)
 
@@ -1412,6 +1421,10 @@ Run only via `/test milestone`. Aggregates only.
 
 | Model | Accuracy (per field) | Cost / session | Latency | Consistency (3 runs) |
 |---|---|---|---|---|
+| `openai:gpt-5.5` | algorithm **0.95** ±0.00 · failure type **0.95** ±0.00 (LLM-decided 0.89) · explanation checklist **0.96** ±0.00 · timeline checklist **0.98** ±0.03. Real / synthetic: failure 0.83 / 1.00, timeline 0.97 / 0.99 | **$0.045** (algorithm 0.0055, failure 0.0118, timeline 0.0281) | median 1.1 s / 6.0 s / 13.9 s | answers identical across repeats except timeline wording |
+| `anthropic:claude-sonnet-5-5` | algorithm **0.95** ±0.00 · failure type **0.89** ±0.00 (LLM-decided 0.78) · explanation checklist **0.87** ±0.15 · timeline checklist **0.95** ±0.03. Real / synthetic: failure 0.83 / 0.92, timeline 0.98 / 0.94 | **$0.021** (0.0034, 0.0058, 0.0115) | median 1.4 s / 6.7 s / 11.4 s | failure type identical across repeats; explanation's invented-detail item swings ±0.31 |
+
+All @ prompts algorithm-v2 / failure-v1 / timeline-v3, datasets dev-v2 / dev-v3 / dev-v4, condenser c1, judges failure-explanation-judge-v2 and timeline-judge-v1 **on gpt-5.5** (calibrated on gpt-5.5; a gpt-5.5 judge may favour gpt-5.5's wording, which T-043 can't rule out). Runs: gpt 20261114T155044Z-{93fcd60d, 19b4cf08, dc92cf79}; Sonnet 20261114T163631Z-{fbf51ca4, e768dd64, 548cf92f}. 3 repeats each, 2026-11-14.
 
 ---
 
