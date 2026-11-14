@@ -23,9 +23,7 @@ from pydantic import BaseModel
 
 from _fake_anthropic import start_fake_anthropic
 
-# T-015 is deferred to M7 (D-048): the human writes the synthetic sessions, so no in-repo caller
-# needs Claude until the model comparison. Kept, not deleted; remove this mark when T-015 resumes.
-pytestmark = pytest.mark.skip(reason="T-015 Anthropic adapter deferred to M7 (D-048)")
+# T-015 resumed in M7 (2026-11-14): the deferral skip mark is removed (`/test write` correction).
 
 KEY = "sk-ant-SENTINEL-t015-never-logged-77c2"
 MODEL = "anthropic:claude-opus-5-5"
@@ -207,7 +205,10 @@ def test_the_key_comes_from_the_environment_and_is_never_logged(tmp_path, server
     server.replies = [(401, None)]
     with pytest.raises(LLMProviderError) as err:
         call(c, prompt)
-    assert server.requests[0]["headers"].get("x-api-key") == KEY
+    # `/test write` correction, 2026-11-14 (the human approved): anthropic SDK 2.x sends the key as
+    # `Authorization: Bearer <key>`, 0.x as `x-api-key`. Either way it must reach the server.
+    h = server.requests[0]["headers"]
+    assert h.get("x-api-key") == KEY or h.get("authorization") == f"Bearer {KEY}"
     assert KEY not in str(err.value) and KEY not in repr(err.value)
     logged = "\n".join(p.read_text() for p in (tmp_path / "logs").rglob("*") if p.is_file())
     assert logged and KEY not in logged
