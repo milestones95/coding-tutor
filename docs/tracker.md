@@ -1289,7 +1289,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | ⬜ | eval plan "Model comparison"; build order step 6 |
 | T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | ⬜ | eval plan "Model comparison" |
 | T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ⬜ | eval plan "test split"; rule 2 |
-| — | *Not planned:* Claude judge recalibration (D-064): only if T-043/T-044 show the gpt-5.5 judges favouring their own model | | | | | |
+| — | *Option, the human decides after T-043:* a Sonnet judge. Needs first: `_is_calibrated` to match the judge's **model** as well as name and version (today a judge pointed at another model would read as calibrated off gpt-5.5's entry, found 2026-11-14), then calibration on the existing 20-item sets, then re-grading both models' saved outputs (judge calls only, ≈ $1–2) for a 2×2 of models × judges | | | | | rule 8; D-064 |
 
 ### T-038 · Dataset v2 specs
 **Milestone:** M7 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Cover every failure type…; include a few sessions where the first approach was already right"; T-028 finding (cue-free DP / backtracking); T-030 finding (0 corrected sessions in test).
