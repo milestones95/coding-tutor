@@ -1281,7 +1281,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-038 | Dataset v2 specs: 8 new synthetic specs aimed at the gaps, approved by the human | test | M | required | 🔄 | eval plan "Dataset"; Deferred row (T-028, T-030 findings) |
 | T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | 🔄 | eval plan "Dataset"; D-048; arch §8.5 |
 | T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | 🔄 | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
-| T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | 🔄 | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
+| T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
 | T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ⬜ | eval plan "measure a baseline"; tuning rules |
 | — | *Then, planned after T-041:* Anthropic adapter (T-015, tests already written), model comparison table, Claude judge recalibration (D-064 revisit), `/test run milestone` on the sealed split | | | | | eval plan "Model comparison"; build order step 6 |
 
@@ -1341,6 +1341,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 - 2026-11-14 Done-when 5, the human: Merge Sorted Array (real, dev) becomes `sorting` ("that's what i used to solve the problem"). `labels.jsonl` changed (rule 10 reason: D-070 adds the label its final code uses). It joins the algorithm dev suite in T-040's build (it had no case there: no label).
 - 2026-11-14 `/test write` correction (the human approved): 4 T-024 assertions read the pinned algorithm version; the off-list example is `hashmap` (missed in `/test write T-042`).
 - 2026-11-14 `/build`: migration `0003_algorithm_labels.sql` (table seeded with 20 labels; `session_algorithms` rebuilt with `label` REFERENCES it, rows copied; two triggers refuse an unknown label on any connection, since REFERENCES needs `PRAGMA foreign_keys`), `AlgorithmLabel.SORTING`, `prompts/algorithm/v2.md` (= v1 + one `sorting` line) pinned, both manifests, architecture §3.3/§4.2. Unit: the old enum-vs-CHECK test replaced by a trigger-syntax test (the contract test covers the list). Suite 629 pass; 1 expected fail (`test_frozen_dataset`, specs changed, T-040). Lint, types, `prompts check` clean. Dev eval: none here; algorithm-v2 is first measured in T-041. Cost $0.
+- 2026-11-14 `/test run` → ✅. Builder commit `844be27` touches no judging files. Gates: 636 passed, 23 skipped; ruff, mypy, `prompts check` clean (first run blocked only by `test_frozen_dataset`, the tester's own relabel; cleared by T-040's refreeze, `c752f96`). Done-when 1–5 met. Eval (free): `algorithm_overlap 0.83 @ predictor keyword_baseline@keyword-v2, dataset dev-v1, condenser c1` = 0.83 @ keyword-v1, no change (run 20261114T154155Z-fc5d368b). algorithm-v2 (LLM) is measured in T-041. Cost $0.
 
 ## Eval baselines (dev)
 
