@@ -1282,7 +1282,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "Dataset"; D-048; arch §8.5 |
 | T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
 | T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
-| T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ⬜ | eval plan "measure a baseline"; tuning rules |
+| T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | 🔄 | eval plan "measure a baseline"; tuning rules |
 | — | *Then, planned after T-041:* Anthropic adapter (T-015, tests already written), model comparison table, Claude judge recalibration (D-064 revisit), `/test run milestone` on the sealed split | | | | | eval plan "Model comparison"; build order step 6 |
 
 ### T-038 · Dataset v2 specs
@@ -1328,6 +1328,13 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 2. Every new-case miss is read and named in the log (no prompt changes in this task).
 3. The human confirms.
 **Not included:** prompt v2s (only if T-041 shows a miss pattern, through `/pm idea`); the test split.
+**Log:**
+- 2026-11-14 `/test` (the human approved the ≈ $7 run): 3 repeats each on dev, gpt-5.5. No new test assets: runner, graders and judges are covered by T-022 – T-037.
+  - `algorithm algorithm_overlap 0.95 @ prompt algorithm-v2, model openai:gpt-5.5, dataset dev-v2, condenser c1, judge —` ±0.00 (run 20261114T155044Z-93fcd60d, $0.31). vs 0.94 @ algorithm-v1, dev-v1: the same single miss (dev-017); the new `sorting` case right in all 3. v2's extra line cost nothing measurable.
+  - `failure failure_type_exact 0.95 @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v3, condenser c1, judge failure-explanation-judge-v2` ±0.00; explanation checklist 0.96 ±0.00 (run 20261114T155044Z-19b4cf08, $1.59). vs 0.93 ±0.05 and 0.97 ±0.04 at M4: inside the bands. Only miss Sort Colors, as at M4.
+  - `timeline timeline-judge 0.98 @ prompt timeline-v3, model openai:gpt-5.5, dataset dev-v4, condenser c1, judge timeline-judge-v1` ±0.03 (run 20261114T155044Z-dc92cf79, $3.49). vs 1.00 ±0.01 at M4: a 0.02 drop, outside M4's band, with nothing changed (same prompt, byte-identical cases). Misses: Daily Temperatures' first approach called off track in all 3 (1 of 3 at M4), Coin Change misread in 1 repeat. Read as noise the 3-repeat M4 band understated; recorded as the new band, not tuned (no prompt change in this task).
+  - New dev cases: 1 (algorithm-dev-019); no misses on it. Test split untouched. Total $5.40.
+  - Waiting on the human's confirmation.
 
 ### T-042 · `sorting` label, label table, one label list
 **Milestone:** M7 · **Size:** M · **Owner:** build · **Test assets:** required · **Order:** before T-040 (the v2 dataset holds a `sorting` label) · **Traces to:** D-070; eval plan "Algorithm labels"; D-050's Deferred row (trigger met).
@@ -1362,6 +1369,10 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 | failure type accuracy, all (same run) | **0.93** mean (0.95, 0.95, 0.89); rule 1.00 (n=10), LLM 0.85 (n=9). Misses: Sort Colors → edge_case_missed in all 3 (label implementation_bug, D-066), LRU Cache → implementation_bug once | **±0.05** (one case) | failure-v1 | openai:gpt-5.5 | dev-v2 | — | 2026-11-08 |
 | timeline ≤ 5 sentences (code-counted) | **1.00** (n=19, all 3 repeats) | 0 | timeline-v3 | openai:gpt-5.5 | dev-v3 | — | 2026-11-08 |
 | timeline checklist (judge) | **1.00** mean 0.997 (repeats 1.00, 0.99, 1.00; real 1.00 n=6, synthetic 1.00 n=13); first approach 0.98 (1.00, 0.95, 1.00: one Daily Temperatures summary called its start off track), every other item 1.00 in all 3 | **±0.01** checklist; first approach ±0.05 (one case); others 0 | timeline-v3 | openai:gpt-5.5 | dev-v3 | timeline-judge-v1 (calibrated, D-064/D-067) | 2026-11-08 |
+| algorithm accuracy | **0.95** (0.95 all 3 repeats; real 1.00 n=6, synthetic 0.92 n=13); only miss algorithm-dev-017 (two-ends recursion → dfs_backtracking, known since T-024); new case dev-019 (`sorting`) right in all 3 | **0.00**; consistency 1.00 | algorithm-v2 | openai:gpt-5.5 | dev-v2 | — | 2026-11-14 |
+| failure type accuracy, all | **0.95** (0.95 all 3); rule 1.00 (n=10), LLM 0.89 (n=9); only miss Sort Colors → edge_case_missed in all 3 (label implementation_bug, D-066) | **0.00** | failure-v1 | openai:gpt-5.5 | dev-v3 | — | 2026-11-14 |
+| failure explanation checklist (judge) | **0.96** (0.96 all 3; n=13); consistent 1.00; no invented cause 0.92 (Sort Colors names an unseen input in all 3) | **0.00** | failure-v1 | openai:gpt-5.5 | dev-v3 | failure-explanation-judge-v2 (calibrated) | 2026-11-14 |
+| timeline checklist (judge) | **0.98** mean (0.99, 0.99, 0.96; real 0.97 n=6, synthetic 0.99 n=13); first approach 0.93 (Daily Temperatures called off track in all 3), Coin Change misread once (3 items) | **±0.03** (wider than M4's ±0.01: same prompt and byte-identical cases, so model noise; 6 repeats so far span 0.96 – 1.00) | timeline-v3 | openai:gpt-5.5 | dev-v4 | timeline-judge-v1 (calibrated) | 2026-11-14 |
 | agent exact answers | | | | | fixture-v1 | — | |
 | agent pattern recall (judge) | | | | | fixture-v1 | | |
 | agent grounding | | | | | fixture-v1 | — | |
