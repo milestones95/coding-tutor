@@ -1062,3 +1062,21 @@ leaves it out of the status coverage and rejects a python3 spec that claims it; 
 Compile Error (the loader and condenser still accept it if another language ever appears).
 **Why.** A synthetic case must match what the real capture produces (session-format); a python3
 Compile Error session would test a shape that never occurs.
+
+## D-070 · `sorting` joins the algorithm labels, as a row in an `algorithm_labels` table · 2026-11-14 · human
+**Decision.** The fixed algorithm list gains a 20th label, `sorting`: the code's key step is sorting
+the input (or a copy) and scanning it. It reverses D-050's "no label for sorting". The label goes in
+everywhere the list lives (eval plan, `AlgorithmLabel`, the algorithm prompt as a new version, the spec
+and session checkers, the keyword baseline, the `synthetic-spec` skill, architecture §3.2/§4.2), and
+`analysis.db` gets it through D-050's deferred migration: an `algorithm_labels` table that
+`session_algorithms.label` references, so a later label is a row insert, not a table rebuild.
+A contract test makes every copy of the list identical. Task T-042, before T-040.
+**Why.** The human, 2026-11-14: "let's keep sorting". A dataset-v2 test spec's final code is a sort
+and scan, and the human had already added `sorting` to `check_specs.py` alone. In that state the spec
+passes, but the model can never answer `sorting` (the enum and prompt lack it), so the case is a
+guaranteed miss, and nothing caught the drift (no test compared the lists). D-050's trigger, "a second
+label needs adding", is met.
+**Not decided here.** Whether the real Merge Sorted Array session (no label under D-050) becomes
+`sorting`: that changes an existing dev label (rule 10), so it is the human's call, recorded in T-042's
+log either way.
+**Supersedes.** D-050 (the "no label" half; its deferred table is now built).

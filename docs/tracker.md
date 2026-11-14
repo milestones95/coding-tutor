@@ -1281,6 +1281,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-038 | Dataset v2 specs: 8 new synthetic specs aimed at the gaps, approved by the human | test | M | required | ⬜ | eval plan "Dataset"; Deferred row (T-028, T-030 findings) |
 | T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | ⬜ | eval plan "Dataset"; D-048; arch §8.5 |
 | T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ⬜ | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
+| T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ⬜ | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
 | T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ⬜ | eval plan "measure a baseline"; tuning rules |
 | — | *Then, planned after T-041:* Anthropic adapter (T-015, tests already written), model comparison table, Claude judge recalibration (D-064 revisit), `/test run milestone` on the sealed split | | | | | eval plan "Model comparison"; build order step 6 |
 
@@ -1318,6 +1319,18 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 2. Every new-case miss is read and named in the log (no prompt changes in this task).
 3. The human confirms.
 **Not included:** prompt v2s (only if T-041 shows a miss pattern, through `/pm idea`); the test split.
+
+### T-042 · `sorting` label, label table, one label list
+**Milestone:** M7 · **Size:** M · **Owner:** build · **Test assets:** required · **Order:** before T-040 (the v2 dataset holds a `sorting` label) · **Traces to:** D-070; eval plan "Algorithm labels"; D-050's Deferred row (trigger met).
+**Done when:**
+1. Migration `0003` creates `algorithm_labels(label TEXT PRIMARY KEY)` holding the 20 labels and rebuilds `session_algorithms` so `label` references it instead of a CHECK; every existing row is kept; tested on a copy first; architecture §3 updated.
+2. `sorting` is in `AlgorithmLabel`, `check_specs.ALGORITHMS`, `checks.py`'s cue words, the keyword baseline, the `synthetic-spec` skill and architecture §4.2.
+3. Prompt `algorithm/v2` = v1 plus one `sorting` line, pinned in `tutor.toml`; v1 unchanged; no dataset problem named (rule 9). Its dev eval is T-041's run (algorithm-v2 replaces algorithm-v1 there).
+4. A contract test fails if the label set differs between `AlgorithmLabel`, `check_specs.ALGORITHMS`, the pinned algorithm prompt and the migrated `algorithm_labels` rows.
+5. The human decides whether Merge Sorted Array's empty label becomes `sorting` (rule 10); the decision is in the log.
+**Not included:** any other new label; changing any other existing label; an eval run (T-041).
+**Log:**
+- 2026-11-14 `/pm idea` keep `sorting` (the human): **Add** as T-042. The human's checker-only edit (`check_specs.py:36`) is uncommitted; `/test write T-042` adopts it with the reason, since `evals/generate/` is tester-owned.
 
 ## Eval baselines (dev)
 
@@ -1375,7 +1388,6 @@ Every item has a trigger: the condition that would make it worth doing.
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
 | `tutor prompts lock` (write manifest entries by command) | M3 adds only two prompts; the contract test catches any wrong hash (re-checked 2026-11-07, D-053) | A hand-entered hash causes a wrong commit, or more than 5 prompt versions exist |
-| `algorithm_labels` table instead of the label CHECK (D-050) | One label gap so far ("sorting"), handled with no label | A second label needs adding: do this migration instead, then labels are rows |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
 ## Dropped
@@ -1420,3 +1432,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-08 | — | — | T-036 | `/pm idea` define "on the right track" in the timeline prompt (the human asked for the task after T-033's review): **Add** as T-036, before the checkpoint so T-035 records the better prompt. Teaches a measured prompt iteration with a calibrated judge; displaces nothing (M4 order gains one S task). |
 | 2026-11-08 | T-029 – T-037; **M4 ✅** | — | T-037 | M4 closed. Calibrated judges: timeline-judge v1 (1.00, 4/4 misses), failure-explanation-judge v2 (1.00, 4/4; v1 rejected at 0.90 with 0/4). Baselines (3 repeats): timeline checklist 1.00 ±0.01 @ timeline-v3, dev-v3; explanation checklist 0.97 ±0.04, failure type 0.93 ±0.05 @ failure-v1, dev-v2; model openai:gpt-5.5. Human relabels: syn-003 (D-063), Sort Colors (D-066); definitions D-063, D-068. Caveat: timeline-v3 and explanation-judge v2 were revised on dev; M7's test split is the honest check. M4 eval spend ≈ $19. Next: dataset v2 (Deferred, trigger now met: after M4, before M7), then M5. |
 | 2026-11-11 | — | — | T-038 – T-041 | `/pm plan` M7 (Part 1): dataset v2 first (moved out of Deferred, trigger met: M4 ✅). 8 new synthetic sessions aimed at the gaps (corrected sessions for test, cue-free DP/backtracking, LLM-decided failures, Compile Error), added without moving any existing session, then a 3-repeat dev re-baseline. Adapter, comparison and test-split run planned after T-041. Not planned: prompt v2s (only on evidence from T-041), Part 2. |
+| 2026-11-14 | — | — | T-042 | `/pm idea` keep `sorting` (the human): **Add** as T-042, before T-040. A dataset-v2 spec needs it, and a checker-only label is a guaranteed miss the model can't answer. Builds D-050's deferred `algorithm_labels` table (Deferred row removed: trigger met). Displaces nothing; adds an algorithm prompt v2, measured in T-041. T-038/T-039 progress: the human wrote and reviewed 7 test-bound sessions (count only); all pass `checks.py`, `check_specs` 0 errors. Still to come for T-038: dev specs for the DP/backtracking and LLM-decided-failure gaps. |
