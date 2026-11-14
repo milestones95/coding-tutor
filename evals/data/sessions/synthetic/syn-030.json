@@ -1,0 +1,72 @@
+{
+  "session_id": "syn-030",
+  "problem": {
+    "slug": "climbing-stairs",
+    "title": "Climbing Stairs",
+    "difficulty": "Easy",
+    "tags": [
+      "math",
+      "dynamic-programming",
+      "memoization"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-08T13:07:00.000Z",
+      "code": "class Solution:\n    def climbStairs(self, n: int) -> int:\n        if n <= 2:\n            return n\n        return self.climbStairs(n - 1) + self.climbStairs(n - 2)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-08T13:11:00.000Z",
+      "code": "class Solution:\n    def climbStairs(self, n: int) -> int:\n        return self.climbStairs(n - 1) + self.climbStairs(n - 2)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-08T13:13:00.000Z",
+      "code": "class Solution:\n    def climbStairs(self, n: int) -> int:\n        dp = [0] * (n + 1)\n        dp[1] = 1\n        dp[2] = 2\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-08T13:15:00.000Z",
+      "code": "class Solution:\n    def climbStairs(self, n: int) -> int:\n        dp = [0] * (n + 1)\n        dp[1] = 1\n        dp[2] = 2\n        for i in range(3, n + 1):\n            dp[i] = dp[i - 1] + dp[i - 2]\n        return dp[n]\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-08T13:08:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-08T13:10:00.000Z",
+      "status": "Time Limit Exceeded",
+      "tests_passed": null,
+      "tests_total": 3,
+      "error_detail": "Last executed input: n = 45"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-08T13:14:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-08T13:17:00.000Z",
+      "verdict": "Runtime Error",
+      "tests_passed": 2,
+      "tests_total": 45,
+      "error_detail": "IndexError: list assignment index out of range\n    dp[2] = 2\nLine 5 in climbStairs (Solution.py)\nLast executed input: n = 1",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

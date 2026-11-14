@@ -1,0 +1,72 @@
+{
+  "session_id": "syn-027",
+  "problem": {
+    "slug": "valid-anagram",
+    "title": "Valid Anagram",
+    "difficulty": "Easy",
+    "tags": [
+      "hash-table",
+      "string",
+      "sorting"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-05T16:32:00.000Z",
+      "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-05T16:34:00.000Z",
+      "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        return set(s) == set(t)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-05T16:36:00.000Z",
+      "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        if len(s) != len(t):\n        return set(s) == set(t)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-05T16:38:00.000Z",
+      "code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        if len(s) != len(t):\n            return False\n        return set(s) == set(t)\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-05T16:33:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-05T16:35:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 2,
+      "tests_total": 3,
+      "error_detail": "Output: true\nExpected: false"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-05T16:37:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-05T16:40:00.000Z",
+      "verdict": "Wrong Answer",
+      "tests_passed": 50,
+      "tests_total": 56,
+      "error_detail": "Input: s = \"aacc\", t = \"ccac\"\nOutput: true\nExpected: false",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

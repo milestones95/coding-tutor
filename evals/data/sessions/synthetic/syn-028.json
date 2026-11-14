@@ -1,0 +1,90 @@
+{
+  "session_id": "syn-028",
+  "problem": {
+    "slug": "top-k-frequent-elements",
+    "title": "Top K Frequent Elements",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "hash-table",
+      "divide-and-conquer",
+      "sorting",
+      "heap-priority-queue",
+      "bucket-sort",
+      "counting",
+      "quickselect"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-06T19:17:00.000Z",
+      "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        counts = []\n        for x in set(nums):\n            counts.append((nums.count(x), x))\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-06T19:19:00.000Z",
+      "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        counts = []\n        for x in set(nums):\n            counts.append((nums.count(x), x))\n        counts.sort(reverse=True)\n        return counts[:k]\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-06T19:21:00.000Z",
+      "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        counts = []\n        for x in set(nums):\n            counts.append((nums.count(x), x))\n        counts.sort()\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-06T19:23:00.000Z",
+      "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        counts = []\n        for x in set(nums):\n            counts.append((nums.count(x), x))\n        counts.sort()\n        return [x for _, x in counts[:k]]\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-06T19:25:00.000Z",
+      "code": "class Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        counts = []\n        for x in set(nums):\n            counts.append((nums.count(x), x))\n        counts.sort(reverse=True)\n        return [x for _, x in counts[:k]]\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-06T19:19:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 3,
+      "error_detail": "Output: [[3,1],[2,2]]\nExpected: [1,2]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-06T19:22:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 3,
+      "error_detail": "Output: [3,2]\nExpected: [1,2]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-06T19:25:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-06T19:28:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-06T19:34:00.000Z",
+      "verdict": "Time Limit Exceeded",
+      "tests_passed": 18,
+      "tests_total": 21,
+      "error_detail": "Last executed input: nums = [7,0,1,2,3,4,...] (length 100000), k = 1",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

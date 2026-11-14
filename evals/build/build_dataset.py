@@ -1,7 +1,9 @@
-"""Assemble dataset v1 from the approved specs and the human's real labels (T-021; arch §8.1; D-045).
+"""Assemble the dataset from the approved specs and the human's real labels (T-021, T-040; arch §8.1).
 
-Tester-owned. Deterministic: a seeded draw inside each (status, real/synthetic) group, so re-running
-gives the same split. Writes evals/data/{failure,algorithm,timeline}/{dev,test}/cases.jsonl and
+Tester-owned. v1 (D-045) was a seeded draw inside each (status, real/synthetic) group. v2 (T-040,
+D-072) never moves a session: every existing case is kept as written (only its dataset_version
+changes) and new sessions are appended with the next case ids, in the split their spec names
+(`"dev"` or `"test"`; `"unassigned"` is refused). `split()` stays for the record of how v1 was drawn. Writes evals/data/{failure,algorithm,timeline}/{dev,test}/cases.jsonl and
 evals/data/manifest.json (hashes the frozen-dataset contract test checks). Prints counts only:
 which sessions are in test is never printed (rule 2).
 
@@ -19,9 +21,11 @@ REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "evals" / "data"
 SEED = 20261107
 TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
-# A split's version bumps when any of its cases changes (rule 10). timeline/dev-v2: syn-003's story
-# relabelled by the human, 2026-11-08 (a pivot at minute 8, still wrong; D-063).
-VERSIONS = {("timeline", "dev"): "dev-v3", ("failure", "dev"): "dev-v2"}   # D-063 (timeline v2), D-066
+# A split's version bumps when any of its cases changes (rule 10). History: timeline/dev-v2 syn-003
+# (D-063), timeline/dev-v3 + failure/dev-v2 Sort Colors (D-066). Dataset v2 (T-040, D-072) bumps all
+# six files: new sessions in every test file, Merge Sorted Array's algorithm case in algorithm/dev.
+VERSIONS = {("timeline", "dev"): "dev-v4", ("failure", "dev"): "dev-v3", ("algorithm", "dev"): "dev-v2",
+            ("timeline", "test"): "test-v2", ("failure", "test"): "test-v2", ("algorithm", "test"): "test-v2"}
 
 
 def outcome(verdict, passed, total):
@@ -89,31 +93,80 @@ def split(rows):
     return {r["key"]: ("test" if r["key"] in test_keys else "dev") for r in rows}
 
 
-def main():
-    rows = sessions()
-    where = split(rows)
-    written = {}
+def _ref(session: dict) -> str:
+    return json.dumps(session, sort_keys=True)
+
+
+def _expected(suite, r):
+    if suite == "failure":
+        return {"failure_type": r["labels"]["failure_type"], "key_facts": r["key_facts"]}
+    if suite == "algorithm":
+        return {"labels": r["labels"]["algorithms"]}
+    return {"checklist": {"approaches": r["story"]["approaches"],
+                          "course_correction": r["story"]["course_correction"],
+                          "final_approach": r["story"]["final_approach"],
+                          "outcome": r["outcome"]},
+            "key_facts": r["key_facts"]}
+
+
+def _existing():
+    """(suite, split) → the committed case rows, in file order."""
+    out = {}
     for suite in ("failure", "algorithm", "timeline"):
         for sp in ("dev", "test"):
-            cases = []
+            path = DATA / suite / sp / "cases.jsonl"
+            out[(suite, sp)] = [json.loads(x) for x in path.read_text().splitlines() if x.strip()] if path.exists() else []
+    return out
+
+
+def pinned_split(rows, existing, spec_splits):
+    """A session already in the dataset keeps its split (the failure suite holds every session); a new
+    one takes its spec's explicit split. Anything else is an error, never a guess."""
+    where = {}
+    for (suite, sp), cases in existing.items():
+        for c in cases:
+            where[_ref(c["session"])] = sp
+    out = {}
+    for r in rows:
+        ref = _ref(r["session"])
+        if ref in where:
+            out[r["key"]] = where[ref]
+        elif r["source"] == "synthetic" and spec_splits.get(r["key"]) in ("dev", "test"):
+            out[r["key"]] = spec_splits[r["key"]]
+        else:
+            raise SystemExit(f"{r['key']}: a new session needs \"split\": \"dev\" or \"test\" in its spec")
+    return out
+
+
+def main():
+    rows = sessions()
+    existing = _existing()
+    spec_splits = {json.loads(x)["id"]: json.loads(x)["split"]
+                   for x in (DATA / "sessions" / "synthetic" / "specs.jsonl").read_text().splitlines() if x.strip()}
+    where = pinned_split(rows, existing, spec_splits)
+    by_ref = {_ref(r["session"]): r for r in rows}
+    written, added = {}, Counter()
+    for suite in ("failure", "algorithm", "timeline"):
+        for sp in ("dev", "test"):
+            version = VERSIONS[(suite, sp)]
+            cases, have = [], set()
+            for c in existing[(suite, sp)]:
+                r = by_ref[_ref(c["session"])]
+                if c["expected"] != _expected(suite, r):
+                    raise SystemExit(f"{c['case_id']}: its label changed; that needs its own reason and version")
+                cases.append({**c, "dataset_version": version})
+                have.add(_ref(c["session"]))
             for r in sorted((r for r in rows if where[r["key"]] == sp), key=lambda r: r["key"]):
+                if _ref(r["session"]) in have:
+                    continue
                 if suite == "algorithm" and not r["labels"]["algorithms"]:
                     continue  # no label in the fixed list applies (D-050)
-                if suite == "failure":
-                    expected = {"failure_type": r["labels"]["failure_type"], "key_facts": r["key_facts"]}
-                elif suite == "algorithm":
-                    expected = {"labels": r["labels"]["algorithms"]}
-                else:
-                    expected = {"checklist": {"approaches": r["story"]["approaches"],
-                                              "course_correction": r["story"]["course_correction"],
-                                              "final_approach": r["story"]["final_approach"],
-                                              "outcome": r["outcome"]},
-                                "key_facts": r["key_facts"]}
                 tags = (["near_miss"] if r["near_miss"] else []) + (["rule_decided"] if suite == "failure" and r["status"] in
                         ("Accepted", "Time Limit Exceeded", "Memory Limit Exceeded") else [])
                 cases.append({"case_id": f"{suite}-{sp}-{len(cases) + 1:03d}", "suite": suite, "split": sp,
-                              "dataset_version": VERSIONS.get((suite, sp), f"{sp}-v1"), "source": r["source"], "session": r["session"],
-                              "expected": expected, "label_source": "human_written", "tags": tags, "notes": ""})
+                              "dataset_version": version, "source": r["source"], "session": r["session"],
+                              "expected": _expected(suite, r), "label_source": "human_written", "tags": tags, "notes": ""})
+                added[(suite, sp)] += 1
             path = DATA / suite / sp / "cases.jsonl"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases))
@@ -121,7 +174,8 @@ def main():
     manifest = {p: hashlib.sha256((REPO / p).read_bytes()).hexdigest() for p in sorted(written)}
     for p in ("evals/data/sessions/synthetic/specs.jsonl", "evals/data/sessions/real/labels.jsonl",
               "evals/data/calibration/timeline/v1.jsonl",   # the human's judge grades are frozen too (D-063)
-              "evals/data/calibration/failure_explanation/v1.jsonl"):
+              "evals/data/calibration/failure_explanation/v1.jsonl",
+              "evals/data/v1_case_digests.json"):           # what dataset v2 must keep (T-040)
         manifest[p] = hashlib.sha256((REPO / p).read_bytes()).hexdigest()
     (DATA / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     # counts only
@@ -133,6 +187,7 @@ def main():
             if d or t:
                 print(f"  {st:22} {src:9}  dev {d}  test {t}")
     print("cases written:", written)
+    print("cases added:", {f"{s}/{sp}": n for (s, sp), n in sorted(added.items())})
 
 
 if __name__ == "__main__":

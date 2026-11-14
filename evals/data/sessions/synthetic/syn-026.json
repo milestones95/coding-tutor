@@ -1,0 +1,89 @@
+{
+  "session_id": "syn-026",
+  "problem": {
+    "slug": "search-in-rotated-sorted-array",
+    "title": "Search in Rotated Sorted Array",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "binary-search"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-04T14:22:00.000Z",
+      "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        lo, hi = 0, len(nums) - 1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if nums[mid] == target:\n                return mid\n            elif nums[mid] < target:\n                lo = mid + 1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-04T14:24:00.000Z",
+      "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        lo, hi = 0, len(nums) - 1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if nums[mid] == target:\n                return mid\n            elif nums[mid] < target:\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return -1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-04T14:26:00.000Z",
+      "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        lo, hi = 0, len(nums) - 1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if nums[mid] == target:\n                return mid\n            if nums[lo] < nums[mid]:\n                if nums[lo] <= target < nums[mid]:\n            else:\n                hi = mid - 1\n        return -1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-04T14:28:00.000Z",
+      "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        lo, hi = 0, len(nums) - 1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if nums[mid] == target:\n                return mid\n            if nums[lo] < nums[mid]:\n                if nums[lo] <= target < nums[mid]:\n                    hi = mid - 1\n                else:\n                    lo = mid + 1\n            else:\n        return -1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-04T14:30:00.000Z",
+      "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        lo, hi = 0, len(nums) - 1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if nums[mid] == target:\n                return mid\n            if nums[lo] < nums[mid]:\n                if nums[lo] <= target < nums[mid]:\n                    hi = mid - 1\n                else:\n                    lo = mid + 1\n            else:\n                if nums[mid] < target <= nums[hi]:\n                    lo = mid + 1\n                else:\n                    hi = mid - 1\n        return -1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-04T14:34:00.000Z",
+      "code": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        lo, hi = 0, len(nums) - 1\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if nums[mid] == target:\n                return mid\n            if nums[lo] <= nums[mid]:\n                if nums[lo] <= target < nums[mid]:\n                    hi = mid - 1\n                else:\n                    lo = mid + 1\n            else:\n                if nums[mid] < target <= nums[hi]:\n                    lo = mid + 1\n                else:\n                    hi = mid - 1\n        return -1\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-04T14:24:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 2,
+      "tests_total": 3,
+      "error_detail": "Output: -1\nExpected: 4"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-04T14:30:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-04T14:32:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 3,
+      "tests_total": 4,
+      "error_detail": "Output: -1\nExpected: 1"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-04T14:34:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-04T14:37:00.000Z",
+      "verdict": "Accepted",
+      "tests_passed": 197,
+      "tests_total": 197,
+      "error_detail": null,
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

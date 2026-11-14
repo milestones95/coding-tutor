@@ -1091,3 +1091,20 @@ guarantee the old CHECK gave on every connection. One line per body because `mig
 line that is only `END;` (it reads as a transaction statement, which would break the
 one-transaction rule). Removing the triggers would silently let off-list labels in.
 **Supersedes.** —
+
+## D-072 · Dataset v2: append, never re-split · 2026-11-14 · test
+**Decision.** `build_dataset.py` no longer draws the split. Every v1 case is kept as written (only its
+`dataset_version` changes) and keeps its case id; a new session takes the split its spec names
+(`dev` or `test`, `unassigned` is refused) and is appended with the next case id. All six files bump
+(failure dev-v3, timeline dev-v4, algorithm dev-v2, every test file test-v2). `v1_case_digests.json`,
+written from the v1 files before the rebuild and frozen in the manifest, lets
+`tests/contract/test_dataset_v2.py` prove no v1 case moved or changed. The builder also refuses an
+existing case whose label no longer matches its source; such a change needs its own reason.
+**Result (counts only).** 35 sessions: 19 dev, 16 test. Added: 7 synthetic sessions to every test
+file (written and reviewed by the human; 5 course-corrected), and Merge Sorted Array's algorithm case
+to algorithm/dev (labelled `sorting`, D-070).
+**Why.** A re-split would move sessions between dev and test: dev sessions everyone has seen would
+land in the sealed split (rule 2), and every earlier baseline would stop being comparable. The human
+wrote all 7 new sessions for test, so the split is now 19/16 rather than the eval plan's 20/10: a larger
+test split gives a steadier test number; dev's LLM-decided failure count stays at 9.
+**Supersedes.** D-045's seeded draw, for every build after v1.

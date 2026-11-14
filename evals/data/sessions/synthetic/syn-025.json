@@ -1,0 +1,98 @@
+{
+  "session_id": "syn-025",
+  "problem": {
+    "slug": "rotting-oranges",
+    "title": "Rotting Oranges",
+    "difficulty": "Medium",
+    "tags": [
+      "array",
+      "breadth-first-search",
+      "matrix"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-03T18:42:00.000Z",
+      "code": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        time = {}\n\n        def spread(r, c, minute):\n            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                    grid[nr][nc] = 2\n                    time[(nr, nc)] = minute + 1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-03T18:44:00.000Z",
+      "code": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        time = {}\n\n        def spread(r, c, minute):\n            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                nr, nc = r + dr, c + dc\n                if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                    grid[nr][nc] = 2\n                    time[(nr, nc)] = minute + 1\n                    spread(nr, nc, minute + 1)\n\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == 2 and (r, c) not in time:\n                    time[(r, c)] = 0\n                    spread(r, c, 0)\n\n        if any(1 in row for row in grid):\n            return -1\n        return max(time.values(), default=0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-03T18:50:00.000Z",
+      "code": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        queue = deque()\n        fresh = 0\n        for r in range(rows):\n            for c in range(cols):\n\n        if any(1 in row for row in grid):\n            return -1\n        return max(time.values(), default=0)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-03T18:52:00.000Z",
+      "code": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        queue = deque()\n        fresh = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == 2:\n                    queue.append((r, c))\n                elif grid[r][c] == 1:\n                    fresh += 1\n\n        minutes = 0\n        while queue:\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                        grid[nr][nc] = 2\n                        fresh -= 1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-03T18:54:00.000Z",
+      "code": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        queue = deque()\n        fresh = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == 2:\n                    queue.append((r, c))\n                elif grid[r][c] == 1:\n                    fresh += 1\n\n        minutes = 0\n        while queue:\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                        grid[nr][nc] = 2\n                        fresh -= 1\n                        queue.append((nr, nc))\n            minutes += 1\n\n        return minutes if fresh == 0 else -1\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-03T18:56:00.000Z",
+      "code": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        rows, cols = len(grid), len(grid[0])\n        queue = deque()\n        fresh = 0\n        for r in range(rows):\n            for c in range(cols):\n                if grid[r][c] == 2:\n                    queue.append((r, c))\n                elif grid[r][c] == 1:\n                    fresh += 1\n\n        minutes = 0\n        while queue:\n            for _ in range(len(queue)):\n                r, c = queue.popleft()\n                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):\n                    nr, nc = r + dr, c + dc\n                    if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:\n                        grid[nr][nc] = 2\n                        fresh -= 1\n                        queue.append((nr, nc))\n            minutes += 1\n\n        return minutes - 1 if fresh == 0 else -1\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-03T18:45:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-03T18:48:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 3,
+      "tests_total": 4,
+      "error_detail": "Output: 5\nExpected: 2"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-03T18:53:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 1,
+      "tests_total": 4,
+      "error_detail": "Output: 5\nExpected: 4"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-03T18:57:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 3,
+      "tests_total": 3,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-03T19:00:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-03T19:04:00.000Z",
+      "verdict": "Wrong Answer",
+      "tests_passed": 305,
+      "tests_total": 307,
+      "error_detail": "Input: grid = [[0]]\nOutput: -1\nExpected: 0",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}
