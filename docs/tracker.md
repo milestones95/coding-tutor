@@ -763,7 +763,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
-| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ deferred to M7 (D-048); test assets written | arch §6; D-008, D-018 |
+| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ✅ 2026-11-14 `/test run` | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ✅ 2026-11-07 `/test run` | arch §8.1, §8.2, §4.3 #1 |
 | T-017 | Session checks (`evals/generate/checks.py`): validate the human's session files | test | M | required | ✅ 2026-11-07 `/test run` (the human confirmed) | arch §8.5; D-043 |
 | ~~T-018~~ | ~~Session generator~~: dropped, the human writes the sessions (D-048) | — | — | — | dropped | arch §8.5; D-017, D-043 |
@@ -838,6 +838,9 @@ T-020 (labelling the real sessions) is human work and can happen any time before
   (1 `llm` test: a real logged call to `llm.generator`). Checked existing tests for an
   "anthropic has no adapter" assumption: none. Result: 13 fail for the right reason ("no adapter
   for provider 'anthropic' yet"). Rest of the suite unchanged.
+- 2026-11-14 resumed in M7. `/test write` correction (the human approved): the deferral skip mark removed; the key assertion accepts `Authorization: Bearer` (anthropic SDK 2.x) as well as `x-api-key`.
+- 2026-11-14 `/build`: `adapters/anthropic.py` (Messages API, `output_config.format` json_schema with every object closed and keywords outside the structured-output subset dropped, pydantic still enforces them; no thinking or sampling params; JSON from the first `text` block; `max_retries=0`; refusal → non-retryable error; key scrubbed), `adapters/schema.py` (the schema rewrite, shared, no SDK import), the client routes `anthropic:` models to it, `anthropic` 2.8.0 added. Unit tests: the existing schema tests cover the shared rewrite.
+- 2026-11-14 `/test run` → ✅. Builder files touch no judging files (the correction above is the tester's). Contract 13/13 against the loopback fake; the `llm`-marked live call to `anthropic:claude-opus-5-5` passed and was logged with cost (< $0.01). Suite: 649 passed; ruff, mypy clean. Done-when 1–3 met.
 
 ### T-016 · Eval cases + split guard
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §8.1, §8.2 (split guard), §4.3 #1 (label fence).
@@ -1282,7 +1285,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "Dataset"; D-048; arch §8.5 |
 | T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
 | T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
-| T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | 🔄 | eval plan "measure a baseline"; tuning rules |
+| T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "measure a baseline"; tuning rules |
 | — | *Then, planned after T-041:* Anthropic adapter (T-015, tests already written), model comparison table, Claude judge recalibration (D-064 revisit), `/test run milestone` on the sealed split | | | | | eval plan "Model comparison"; build order step 6 |
 
 ### T-038 · Dataset v2 specs
@@ -1335,6 +1338,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
   - `timeline timeline-judge 0.98 @ prompt timeline-v3, model openai:gpt-5.5, dataset dev-v4, condenser c1, judge timeline-judge-v1` ±0.03 (run 20261114T155044Z-dc92cf79, $3.49). vs 1.00 ±0.01 at M4: a 0.02 drop, outside M4's band, with nothing changed (same prompt, byte-identical cases). Misses: Daily Temperatures' first approach called off track in all 3 (1 of 3 at M4), Coin Change misread in 1 repeat. Read as noise the 3-repeat M4 band understated; recorded as the new band, not tuned (no prompt change in this task).
   - New dev cases: 1 (algorithm-dev-019); no misses on it. Test split untouched. Total $5.40.
   - Waiting on the human's confirmation.
+- 2026-11-14 `/test run` → ✅. The human confirmed the baselines ("okay let's proceed").
 
 ### T-042 · `sorting` label, label table, one label list
 **Milestone:** M7 · **Size:** M · **Owner:** build · **Test assets:** required · **Order:** before T-040 (the v2 dataset holds a `sorting` label) · **Traces to:** D-070; eval plan "Algorithm labels"; D-050's Deferred row (trigger met).

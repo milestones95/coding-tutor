@@ -10,7 +10,6 @@
   `logs/llm_bodies/`.
 """
 
-import copy
 import os
 import re
 
@@ -18,6 +17,7 @@ import openai
 from openai.types.responses import EasyInputMessageParam, ResponseTextConfigParam
 
 from tutor.llm.adapters import AdapterResponse
+from tutor.llm.adapters.schema import strict_schema  # re-exported: shared with the Anthropic adapter
 from tutor.llm.errors import LLMConfigError, LLMProviderError
 from tutor.llm.messages import Message
 
@@ -71,37 +71,3 @@ def _input_item(m: Message) -> EasyInputMessageParam:
 
 def _schema_name(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]", "_", name)[:64] or "output"
-
-
-def strict_schema(schema: dict) -> dict:
-    """Rewrite a pydantic JSON schema into the form OpenAI's strict mode accepts.
-
-    OpenAI's documented strict-mode rules: every object sets `additionalProperties: false` and
-    lists all of its properties in `required`. `default` is dropped (with every field required
-    it means nothing), and a `$ref` that has sibling keys is inlined, because strict mode
-    rejects siblings next to `$ref`. The input is not modified.
-    """
-    root = copy.deepcopy(schema)
-    defs = root.get("$defs", {})
-
-    def walk(node):
-        if isinstance(node, list):
-            return [walk(n) for n in node]
-        if not isinstance(node, dict):
-            return node
-        if "$ref" in node and len(node) > 1:
-            target = defs.get(node["$ref"].rsplit("/", 1)[-1], {})
-            node = {**copy.deepcopy(target), **{k: v for k, v in node.items() if k != "$ref"}}
-        node.pop("default", None)
-        out = {}
-        for k, v in node.items():
-            if k in ("properties", "$defs", "definitions"):
-                out[k] = {name: walk(sub) for name, sub in v.items()}
-            else:
-                out[k] = walk(v)
-        if out.get("type") == "object" or "properties" in out:
-            out["additionalProperties"] = False
-            out["required"] = list(out.get("properties", {}))
-        return out
-
-    return walk(root)
