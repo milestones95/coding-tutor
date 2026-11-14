@@ -1287,7 +1287,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
 | T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "measure a baseline"; tuning rules |
 | T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | 🔄 | eval plan "Model comparison"; build order step 6 |
-| T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | ⬜ | eval plan "Model comparison" |
+| T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | 🔄 | eval plan "Model comparison" |
 | T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ⬜ | eval plan "test split"; rule 2 |
 | — | *Option, the human decides after T-043:* a Sonnet judge. Needs first: `_is_calibrated` to match the judge's **model** as well as name and version (today a judge pointed at another model would read as calibrated off gpt-5.5's entry, found 2026-11-14), then calibration on the existing 20-item sets, then re-grading both models' saved outputs (judge calls only, ≈ $1–2) for a 2×2 of models × judges | | | | | rule 8; D-064 |
 
@@ -1377,6 +1377,17 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
   - **Judge bias:** can't be ruled out (gpt-5.5 judges). The code-counted and exact-match metrics don't depend on it: failure type 0.89 vs 0.95 and the ≤ 5-sentence item 0.96 vs 1.00 favour gpt-5.5 too.
   - Waiting on the human's confirmation; the Opus 5.5 run (T-044) waits on the human's approval.
 
+### T-044 · Model comparison on dev (Opus 5.5)
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "Model comparison". Done when: as T-043, for `anthropic:claude-opus-5-5`.
+**Log:**
+- 2026-11-14 the human approved the run ("we can see how opus performs sure"). Opus 5.5 runs, 3 repeats each: $5.65 total = Anthropic $2.44 (field calls 0.41 + 0.65 + 1.39) + OpenAI $3.21 (judges). Table above. Against gpt-5.5 / Sonnet:
+  - **algorithm:** 1.00, the only model to get dev-017 (palindrome recursion) right.
+  - **failure type:** misses dev-003 like both others (wrong_approach, as Sonnet) and dev-016 in 2 of 3 (implementation_bug, as Sonnet in 3 of 3).
+  - **explanation:** invented-detail item on dev-003 (all three models), -010, -012, -018, in some repeats; consistent item misses dev-003 (as Sonnet).
+  - **timeline:** main loss is length: > 5 sentences in 13 of 57 summaries across 11 sessions (code-counted, no judge). First approach misread on dev-008 (syn-003, as Sonnet) and dev-012 in all 3, dev-018 once. No invented corrections; approaches and final/outcome 1.00.
+  - **Generator bias (D-018):** not seen on timeline (synthetic 0.92 < real 0.95). Failure synthetic 0.95 vs real 0.83, but real equals the other two models' 0.83 (same real miss), and the synthetic gap is gpt-5.5's 1.00 as well.
+  - Waiting on the human's confirmation.
+
 ## Eval baselines (dev)
 
 Every number names its versions. Noise band = spread across 3 runs of the same version.
@@ -1421,10 +1432,11 @@ Run only via `/test milestone`. Aggregates only.
 
 | Model | Accuracy (per field) | Cost / session | Latency | Consistency (3 runs) |
 |---|---|---|---|---|
-| `openai:gpt-5.5` | algorithm **0.95** ±0.00 · failure type **0.95** ±0.00 (LLM-decided 0.89) · explanation checklist **0.96** ±0.00 · timeline checklist **0.98** ±0.03. Real / synthetic: failure 0.83 / 1.00, timeline 0.97 / 0.99 | **$0.045** (algorithm 0.0055, failure 0.0118, timeline 0.0281) | median 1.1 s / 6.0 s / 13.9 s | answers identical across repeats except timeline wording |
-| `anthropic:claude-sonnet-5-5` | algorithm **0.95** ±0.00 · failure type **0.89** ±0.00 (LLM-decided 0.78) · explanation checklist **0.87** ±0.15 · timeline checklist **0.95** ±0.03. Real / synthetic: failure 0.83 / 0.92, timeline 0.98 / 0.94 | **$0.021** (0.0034, 0.0058, 0.0115) | median 1.4 s / 6.7 s / 11.4 s | failure type identical across repeats; explanation's invented-detail item swings ±0.31 |
+| `openai:gpt-5.5` | algorithm **0.95** ±0.00 · failure type **0.95** ±0.00 (LLM-decided 0.89) · explanation checklist **0.96** ±0.00 · timeline checklist **0.98** ±0.03. Real / synthetic: failure 0.83 / 1.00, timeline 0.97 / 0.99 | **$0.045** (algorithm 0.0055, failure 0.0118, timeline 0.0281) | model call median 1.1 s / 2.0 s / 6.9 s | answers identical across repeats except timeline wording |
+| `anthropic:claude-sonnet-5-5` | algorithm **0.95** ±0.00 · failure type **0.89** ±0.00 (LLM-decided 0.78) · explanation checklist **0.87** ±0.15 · timeline checklist **0.95** ±0.03. Real / synthetic: failure 0.83 / 0.92, timeline 0.98 / 0.94 | **$0.021** (0.0034, 0.0058, 0.0115) | model call median 1.4 s / 2.3 s / 3.6 s | failure type identical across repeats; explanation's invented-detail item swings ±0.31 |
 
-All @ prompts algorithm-v2 / failure-v1 / timeline-v3, datasets dev-v2 / dev-v3 / dev-v4, condenser c1, judges failure-explanation-judge-v2 and timeline-judge-v1 **on gpt-5.5** (calibrated on gpt-5.5; a gpt-5.5 judge may favour gpt-5.5's wording, which T-043 can't rule out). Runs: gpt 20261114T155044Z-{93fcd60d, 19b4cf08, dc92cf79}; Sonnet 20261114T163631Z-{fbf51ca4, e768dd64, 548cf92f}. 3 repeats each, 2026-11-14.
+| `anthropic:claude-opus-5-5` | algorithm **1.00** ±0.00 · failure type **0.91** ±0.05 (LLM-decided 0.81) · explanation checklist **0.87** ±0.08 · timeline checklist **0.93** ±0.04 (≤ 5 sentences 0.77, code-counted; first approach 0.88). Real / synthetic: failure 0.83 / 0.95, timeline 0.95 / 0.92 | **$0.043** (0.0071, 0.0114, 0.0243) | model call median 1.5 s / 2.2 s / 4.6 s | failure type flips on one case; timeline length swings ±0.21 |
+All @ prompts algorithm-v2 / failure-v1 / timeline-v3, datasets dev-v2 / dev-v3 / dev-v4, condenser c1, judges failure-explanation-judge-v2 and timeline-judge-v1 **on gpt-5.5** (calibrated on gpt-5.5; a gpt-5.5 judge may favour gpt-5.5's wording, which T-043 can't rule out). Runs: gpt 20261114T155044Z-{93fcd60d, 19b4cf08, dc92cf79}; Sonnet 20261114T163631Z-{fbf51ca4, e768dd64, 548cf92f}; Opus 20261114T232428Z-{f93e75f7, f2513f6d, cfa7e2e0}. 3 repeats each, 2026-11-14. Latency is the model's own call, from `logs/llm_calls.jsonl` (corrected 2026-11-14: the first figures were the result record's per-case latency, which includes the gpt-5.5 judge call). Failure is 39 calls, not 57: verdict-decided cases make no call.
 
 ---
 
