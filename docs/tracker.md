@@ -1278,9 +1278,9 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
-| T-038 | Dataset v2 specs: 8 new synthetic specs aimed at the gaps, approved by the human | test | M | required | 🔄 | eval plan "Dataset"; Deferred row (T-028, T-030 findings) |
-| T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | 🔄 | eval plan "Dataset"; D-048; arch §8.5 |
-| T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | 🔄 | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
+| T-038 | Dataset v2 specs: 8 new synthetic specs aimed at the gaps, approved by the human | test | M | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "Dataset"; Deferred row (T-028, T-030 findings) |
+| T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "Dataset"; D-048; arch §8.5 |
+| T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
 | T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
 | T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ⬜ | eval plan "measure a baseline"; tuning rules |
 | — | *Then, planned after T-041:* Anthropic adapter (T-015, tests already written), model comparison table, Claude judge recalibration (D-064 revisit), `/test run milestone` on the sealed split | | | | | eval plan "Model comparison"; build order step 6 |
@@ -1298,6 +1298,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Not included:** session files (T-039); any change to an existing spec or label.
 **Log:**
 - 2026-11-14 the human wrote 7 specs, all `"split": "test"` (Claude-drafted code, `ai_assistance` recorded; D-018): 5 course-corrected, 2 off track and not corrected; 4 failing with a model-decided type (implementation_bug 2, wrong_approach 1, edge_case_missed 1). Cue-free DP/backtracking dropped by the human. `check_specs --with-real`: 27 valid, 0 errors. **Differs from Done-when 1:** 7 specs, not 8, and the 4 model-decided failures are in test, so dev's count stays 9. Needs the human's confirmation to close.
+- 2026-11-14 `/test run` → ✅. The human confirmed ("okay sounds good"), including the differences from the plan (7 test-bound specs, 19/16 split, D-072). Suite 636 passed; `checks.py` 27/27; `check_specs` 0 errors.
 
 ### T-039 · Session files for the new specs
 **Milestone:** M7 · **Size:** M · **Owner:** test · **Traces to:** D-048 (the human writes or approves each file; an AI drafter is Claude, named in `meta.json`); arch §8.5.
@@ -1307,6 +1308,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Not included:** splitting (T-040).
 **Log:**
 - 2026-11-14 7 session files + `meta.json` (verdict `accepted`, reviewed by the human), final code checked on LeetCode by the human; fixes to repeated snapshots, the problem block and submit counts made by the human (counts only reported). `checks.py`: 27 passed, 0 failed. Needs the human's confirmation to close.
+- 2026-11-14 `/test run` → ✅. The human confirmed ("okay sounds good"), including the differences from the plan (7 test-bound specs, 19/16 split, D-072). Suite 636 passed; `checks.py` 27/27; `check_specs` 0 errors.
 
 ### T-040 · Dataset v2 build and freeze
 **Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1; rule 2, rule 10.
@@ -1317,6 +1319,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Not included:** any eval run (T-041).
 **Log:**
 - 2026-11-14 `/test write T-040` + build (tester-owned): `build_dataset.py` appends instead of re-splitting (D-072); `v1_case_digests.json` frozen; `tests/contract/test_dataset_v2.py` (6: every v1 case unchanged in its split, ids continue, v2 versions, no session in both splits, ≥ 2 corrected in test, every spec once). Version pins updated in `test_frozen_dataset.py` and T-030. Result: 19 dev / 16 test sessions; added 7 to each test file, 1 to algorithm/dev (Merge Sorted Array, `sorting`). Test split corrected sessions: 5 (was 0). By status, dev/test: Accepted 6/5, WA 5/4, TLE 3/2, RE 1/3, MLE 1/1, OLE 1/0, not submitted 2/1. Suite 636 passed. Needs the human's confirmation to close.
+- 2026-11-14 `/test run` → ✅. The human confirmed ("okay sounds good"), including the differences from the plan (7 test-bound specs, 19/16 split, D-072). Suite 636 passed; `checks.py` 27/27; `check_specs` 0 errors.
 
 ### T-041 · Dev re-baseline on dataset v2
 **Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "measure a baseline, then set targets".
