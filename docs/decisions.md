@@ -1108,3 +1108,80 @@ land in the sealed split (rule 2), and every earlier baseline would stop being c
 wrote all 7 new sessions for test, so the split is now 19/16 rather than the eval plan's 20/10: a larger
 test split gives a steadier test number; dev's LLM-decided failure count stays at 9.
 **Supersedes.** D-045's seeded draw, for every build after v1.
+
+## D-073 · Part 2 topic = algorithm label, attached to the problem · 2026-11-15 · human
+**Decision.** A Part 2 topic is a label from `algorithm_labels`. Topics belong to the problem:
+the labels of its passed sessions, or of all its sessions if it never passed
+(`problem_topics` view, architecture §17.1). A two-label problem counts in both topics.
+**Why.** One topic per problem means sessions of the same problem can't disagree. Passed code
+is the data's best evidence of what the problem needs. LeetCode tags were rejected (JSON
+arrays, vague tags like "Array"); composite topics (`bfs+graph`) were rejected (≈ 210 pairs
+split the data, and any one-label difference changes the key).
+**Known limit.** Part 1's label is what the final code does, so a never-passed problem
+attempted with the wrong technique lands under that technique. Fix proposed as a Part 1
+on-track field via `/pm idea`, after M7. Part 2's evals are unaffected: the fixture plants
+consistent labels.
+**Supersedes.** —
+
+## D-074 · A problem is scored by its latest cold attempt, passed within time · 2026-11-15 · human
+**Decision.** A problem's sessions group into 14-day retry windows anchored at each window's
+first session; only that first (cold) session scores the window, and the problem is scored
+by its latest window. Pass = `status = 'passed'` and `time_to_finish_min` ≤ 15 / 25 / 40 min
+(Easy / Medium / Hard). Solved-at-any-time is kept beside it. Solve time is otherwise a fact,
+not a verdict. Defined once in the `counted_attempts` view (§17.2, §17.4).
+**Why.** The human's aim is "can I solve it cold now, at interview pace". Rejected: any pass
+in the window and the last session (a retry right after a failure would hide it); a window
+measured from the last session (daily retries would extend it forever); a separate "slow"
+verdict (the human: a medium over 25 min would likely fail a real interview, so it's a fail).
+A view, because the recursive windowing would otherwise be graded instead of the agent's
+reasoning. `status` is unchanged (rule 1).
+**Supersedes.** The plan's draft strength rule ("90% … median solve time at or under target").
+
+## D-075 · Verdicts, lookback and not-seen; "interview ready" has no thresholds of its own · 2026-11-15 · human
+**Decision.** Over scorable problems in the lookback: < 5 problems = needs more reps; ≥ 5 and
+< 80% within time = struggle; ≥ 80% = strength; labels with none = not practiced. Lookback 60
+days by default, overridable in the question, including all time. Not seen = no session in 60
+days, overridable, oldest first. Rankings use only topics with ≥ 5 problems and include every
+topic tied at the cutoff. Numbers live in `scoring_rules` /
+`time_targets` (§17.4).
+**Why.** The human: too few problems means too few reps, so it is a finding, not a gap in the
+data; 5 to start. Ties included because any tie-breaker is something the agent would have to
+guess. "Interview ready" gets no thresholds of its own (the human dropped the draft rule);
+the question stays, answered as struggle + needs more reps + not practiced.
+**Also (the architect's default, confirmed by the human "for now").** A cold attempt with
+status `unknown` is not scorable, so pre-capture sessions don't count as failures.
+**Supersedes.** The plan's draft definitions table.
+
+## D-076 · Gaps: recurring = 2+ failed sessions, cited by id · 2026-11-15 · human
+**Decision.** "What do I keep missing" draws on all failed sessions of the topic in the
+lookback (retries included) plus passes over the time target. A theme counts when ≥ 2 of
+those sessions support it, and the agent cites their `session_id`s.
+**Why.** Gaps are about mistakes, not scores, so retries count. A one-session theme is a
+one-off. Citations let code check the sessions are real and qualifying, and let the judge
+check the theme against just those explanations, which is how invented gaps get caught.
+**Supersedes.** —
+
+## D-077 · The agent answers through a `final_answer` tool with a claims block · 2026-11-15 · human
+**Decision.** The loop ends on a valid `final_answer` call whose arguments are prose plus
+typed claims (topics with counts and verdicts, problems, gaps with cited sessions, the
+lookback used) (§17.5). Code grades the claims against frozen reference-query results;
+one LLM judge grades theme support, expected/forbidden findings and prose-claims agreement;
+grounding checks every number against tool results (§17.7).
+**Why.** It makes "accurate" and "invented" checkable by code for every factual question:
+an extra topic is a false positive (claim precision). A tool rather than a JSON tail,
+because the arguments are validated and an invalid answer is a recoverable tool error.
+Rates are left out of the claims so rounding can't fail a correct answer. `final_answer`
+reads no data, so D-001 (one data tool) stands.
+**Supersedes.** Part of §9's loop (a text-only reply no longer ends the run).
+
+## D-078 · The Part 2 fixture is built as of a fixed date, one pattern per rule · 2026-11-15 · human
+**Decision.** `build_fixture.py` builds `progress.db` as of a fixed `as_of` (proposed
+2026-12-01), passed to the agent as "today". About 70 sessions over 45 problems (estimate).
+The plan's six patterns stay, adjusted to D-074/D-075 (graphs 70+ days; binary search a
+struggle; the thin topic "needs more reps"), and each new rule gets a planted case where
+breaking it changes the answer (§17.8). Each `reference_sql` and its result are frozen; a
+contract test re-runs them on the fixture.
+**Why.** Every rule is relative to today; with the real date the expected answers would
+drift daily. A pattern the agent can get right while breaking the rule tests nothing. The
+fixture isn't built yet, so adjusting the patterns now edits no frozen expectation (rule 10).
+**Supersedes.** The plan's "about 50 fake sessions".

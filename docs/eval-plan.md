@@ -93,23 +93,33 @@ An agent answers open-ended questions about my practice by deciding which querie
 - What aspects are not interview ready?
 - What are my weaknesses?
 - What problems have I not seen in a while?
+- What do I keep missing in dynamic programming?
+- What are my three weakest topics?
 
 **Data:** one row per session with all Part 1 fields, in a local database (SQLite is enough).
 
 **Tools: raw SQL (decided).**
 
 - **Setup:** one read-only `run_sql` tool with the schema in the system prompt. Most flexible, and teaches query errors and recovery. Guardrails: a read-only connection, a 5-second query timeout, at most 200 rows returned, and SQL errors sent back to the model so it can fix its query.
+- **Answer:** a `final_answer` tool whose arguments are the prose answer plus a claims block (topics with counts and verdicts, problems, gaps with cited sessions, the lookback used), checked by code (D-077). It reads no data.
 
-**Definitions (in the system prompt, draft):**
+**Definitions (in the system prompt; numbers live in the database, D-073 – D-076):**
 
 | Term | Definition |
 | --- | --- |
-| Struggle | Topic pass rate under 80% over the last 60 days, with at least 3 attempts in that window |
-| Strength | Topic pass rate 90% or higher over the last 60 days, with at least 3 attempts in that window, and median solve time at or under target |
-| Interview ready | 80%+ pass rate over the last 5 attempts, median medium solve time 25 min or less, attempted in the last 21 days |
-| Not seen in a while | No attempt in more than 14 days |
+| Topic | An algorithm label, attached to the problem: the labels of its passed sessions, otherwise of all its sessions |
+| Counted attempt | The first (cold) session in a 14-day retry window; later sessions in the window are retries. A problem is scored by its latest counted attempt |
+| Pass | Passed within 15 / 25 / 40 min (Easy / Medium / Hard). Solved at any time is reported beside it |
+| Lookback | 60 days by default; I can set it in the question, including "all time" |
+| Needs more reps | Fewer than 5 problems in the topic |
+| Struggle | At least 5 problems, pass rate under 80% |
+| Strength | At least 5 problems, pass rate 80% or higher |
+| Not practiced | No problems in the topic |
+| Not interview ready | A struggle, needs more reps, or not practiced (no separate thresholds) |
+| Not seen in a while | No session in 60 days (I can set it), oldest first |
+| Keep missing | A theme in at least 2 failed sessions of the topic in the lookback (retries and passes over time included) |
 
-Attempts older than 60 days don't count toward strength or struggle. The agent can still use them for trend questions like "have I improved at DP?"
+Rankings ("worst 3") use only topics with at least 5 problems and include every topic tied at the cutoff. Sessions with no captured verdict are not scored.
 
 **Harness:**
 
@@ -122,21 +132,29 @@ Attempts older than 60 days don't count toward strength or struggle. The agent c
 
 Test the agent on a fake practice history with planted patterns, not on Part 1's output. That way the right answers are known, and any mistake is the agent's, not a Part 1 labeling error.
 
-**Fixture database:** about 50 fake sessions with planted patterns:
+**Fixture database:** about 70 fake sessions, built as of a fixed date given to the agent as "today" (D-078), with planted patterns. Each rule gets a pattern where breaking the rule changes the answer:
 
 - Weak at dynamic programming (around 40% pass, mostly "wrong approach")
 - Strong at two pointers (95%+ pass, fast)
-- Graphs not attempted in 40+ days
-- Binary search passes but slowly (mostly "too slow" or long solve times)
-- A topic with too few attempts to judge (tests whether the agent says "not enough data")
+- Graphs not attempted in 70+ days
+- Binary search solved but slowly (should count as a struggle: solved, but over the time target)
+- A topic with too few problems (should be reported as needs more reps)
 - Heaps failed often 6+ months ago but passed consistently in the last 60 days (should count as a strength, not a struggle)
+- A fail followed by a pass inside one retry window (scored as a fail)
+- Two topics tied at the ranking cutoff (both returned)
+- One gap theme in several failed sessions, plus one-off decoy themes (only the recurring one reported)
+- Topics with no problems (listed as not practiced)
+
+Changed 2026-11-15, before the fixture was built (rule 10): the definitions above changed, so graphs moved from 40+ to 70+ days, binary search and the thin topic got new expected answers, and four patterns were added.
 
 **Question set:** about 20 questions, each with an expected answer. Split them into factual questions with one right answer and judgment questions that should surface the planted patterns.
 
 | Grader | What it checks | How |
 | --- | --- | --- |
-| Exact answer | Factual questions ("what haven't I seen in 30 days") | Compare against the expected set in code |
-| Pattern recall | Judgment questions surface the planted patterns | LLM judge with a list of expected findings |
+| Claims | Topics, counts, verdicts, rankings, problem lists | Code, against frozen reference-query results. Claim precision catches invented items |
+| Lookback | The window used matches the question (60 days if none given) | Code |
+| Theme citations | Each gap theme cites at least 2 real, qualifying sessions | Code |
+| Answer judge | Themes match the cited sessions; expected findings present, forbidden ones absent; the prose matches the claims | LLM judge, calibrated first |
 | Grounding | Every number in the answer appears in a tool result | Automated check against the logged tool outputs |
 | Trajectory | Queried before answering, recovered from SQL errors, no repeated or pointless queries | Rules on the tool-call log |
 | Efficiency | Steps, tokens, cost, latency per question | Logged per run, compared across models |
@@ -156,7 +174,7 @@ Build the easy, deterministic pieces first and the timeline last, because it's t
 ## Open questions
 
 - [x] Part 2 tools: raw SQL or fixed tools? Decided: raw SQL.
-- [ ] Final definitions of "interview ready" and "strength" (the drafts above are placeholders)
+- [x] Final definitions of "interview ready" and "strength"? Decided 2026-11-15 (D-073 – D-076): see the definitions table.
 - [ ] Aggregate questions like "do I spend too long planning?" need numbers. Add per-session planning / coding / debugging minutes later?
 - [x] How do I label "Not submitted" sessions? Decided: status is the verdict; `not_submitted` only once submit capture is reliable, otherwise `unknown` (D-014).
 - [x] Where do the synthetic sessions come from? Decided: generated by Claude from specs I write or approve, then reviewed by me before use (D-017).
