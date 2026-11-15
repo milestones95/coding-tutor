@@ -1,0 +1,98 @@
+{
+  "session_id": "syn-024",
+  "problem": {
+    "slug": "valid-parentheses",
+    "title": "Valid Parentheses",
+    "difficulty": "Easy",
+    "tags": [
+      "string",
+      "stack",
+      "bracket-sequences"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-02T15:12:00.000Z",
+      "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        open_count = {\"(\": 0, \"[\": 0, \"{\": 0}\n        for ch in s:\n            if ch in pairs:\n                open_count[pairs[ch]] -= 1\n                if open_count[pairs[ch]] < 0:\n                    return False\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-02T15:14:00.000Z",
+      "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        open_count = {\"(\": 0, \"[\": 0, \"{\": 0}\n        for ch in s:\n            if ch in pairs:\n                open_count[pairs[ch]] -= 1\n                if open_count[pairs[ch]] < 0:\n                    return False\n            else:\n                open_count[ch] += 1\n        return all(v == 0 for v in open_count.values())\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-02T15:16:00.000Z",
+      "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        stack = []\n        for ch in s:\n            if ch in pairs:\n                if open_count[pairs[ch]] < 0:\n                    return False\n            else:\n                open_count[ch] += 1\n        return all(v == 0 for v in open_count.values())\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-02T15:18:00.000Z",
+      "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        stack = []\n        for ch in s:\n            if ch in pairs:\n                if not stack or stack.pop() != pairs[ch]:\n                    return False\n            else:\n                stack.append(ch)\n        return True\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-02T15:20:00.000Z",
+      "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        stack = []\n        for ch in s:\n            if ch in pairs:\n                if not stack or stack.pop() != pairs[ch]:\n                    return False\n            else:\n                stack.append(ch)\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-02T15:22:00.000Z",
+      "code": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pairs = {\")\": \"(\", \"]\": \"[\", \"}\": \"{\"}\n        stack = []\n        for ch in s:\n            if ch in pairs:\n                if not stack or stack.pop() != pairs[ch]:\n                    return False\n            else:\n                stack.append(ch)\n        return not stack\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-02T15:13:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 4,
+      "tests_total": 4,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-02T15:15:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 4,
+      "tests_total": 5,
+      "error_detail": "Output: true\nExpected: false"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-02T15:18:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 5,
+      "tests_total": 5,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-02T15:19:30.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 5,
+      "tests_total": 6,
+      "error_detail": "Output: true\nExpected: false"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-02T15:21:00.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 6,
+      "tests_total": 6,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-02T15:24:00.000Z",
+      "verdict": "Accepted",
+      "tests_passed": 103,
+      "tests_total": 103,
+      "error_detail": null,
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

@@ -64,7 +64,8 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    ideally needs. A wrong greedy attempt at a DP problem is labelled `greedy`. Use labels from:
    `hash_map` `two_pointers` `sliding_window` `binary_search` `stack` `heap` `bfs` `dfs_backtracking`
    `dynamic_programming` `greedy` `intervals` `linked_list` `tree_traversal` `trie` `union_find`
-   `graph_topological_sort` `bit_manipulation` `math` `prefix_sum` (prefix sums or products, D-044).
+   `graph_topological_sort` `bit_manipulation` `math` `prefix_sum` (prefix sums or products, D-044)
+   `sorting` (sorting the input or a copy is the key step, D-070).
 5. **Approaches**: every distinct approach, in the order tried, in plain words. A refinement
    (fixing a bug in the same idea) is not a new approach.
 6. **Course correction** (D-026):
@@ -77,8 +78,9 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    `null` when the first approach was on track. Labels only, never code: the eval plan rules out an
    expected approach with code. It is never shown to a model. `wrong_approach` always means the
    first approach was off track; a switch to another idea that also fails is still `wrong_approach` (D-063).
-8. **Language**: `python3` only for now (D-042). A Python *Compile Error* on LeetCode means a
-   `SyntaxError`/`IndentationError`; a misspelt name is a Runtime Error.
+8. **Language**: `python3` only for now (D-042). LeetCode reports a Python `SyntaxError` or
+   `IndentationError` as a **Runtime Error** (seen in a real capture, D-069), so a python3 spec never
+   ends in Compile Error and the checker rejects one.
    **Shape**: `duration_min` (2–60, usually 10–30) and `runs` (0–20), consistent with the story. A course
    correction needs time before and after it; a near-miss usually has several runs.
 9. **Key facts**: 2–4 things a correct timeline summary must mention, each **visible in the

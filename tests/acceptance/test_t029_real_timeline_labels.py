@@ -20,7 +20,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 LABELS = REPO / "evals" / "data" / "sessions" / "real" / "labels.jsonl"
 # re-pinned 2026-11-08 (`/test write` correction): Sort Colors relabelled by the human, reason in D-066
-T020_PIN = "db5dcd67e0719ee2d01424c7377a239cc544d00d17b1b8c6b45c4fbe83908344"
+T020_PIN = "63b9840620ae3fc1e17054479c7509007bef35e13082de6cecbf3c3ad1ea871c"  # re-pinned 2026-11-14 (`/test write T-042`): Merge Sorted Array -> sorting, the human (D-070)
 
 
 def _rows():

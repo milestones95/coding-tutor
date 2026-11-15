@@ -54,13 +54,10 @@ def test_the_error_names_the_failing_file(tmp_path):
         migrate(tmp_path / "t.db", settings=_settings(tmp_path), migrations_dir=mig)
 
 
-def test_algorithm_label_enum_matches_the_latest_check_list():
-    import re
+def test_the_label_triggers_are_one_line_so_migrate_accepts_them():
+    """0003's trigger bodies must not put `END;` on its own line: migrate refuses that as a transaction
+    statement. (The enum-vs-labels check moved to tests/contract/test_label_lists.py, D-070.)"""
+    from tutor.db.migrate import TRANSACTION_STATEMENT
 
-    from tutor.models import AlgorithmLabel
-
-    pattern = re.compile(r"label\s+TEXT NOT NULL CHECK \(label IN \((.*?)\)\)", re.S)
-    # The newest migration that (re)defines the label list; later ones may not touch the table.
-    check = next(m.group(1) for mig in reversed(discover(MIGRATIONS_DIR))
-                 if (m := pattern.search(mig.path.read_text())))
-    assert {s.strip().strip("'") for s in check.split(",")} == {a.value for a in AlgorithmLabel}
+    text = (MIGRATIONS_DIR / "0003_algorithm_labels.sql").read_text()
+    assert "CREATE TRIGGER" in text and not TRANSACTION_STATEMENT.search(text)

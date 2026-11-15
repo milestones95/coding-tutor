@@ -97,13 +97,13 @@ def test_dw1_the_migration_starts_with_a_header_about_existing_rows():
 def test_dw2_migrate_creates_every_table_and_index(tmp_path, settings):
     path = tmp_path / "analysis.db"
     assert not path.exists()
-    assert migrate(path, settings=settings) == [1, 2]   # 0002_add_prefix_sum since T-014
+    assert migrate(path, settings=settings)[:2] == [1, 2]   # 0002_add_prefix_sum since T-014  # `/test write T-042` correction, 2026-11-14: 0003 adds algorithm_labels (D-070)
     con = sqlite3.connect(path)
     names = {n: t for t, n in con.execute("SELECT type, name FROM sqlite_master")}
     assert TABLES <= {n for n, t in names.items() if t == "table"}
     assert INDEXES <= {n for n, t in names.items() if t == "index"}
     rows = con.execute("SELECT version, name, applied_at FROM schema_migrations ORDER BY version").fetchall()
-    assert [(v, n) for v, n, _ in rows] == [(1, "init"), (2, "add_prefix_sum")]
+    assert [(v, n) for v, n, _ in rows][:2] == [(1, "init"), (2, "add_prefix_sum")]
     for _, _, applied_at in rows:
         assert re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d", applied_at), "applied_at is ISO-8601"
 

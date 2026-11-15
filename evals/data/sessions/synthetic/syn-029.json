@@ -1,0 +1,76 @@
+{
+  "session_id": "syn-029",
+  "problem": {
+    "slug": "min-stack",
+    "title": "Min Stack",
+    "difficulty": "Medium",
+    "tags": [
+      "stack",
+      "design"
+    ],
+    "description": null
+  },
+  "snapshots": [
+    {
+      "ts": "2026-11-07T15:42:00.000Z",
+      "code": "class MinStack:\n\n    def __init__(self):\n        self.stack = []\n        self.min_val = float(\"inf\")\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        self.min_val = min(self.min_val, val)\n\n    def pop(self) -> None:\n\n\n    def top(self) -> int:\n\n\n    def getMin(self) -> int:\n\n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-07T15:44:00.000Z",
+      "code": "class MinStack:\n\n    def __init__(self):\n        self.stack = []\n        self.min_val = float(\"inf\")\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        self.min_val = min(self.min_val, val)\n\n    def pop(self) -> None:\n        self.stack.pop()\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return self.min_val\n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-07T15:46:00.000Z",
+      "code": "class MinStack:\n\n    def __init__(self):\n        self.stack = []\n        self.mins = []\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        self.min_val = min(self.min_val, val)\n\n    def pop(self) -> None:\n        self.stack.pop()\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return self.min_val\n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-07T15:48:00.000Z",
+      "code": "class MinStack:\n\n    def __init__(self):\n        self.stack = []\n        self.mins = []\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        if not self.mins or val < self.mins[-1]:\n            self.mins.append(val)\n\n    def pop(self) -> None:\n        if self.stack.pop() == self.mins[-1]:\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return self.min_val\n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()\n",
+      "language": "python3"
+    },
+    {
+      "ts": "2026-11-07T15:50:00.000Z",
+      "code": "class MinStack:\n\n    def __init__(self):\n        self.stack = []\n        self.mins = []\n\n    def push(self, val: int) -> None:\n        self.stack.append(val)\n        if not self.mins or val < self.mins[-1]:\n            self.mins.append(val)\n\n    def pop(self) -> None:\n        if self.stack.pop() == self.mins[-1]:\n            self.mins.pop()\n\n    def top(self) -> int:\n        return self.stack[-1]\n\n    def getMin(self) -> int:\n        return self.mins[-1]\n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()\n",
+      "language": "python3"
+    }
+  ],
+  "events": [
+    {
+      "kind": "run",
+      "ts": "2026-11-07T15:45:00.000Z",
+      "status": "Wrong Answer (sample tests)",
+      "tests_passed": 0,
+      "tests_total": 1,
+      "error_detail": "Output: [null,null,null,null,-3,null,0,-3]\nExpected: [null,null,null,null,-3,null,0,-2]"
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-07T15:49:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 1,
+      "tests_total": 1,
+      "error_detail": null
+    },
+    {
+      "kind": "run",
+      "ts": "2026-11-07T15:52:30.000Z",
+      "status": "Passed sample tests",
+      "tests_passed": 2,
+      "tests_total": 2,
+      "error_detail": null
+    },
+    {
+      "kind": "submit",
+      "ts": "2026-11-07T15:56:00.000Z",
+      "verdict": "Runtime Error",
+      "tests_passed": 4,
+      "tests_total": 46,
+      "error_detail": "Input: [\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"getMin\"]\n[[],[2],[1],[1],[],[],[]]\nOutput: [null,null,null,null,1,null,2]\nExpected: [null,null,null,null,1,null,1]",
+      "source": "capture_submit"
+    }
+  ],
+  "submit_capture_reliable": true
+}

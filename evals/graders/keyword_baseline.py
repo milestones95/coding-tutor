@@ -7,7 +7,7 @@ the 1-2 labels with the most cue hits win (ties broken by the list order below).
 
 import re
 
-VERSION = "keyword-v1"
+VERSION = "keyword-v2"  # v2 adds sorting (D-070)
 
 CUES: dict[str, list[str]] = {
     "heap": [r"\bheapq\b", r"\bheappush\b"],
@@ -29,6 +29,7 @@ CUES: dict[str, list[str]] = {
     "math": [r"%\s*10\b", r"//\s*10\b"],
     "hash_map": [r"=\s*\{\}", r"\bdict\(|\bset\(|\bdefaultdict\b|\bCounter\b"],
     "greedy": [r"\bgreedy\b"],
+    "sorting": [r"\.sort\(", r"\bsorted\("],
 }
 
 

@@ -23,7 +23,7 @@ Size: S (under an hour) · M (one session) · no L — split it
 | M4 | Timeline summary + judge | ✅ 2026-11-08 | Judge agreement ≥ 85% recorded |
 | M5 | Progress Agent + `run_sql` | ⏸ Part 2, after Part 1 (2026-11-03) | One fixture question answered with a logged trajectory |
 | M6 | Part 2 evals | ⏸ Part 2, after Part 1 (2026-11-03) | All five graders produce a baseline |
-| M7 | Model comparison + test split — **Part 1 only** for now | ⬜ | Comparison table below |
+| M7 | Model comparison + test split — **Part 1 only** for now; dataset v2 first (T-038 – T-041) | 🔄 planned 2026-11-11 | Comparison table below |
 
 ---
 
@@ -763,7 +763,7 @@ T-020 (labelling the real sessions) is human work and can happen any time before
 | ID | Task | Owner | Size | Test assets | Status | Traces to |
 |---|---|---|---|---|---|---|
 | T-014 | Migration `0002_add_prefix_sum.sql`: recreate `session_algorithms` with `prefix_sum` in the label CHECK, keeping rows; `AlgorithmLabel` gets the value | build | S | required | ✅ 2026-11-07 `/test run` | D-044; arch §3.3 |
-| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ⏸ deferred to M7 (D-048); test assets written | arch §6; D-008, D-018 |
+| T-015 | Anthropic adapter (`adapters/anthropic.py`), the same contract as OpenAI's | build | M | required | ✅ 2026-11-14 `/test run` | arch §6; D-008, D-018 |
 | T-016 | Eval cases + split guard (`tutor/evals/cases.py`) | build | M | required | ✅ 2026-11-07 `/test run` | arch §8.1, §8.2, §4.3 #1 |
 | T-017 | Session checks (`evals/generate/checks.py`): validate the human's session files | test | M | required | ✅ 2026-11-07 `/test run` (the human confirmed) | arch §8.5; D-043 |
 | ~~T-018~~ | ~~Session generator~~: dropped, the human writes the sessions (D-048) | — | — | — | dropped | arch §8.5; D-017, D-043 |
@@ -838,6 +838,9 @@ T-020 (labelling the real sessions) is human work and can happen any time before
   (1 `llm` test: a real logged call to `llm.generator`). Checked existing tests for an
   "anthropic has no adapter" assumption: none. Result: 13 fail for the right reason ("no adapter
   for provider 'anthropic' yet"). Rest of the suite unchanged.
+- 2026-11-14 resumed in M7. `/test write` correction (the human approved): the deferral skip mark removed; the key assertion accepts `Authorization: Bearer` (anthropic SDK 2.x) as well as `x-api-key`.
+- 2026-11-14 `/build`: `adapters/anthropic.py` (Messages API, `output_config.format` json_schema with every object closed and keywords outside the structured-output subset dropped, pydantic still enforces them; no thinking or sampling params; JSON from the first `text` block; `max_retries=0`; refusal → non-retryable error; key scrubbed), `adapters/schema.py` (the schema rewrite, shared, no SDK import), the client routes `anthropic:` models to it, `anthropic` 2.8.0 added. Unit tests: the existing schema tests cover the shared rewrite.
+- 2026-11-14 `/test run` → ✅. Builder files touch no judging files (the correction above is the tester's). Contract 13/13 against the loopback fake; the `llm`-marked live call to `anthropic:claude-opus-5-5` passed and was logged with cost (< $0.01). Suite: 649 passed; ruff, mypy clean. Done-when 1–3 met.
 
 ### T-016 · Eval cases + split guard
 **Milestone:** M2 · **Size:** M · **Owner:** build · **Traces to:** arch §8.1, §8.2 (split guard), §4.3 #1 (label fence).
@@ -1267,6 +1270,124 @@ content in any log (counts only).
 
 ---
 
+## Tasks — active milestone: M7 (Part 1): dataset v2, model comparison, first test-split run
+
+Planned 2026-11-11 (`/pm plan`). Dataset v2 comes first because M7's test score can't measure
+course-correction reporting while the test split holds 0 corrected sessions (T-030), and because
+LLM-decided failure type has only 9 dev cases (one case = ±0.11). **Rules for v2:** no existing
+session changes split (dev stays dev, test stays sealed); new sessions only; every label the human's.
+**Human work:** approve 8 specs, review 8 session files, confirm the split. Estimated eval spend:
+T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20).
+
+| ID | Task | Owner | Size | Test assets | Status | Traces to |
+|---|---|---|---|---|---|---|
+| T-038 | Dataset v2 specs: 8 new synthetic specs aimed at the gaps, approved by the human | test | M | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "Dataset"; Deferred row (T-028, T-030 findings) |
+| T-039 | Session files for the 8 specs: drafted, reviewed by the human, passing the T-017 checks | test | M | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "Dataset"; D-048; arch §8.5 |
+| T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
+| T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
+| T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "measure a baseline"; tuning rules |
+| T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | 🔄 | eval plan "Model comparison"; build order step 6 |
+| T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | 🔄 | eval plan "Model comparison" |
+| T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ⬜ | eval plan "test split"; rule 2 |
+| — | *Option, the human decides after T-043:* a Sonnet judge. Needs first: `_is_calibrated` to match the judge's **model** as well as name and version (today a judge pointed at another model would read as calibrated off gpt-5.5's entry, found 2026-11-14), then calibration on the existing 20-item sets, then re-grading both models' saved outputs (judge calls only, ≈ $1–2) for a 2×2 of models × judges | | | | | rule 8; D-064 |
+
+### T-038 · Dataset v2 specs
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Traces to:** eval plan "Cover every failure type…; include a few sessions where the first approach was already right"; T-028 finding (cue-free DP / backtracking); T-030 finding (0 corrected sessions in test).
+**Done when:**
+1. 8 new specs in `specs.jsonl` (`syn-021`+ ids continue; no problem reused), drafted with the `synthetic-spec` skill, each approved by the human in the log. Together they hold at least:
+   - 3 course-corrected sessions (2 of them intended for test);
+   - ~~2 cue-free dynamic-programming or backtracking sessions~~ dropped 2026-11-14 by the human ("let's not worry about dp/backtracking specifically");
+   - 4 failing sessions whose type the model decides (not Accepted, not TLE/MLE): spread over edge_case_missed, implementation_bug, wrong_approach, did_not_finish.
+   (Compile Error dropped 2026-11-11: LeetCode reports a Python SyntaxError as Runtime Error, D-069.)
+2. `check_specs.py --with-real` reports no errors and no new skew lines.
+3. The intended split of each new spec is recorded in the log by count only for test-bound specs.
+**Not included:** session files (T-039); any change to an existing spec or label.
+**Log:**
+- 2026-11-14 the human wrote 7 specs, all `"split": "test"` (Claude-drafted code, `ai_assistance` recorded; D-018): 5 course-corrected, 2 off track and not corrected; 4 failing with a model-decided type (implementation_bug 2, wrong_approach 1, edge_case_missed 1). Cue-free DP/backtracking dropped by the human. `check_specs --with-real`: 27 valid, 0 errors. **Differs from Done-when 1:** 7 specs, not 8, and the 4 model-decided failures are in test, so dev's count stays 9. Needs the human's confirmation to close.
+- 2026-11-14 `/test run` → ✅. The human confirmed ("okay sounds good"), including the differences from the plan (7 test-bound specs, 19/16 split, D-072). Suite 636 passed; `checks.py` 27/27; `check_specs` 0 errors.
+
+### T-039 · Session files for the new specs
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Traces to:** D-048 (the human writes or approves each file; an AI drafter is Claude, named in `meta.json`); arch §8.5.
+**Done when:**
+1. 8 `evals/data/sessions/synthetic/syn-0nn.json` + `.meta.json`, each passing `evals/generate/checks.py`, its final code checked by the human on LeetCode where a verdict is claimed.
+2. The human confirms each file in the log (test-bound files by count only).
+**Not included:** splitting (T-040).
+**Log:**
+- 2026-11-14 7 session files + `meta.json` (verdict `accepted`, reviewed by the human), final code checked on LeetCode by the human; fixes to repeated snapshots, the problem block and submit counts made by the human (counts only reported). `checks.py`: 27 passed, 0 failed. Needs the human's confirmation to close.
+- 2026-11-14 `/test run` → ✅. The human confirmed ("okay sounds good"), including the differences from the plan (7 test-bound specs, 19/16 split, D-072). Suite 636 passed; `checks.py` 27/27; `check_specs` 0 errors.
+
+### T-040 · Dataset v2 build and freeze
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** arch §8.1; rule 2, rule 10.
+**Done when:**
+1. The 8 new sessions are added to the failure, algorithm and timeline suites; every existing case keeps its split and its expected values byte-for-byte (a contract test proves it).
+2. The test split holds ≥ 2 course-corrected sessions; counts per split by status reported, test by count only.
+3. All six cases files get a new `dataset_version` (`dev-v3`/`dev-v4`/`test-v2` per suite), the manifest and frozen-dataset tests updated, the reason in `docs/decisions.md`.
+**Not included:** any eval run (T-041).
+**Log:**
+- 2026-11-14 `/test write T-040` + build (tester-owned): `build_dataset.py` appends instead of re-splitting (D-072); `v1_case_digests.json` frozen; `tests/contract/test_dataset_v2.py` (6: every v1 case unchanged in its split, ids continue, v2 versions, no session in both splits, ≥ 2 corrected in test, every spec once). Version pins updated in `test_frozen_dataset.py` and T-030. Result: 19 dev / 16 test sessions; added 7 to each test file, 1 to algorithm/dev (Merge Sorted Array, `sorting`). Test split corrected sessions: 5 (was 0). By status, dev/test: Accepted 6/5, WA 5/4, TLE 3/2, RE 1/3, MLE 1/1, OLE 1/0, not submitted 2/1. Suite 636 passed. Needs the human's confirmation to close.
+- 2026-11-14 `/test run` → ✅. The human confirmed ("okay sounds good"), including the differences from the plan (7 test-bound specs, 19/16 split, D-072). Suite 636 passed; `checks.py` 27/27; `check_specs` 0 errors.
+
+### T-041 · Dev re-baseline on dataset v2
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "measure a baseline, then set targets".
+**Done when:**
+1. Fresh `repeats=3` dev runs of algorithm, failure (type + explanation) and timeline with the current prompts (algorithm-v1, failure-v1, timeline-v3), gpt-5.5, and the calibrated judges; each metric with its noise band and versions in Baselines.
+2. Every new-case miss is read and named in the log (no prompt changes in this task).
+3. The human confirms.
+**Not included:** prompt v2s (only if T-041 shows a miss pattern, through `/pm idea`); the test split.
+**Log:**
+- 2026-11-14 `/test` (the human approved the ≈ $7 run): 3 repeats each on dev, gpt-5.5. No new test assets: runner, graders and judges are covered by T-022 – T-037.
+  - `algorithm algorithm_overlap 0.95 @ prompt algorithm-v2, model openai:gpt-5.5, dataset dev-v2, condenser c1, judge —` ±0.00 (run 20261114T155044Z-93fcd60d, $0.31). vs 0.94 @ algorithm-v1, dev-v1: the same single miss (dev-017); the new `sorting` case right in all 3. v2's extra line cost nothing measurable.
+  - `failure failure_type_exact 0.95 @ prompt failure-v1, model openai:gpt-5.5, dataset dev-v3, condenser c1, judge failure-explanation-judge-v2` ±0.00; explanation checklist 0.96 ±0.00 (run 20261114T155044Z-19b4cf08, $1.59). vs 0.93 ±0.05 and 0.97 ±0.04 at M4: inside the bands. Only miss Sort Colors, as at M4.
+  - `timeline timeline-judge 0.98 @ prompt timeline-v3, model openai:gpt-5.5, dataset dev-v4, condenser c1, judge timeline-judge-v1` ±0.03 (run 20261114T155044Z-dc92cf79, $3.49). vs 1.00 ±0.01 at M4: a 0.02 drop, outside M4's band, with nothing changed (same prompt, byte-identical cases). Misses: Daily Temperatures' first approach called off track in all 3 (1 of 3 at M4), Coin Change misread in 1 repeat. Read as noise the 3-repeat M4 band understated; recorded as the new band, not tuned (no prompt change in this task).
+  - New dev cases: 1 (algorithm-dev-019); no misses on it. Test split untouched. Total $5.40.
+  - Waiting on the human's confirmation.
+- 2026-11-14 `/test run` → ✅. The human confirmed the baselines ("okay let's proceed").
+
+### T-042 · `sorting` label, label table, one label list
+**Milestone:** M7 · **Size:** M · **Owner:** build · **Test assets:** required · **Order:** before T-040 (the v2 dataset holds a `sorting` label) · **Traces to:** D-070; eval plan "Algorithm labels"; D-050's Deferred row (trigger met).
+**Done when:**
+1. Migration `0003` creates `algorithm_labels(label TEXT PRIMARY KEY)` holding the 20 labels and rebuilds `session_algorithms` so `label` references it instead of a CHECK; every existing row is kept; tested on a copy first; architecture §3 updated.
+2. `sorting` is in `AlgorithmLabel`, `check_specs.ALGORITHMS`, `checks.py`'s cue words, the keyword baseline, the `synthetic-spec` skill and architecture §4.2.
+3. Prompt `algorithm/v2` = v1 plus one `sorting` line, pinned in `tutor.toml`; v1 unchanged; no dataset problem named (rule 9). Its dev eval is T-041's run (algorithm-v2 replaces algorithm-v1 there).
+4. A contract test fails if the label set differs between `AlgorithmLabel`, `check_specs.ALGORITHMS`, the pinned algorithm prompt and the migrated `algorithm_labels` rows.
+5. The human decides whether Merge Sorted Array's empty label becomes `sorting` (rule 10); the decision is in the log.
+**Not included:** any other new label; changing any other existing label; an eval run (T-041).
+**Log:**
+- 2026-11-14 `/pm idea` keep `sorting` (the human): **Add** as T-042. The human's checker-only edit (`check_specs.py:36`) is uncommitted; `/test write T-042` adopts it with the reason, since `evals/generate/` is tester-owned.
+- 2026-11-14 `/test write T-042`: `tests/acceptance/test_t042_sorting_label.py` (14: migration 0003 keeps rows, `algorithm_labels` holds the 20, an off-list label refused on a plain connection with no PRAGMA, a new label is a row insert, PK and index kept, architecture and skill list it, prompt v2 pinned and = v1 + one `sorting` line, v1 unchanged, no dataset problem named) and `tests/contract/test_label_lists.py` (4: enum = pinned prompt = migrated table = spec checker = session checker = keyword baseline). Tester-owned lists updated: the human's `check_specs.py` edit adopted with its reason; `checks.py` giveaway words and the keyword baseline (now `keyword-v2`, cues `.sort(` / `sorted(`) gain `sorting`; the `synthetic-spec` skill lists it. Corrections (pinned version instead of v1, migration lists as prefixes): T-008 (2 lines), T-014 (4), T-024 (3). Suite: 14 fail for the right reason (no 0003, no table, enum and prompt lack `sorting`) + `test_frozen_dataset` (specs changed; T-040); 615 pass. All 27 synthetic sessions still pass `checks.py`.
+- 2026-11-14 Done-when 5, the human: Merge Sorted Array (real, dev) becomes `sorting` ("that's what i used to solve the problem"). `labels.jsonl` changed (rule 10 reason: D-070 adds the label its final code uses). It joins the algorithm dev suite in T-040's build (it had no case there: no label).
+- 2026-11-14 `/test write` correction (the human approved): 4 T-024 assertions read the pinned algorithm version; the off-list example is `hashmap` (missed in `/test write T-042`).
+- 2026-11-14 `/build`: migration `0003_algorithm_labels.sql` (table seeded with 20 labels; `session_algorithms` rebuilt with `label` REFERENCES it, rows copied; two triggers refuse an unknown label on any connection, since REFERENCES needs `PRAGMA foreign_keys`), `AlgorithmLabel.SORTING`, `prompts/algorithm/v2.md` (= v1 + one `sorting` line) pinned, both manifests, architecture §3.3/§4.2. Unit: the old enum-vs-CHECK test replaced by a trigger-syntax test (the contract test covers the list). Suite 629 pass; 1 expected fail (`test_frozen_dataset`, specs changed, T-040). Lint, types, `prompts check` clean. Dev eval: none here; algorithm-v2 is first measured in T-041. Cost $0.
+- 2026-11-14 `/test run` → ✅. Builder commit `844be27` touches no judging files. Gates: 636 passed, 23 skipped; ruff, mypy, `prompts check` clean (first run blocked only by `test_frozen_dataset`, the tester's own relabel; cleared by T-040's refreeze, `c752f96`). Done-when 1–5 met. Eval (free): `algorithm_overlap 0.83 @ predictor keyword_baseline@keyword-v2, dataset dev-v1, condenser c1` = 0.83 @ keyword-v1, no change (run 20261114T154155Z-fc5d368b). algorithm-v2 (LLM) is measured in T-041. Cost $0.
+
+### T-043 · Model comparison on dev (Sonnet 5.5)
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "Model comparison".
+**Done when:**
+1. algorithm, failure and timeline dev runs with `--model anthropic:claude-sonnet-5-5`, 3 repeats, same prompts (algorithm-v2, failure-v1, timeline-v3), same dataset (dev-v2 / dev-v3 / dev-v4), same gpt-5.5 judges, against T-041's gpt-5.5 runs.
+2. The Model comparison table holds both models: per-field accuracy with noise band, cost per session, latency, consistency, and each metric real-only and synthetic-only (the synthetic sessions were drafted with Claude Opus 5.5, D-018: a synthetic-only advantage that real-only doesn't show is read as generator bias).
+3. Every case where the two models disagree is named in the log. The human confirms.
+**Not included:** prompt changes for Claude (the prompts are shared); the test split (T-045).
+**Log:**
+- 2026-11-14 Sonnet 5.5 runs, 3 repeats each ($4.50 including the gpt-5.5 judges; the field calls cost $0.19 + $0.33 + $0.66). Table above. Where the models disagree:
+  - **algorithm:** none; both miss only dev-017.
+  - **failure type:** Sonnet also misses failure-dev-016 (syn-016, labelled did_not_finish → implementation_bug in all 3); on Sort Colors (dev-003) it says wrong_approach where gpt-5.5 says edge_case_missed (label implementation_bug).
+  - **explanation:** Sonnet loses on invented detail in dev-003, -010, -012, -014, -016, -018 (judge-graded, in some repeats), consistent 0.92 vs 1.00.
+  - **timeline:** Sonnet worse on dev-008 (syn-003) and dev-016 (syn-016): first approach misread in all 3, plus one over-length summary (code-counted) and one invented event each; slightly worse on -005, -009, -011; better on -004 (Coin Change) and -010 (Daily Temperatures), gpt-5.5's two misses.
+  - **Generator bias (D-018):** not seen. Sonnet does no better on the Claude-drafted synthetic sessions; it is lower there than on real ones (failure 0.92 vs 0.83 real equal to gpt's 0.83; timeline 0.94 synthetic vs 0.98 real).
+  - **Judge bias:** can't be ruled out (gpt-5.5 judges). The code-counted and exact-match metrics don't depend on it: failure type 0.89 vs 0.95 and the ≤ 5-sentence item 0.96 vs 1.00 favour gpt-5.5 too.
+  - Waiting on the human's confirmation; the Opus 5.5 run (T-044) waits on the human's approval.
+
+### T-044 · Model comparison on dev (Opus 5.5)
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "Model comparison". Done when: as T-043, for `anthropic:claude-opus-5-5`.
+**Log:**
+- 2026-11-14 the human approved the run ("we can see how opus performs sure"). Opus 5.5 runs, 3 repeats each: $5.65 total = Anthropic $2.44 (field calls 0.41 + 0.65 + 1.39) + OpenAI $3.21 (judges). Table above. Against gpt-5.5 / Sonnet:
+  - **algorithm:** 1.00, the only model to get dev-017 (palindrome recursion) right.
+  - **failure type:** misses dev-003 like both others (wrong_approach, as Sonnet) and dev-016 in 2 of 3 (implementation_bug, as Sonnet in 3 of 3).
+  - **explanation:** invented-detail item on dev-003 (all three models), -010, -012, -018, in some repeats; consistent item misses dev-003 (as Sonnet).
+  - **timeline:** main loss is length: > 5 sentences in 13 of 57 summaries across 11 sessions (code-counted, no judge). First approach misread on dev-008 (syn-003, as Sonnet) and dev-012 in all 3, dev-018 once. No invented corrections; approaches and final/outcome 1.00.
+  - **Generator bias (D-018):** not seen on timeline (synthetic 0.92 < real 0.95). Failure synthetic 0.95 vs real 0.83, but real equals the other two models' 0.83 (same real miss), and the synthetic gap is gpt-5.5's 1.00 as well.
+  - Waiting on the human's confirmation.
+
 ## Eval baselines (dev)
 
 Every number names its versions. Noise band = spread across 3 runs of the same version.
@@ -1283,6 +1404,10 @@ Status accuracy is not an eval any more: status is code (D-014), covered by T-01
 | failure type accuracy, all (same run) | **0.93** mean (0.95, 0.95, 0.89); rule 1.00 (n=10), LLM 0.85 (n=9). Misses: Sort Colors → edge_case_missed in all 3 (label implementation_bug, D-066), LRU Cache → implementation_bug once | **±0.05** (one case) | failure-v1 | openai:gpt-5.5 | dev-v2 | — | 2026-11-08 |
 | timeline ≤ 5 sentences (code-counted) | **1.00** (n=19, all 3 repeats) | 0 | timeline-v3 | openai:gpt-5.5 | dev-v3 | — | 2026-11-08 |
 | timeline checklist (judge) | **1.00** mean 0.997 (repeats 1.00, 0.99, 1.00; real 1.00 n=6, synthetic 1.00 n=13); first approach 0.98 (1.00, 0.95, 1.00: one Daily Temperatures summary called its start off track), every other item 1.00 in all 3 | **±0.01** checklist; first approach ±0.05 (one case); others 0 | timeline-v3 | openai:gpt-5.5 | dev-v3 | timeline-judge-v1 (calibrated, D-064/D-067) | 2026-11-08 |
+| algorithm accuracy | **0.95** (0.95 all 3 repeats; real 1.00 n=6, synthetic 0.92 n=13); only miss algorithm-dev-017 (two-ends recursion → dfs_backtracking, known since T-024); new case dev-019 (`sorting`) right in all 3 | **0.00**; consistency 1.00 | algorithm-v2 | openai:gpt-5.5 | dev-v2 | — | 2026-11-14 |
+| failure type accuracy, all | **0.95** (0.95 all 3); rule 1.00 (n=10), LLM 0.89 (n=9); only miss Sort Colors → edge_case_missed in all 3 (label implementation_bug, D-066) | **0.00** | failure-v1 | openai:gpt-5.5 | dev-v3 | — | 2026-11-14 |
+| failure explanation checklist (judge) | **0.96** (0.96 all 3; n=13); consistent 1.00; no invented cause 0.92 (Sort Colors names an unseen input in all 3) | **0.00** | failure-v1 | openai:gpt-5.5 | dev-v3 | failure-explanation-judge-v2 (calibrated) | 2026-11-14 |
+| timeline checklist (judge) | **0.98** mean (0.99, 0.99, 0.96; real 0.97 n=6, synthetic 0.99 n=13); first approach 0.93 (Daily Temperatures called off track in all 3), Coin Change misread once (3 items) | **±0.03** (wider than M4's ±0.01: same prompt and byte-identical cases, so model noise; 6 repeats so far span 0.96 – 1.00) | timeline-v3 | openai:gpt-5.5 | dev-v4 | timeline-judge-v1 (calibrated) | 2026-11-14 |
 | agent exact answers | | | | | fixture-v1 | — | |
 | agent pattern recall (judge) | | | | | fixture-v1 | | |
 | agent grounding | | | | | fixture-v1 | — | |
@@ -1307,6 +1432,11 @@ Run only via `/test milestone`. Aggregates only.
 
 | Model | Accuracy (per field) | Cost / session | Latency | Consistency (3 runs) |
 |---|---|---|---|---|
+| `openai:gpt-5.5` | algorithm **0.95** ±0.00 · failure type **0.95** ±0.00 (LLM-decided 0.89) · explanation checklist **0.96** ±0.00 · timeline checklist **0.98** ±0.03. Real / synthetic: failure 0.83 / 1.00, timeline 0.97 / 0.99 | **$0.045** (algorithm 0.0055, failure 0.0118, timeline 0.0281) | model call median 1.1 s / 2.0 s / 6.9 s | answers identical across repeats except timeline wording |
+| `anthropic:claude-sonnet-5-5` | algorithm **0.95** ±0.00 · failure type **0.89** ±0.00 (LLM-decided 0.78) · explanation checklist **0.87** ±0.15 · timeline checklist **0.95** ±0.03. Real / synthetic: failure 0.83 / 0.92, timeline 0.98 / 0.94 | **$0.021** (0.0034, 0.0058, 0.0115) | model call median 1.4 s / 2.3 s / 3.6 s | failure type identical across repeats; explanation's invented-detail item swings ±0.31 |
+
+| `anthropic:claude-opus-5-5` | algorithm **1.00** ±0.00 · failure type **0.91** ±0.05 (LLM-decided 0.81) · explanation checklist **0.87** ±0.08 · timeline checklist **0.93** ±0.04 (≤ 5 sentences 0.77, code-counted; first approach 0.88). Real / synthetic: failure 0.83 / 0.95, timeline 0.95 / 0.92 | **$0.043** (0.0071, 0.0114, 0.0243) | model call median 1.5 s / 2.2 s / 4.6 s | failure type flips on one case; timeline length swings ±0.21 |
+All @ prompts algorithm-v2 / failure-v1 / timeline-v3, datasets dev-v2 / dev-v3 / dev-v4, condenser c1, judges failure-explanation-judge-v2 and timeline-judge-v1 **on gpt-5.5** (calibrated on gpt-5.5; a gpt-5.5 judge may favour gpt-5.5's wording, which T-043 can't rule out). Runs: gpt 20261114T155044Z-{93fcd60d, 19b4cf08, dc92cf79}; Sonnet 20261114T163631Z-{fbf51ca4, e768dd64, 548cf92f}; Opus 20261114T232428Z-{f93e75f7, f2513f6d, cfa7e2e0}. 3 repeats each, 2026-11-14. Latency is the model's own call, from `logs/llm_calls.jsonl` (corrected 2026-11-14: the first figures were the result record's per-case latency, which includes the gpt-5.5 judge call). Failure is 39 calls, not 57: verdict-decided cases make no call.
 
 ---
 
@@ -1323,8 +1453,6 @@ Every item has a trigger: the condition that would make it worth doing.
 | Dashboard / UI | Out of scope (UI polish) | Never, for this project's goal |
 | Part 2: Progress Agent, `run_sql`, fixture DB, Part 2 evals (M5, M6, Part 2 half of M7) | Human, 2026-11-03: Part 1 first | Part 1's M7 model comparison ✅ |
 | `tutor prompts lock` (write manifest entries by command) | M3 adds only two prompts; the contract test catches any wrong hash (re-checked 2026-11-07, D-053) | A hand-entered hash causes a wrong commit, or more than 5 prompt versions exist |
-| `algorithm_labels` table instead of the label CHECK (D-050) | One label gap so far ("sorting"), handled with no label | A second label needs adding: do this migration instead, then labels are rows |
-| **Dataset v2:** more course-corrected sessions (the test split has 0 of 3, T-030), cue-free DP / backtracking (T-028), more LLM-decided failure cases; re-split, then prompt v2s against it | Doesn't block M4: dev holds all 3 corrected sessions, so the timeline judge is still calibrated and measured. Doing it now delays T-031–T-035 and would change dev-v1 mid-milestone, breaking comparison with the M3 baselines | **After M4 ✅, before M7's test-split run.** M7's test score can't measure course-correction reporting with 0 corrected cases; it becomes a task in the M5-replacement slot (Part 2 is deferred) |
 | Rule-based stuck periods in the condenser (eval plan 2026-11-03) | Rule B never fired on 26 real sessions; rule A only with a loose "same status" match (D-026) | Real sessions show long no-edit stretches, or the timeline eval misses struggles the summary can't see |
 
 ## Dropped
@@ -1368,3 +1496,6 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-08 | — | — | — | `/pm idea` dataset v2 (the human asked for a todo after T-030 found 0 corrected sessions in the test split; merges the open T-028 idea): **Deferred**, trigger after M4 ✅ / before M7. |
 | 2026-11-08 | — | — | T-036 | `/pm idea` define "on the right track" in the timeline prompt (the human asked for the task after T-033's review): **Add** as T-036, before the checkpoint so T-035 records the better prompt. Teaches a measured prompt iteration with a calibrated judge; displaces nothing (M4 order gains one S task). |
 | 2026-11-08 | T-029 – T-037; **M4 ✅** | — | T-037 | M4 closed. Calibrated judges: timeline-judge v1 (1.00, 4/4 misses), failure-explanation-judge v2 (1.00, 4/4; v1 rejected at 0.90 with 0/4). Baselines (3 repeats): timeline checklist 1.00 ±0.01 @ timeline-v3, dev-v3; explanation checklist 0.97 ±0.04, failure type 0.93 ±0.05 @ failure-v1, dev-v2; model openai:gpt-5.5. Human relabels: syn-003 (D-063), Sort Colors (D-066); definitions D-063, D-068. Caveat: timeline-v3 and explanation-judge v2 were revised on dev; M7's test split is the honest check. M4 eval spend ≈ $19. Next: dataset v2 (Deferred, trigger now met: after M4, before M7), then M5. |
+| 2026-11-11 | — | — | T-038 – T-041 | `/pm plan` M7 (Part 1): dataset v2 first (moved out of Deferred, trigger met: M4 ✅). 8 new synthetic sessions aimed at the gaps (corrected sessions for test, cue-free DP/backtracking, LLM-decided failures, Compile Error), added without moving any existing session, then a 3-repeat dev re-baseline. Adapter, comparison and test-split run planned after T-041. Not planned: prompt v2s (only on evidence from T-041), Part 2. |
+| 2026-11-14 | — | — | T-042 | `/pm idea` keep `sorting` (the human): **Add** as T-042, before T-040. A dataset-v2 spec needs it, and a checker-only label is a guaranteed miss the model can't answer. Builds D-050's deferred `algorithm_labels` table (Deferred row removed: trigger met). Displaces nothing; adds an algorithm prompt v2, measured in T-041. T-038/T-039 progress: the human wrote and reviewed 7 test-bound sessions (count only); all pass `checks.py`, `check_specs` 0 errors. Still to come for T-038: dev specs for the DP/backtracking and LLM-decided-failure gaps. |
+| 2026-11-14 | T-015, T-041 | — | T-043 – T-045 | `/pm plan` rest of M7 (Part 1): Sonnet 5.5 comparison first (the human), Opus 5.5 only on the human's approval, then the sealed test-split run. Claude judge recalibration not planned unless the comparison shows judge self-preference. Sonnet 5.5 priced from the human's screenshot ($2 / $10). |

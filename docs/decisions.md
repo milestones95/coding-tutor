@@ -1050,3 +1050,61 @@ right and the slowness comes from how it is implemented (an unneeded copy, using
 structure the wrong way). Adding a memo to plain recursion is a new technique, so that stays off
 track (the existing label). Labels unchanged; `timeline/v3` states the refined rule.
 **Why.** It keeps D-063's core ("only bug fixes needed") and the human's existing labels consistent.
+
+## D-069 · Python never ends in Compile Error on LeetCode · 2026-11-11 · human
+A real capture (Majority Element, 2026-11-11) has a run with `SyntaxError: invalid syntax` stored as
+**Runtime Error**, and the human confirmed LeetCode itself shows Runtime Error for it. The capture DB
+has 0 Compile Error events among ~120. This corrects D-042's note that a Python Compile Error means a
+SyntaxError.
+**Effects.** Compile Error is not a coverage gap for this python3-only dataset: `check_specs.py`
+leaves it out of the status coverage and rejects a python3 spec that claims it; the
+`synthetic-spec` skill says so. T-038 drops its Compile Error spec. The verdict list itself keeps
+Compile Error (the loader and condenser still accept it if another language ever appears).
+**Why.** A synthetic case must match what the real capture produces (session-format); a python3
+Compile Error session would test a shape that never occurs.
+
+## D-070 · `sorting` joins the algorithm labels, as a row in an `algorithm_labels` table · 2026-11-14 · human
+**Decision.** The fixed algorithm list gains a 20th label, `sorting`: the code's key step is sorting
+the input (or a copy) and scanning it. It reverses D-050's "no label for sorting". The label goes in
+everywhere the list lives (eval plan, `AlgorithmLabel`, the algorithm prompt as a new version, the spec
+and session checkers, the keyword baseline, the `synthetic-spec` skill, architecture §3.2/§4.2), and
+`analysis.db` gets it through D-050's deferred migration: an `algorithm_labels` table that
+`session_algorithms.label` references, so a later label is a row insert, not a table rebuild.
+A contract test makes every copy of the list identical. Task T-042, before T-040.
+**Why.** The human, 2026-11-14: "let's keep sorting". A dataset-v2 test spec's final code is a sort
+and scan, and the human had already added `sorting` to `check_specs.py` alone. In that state the spec
+passes, but the model can never answer `sorting` (the enum and prompt lack it), so the case is a
+guaranteed miss, and nothing caught the drift (no test compared the lists). D-050's trigger, "a second
+label needs adding", is met.
+**Not decided here.** Whether the real Merge Sorted Array session (no label under D-050) becomes
+`sorting`: that changes an existing dev label (rule 10), so it is the human's call, recorded in T-042's
+log either way.
+**Supersedes.** D-050 (the "no label" half; its deferred table is now built).
+
+## D-071 · Label enforcement in analysis.db uses triggers, not only REFERENCES · 2026-11-14 · build
+**Decision.** Migration 0003 makes `session_algorithms.label` REFERENCE `algorithm_labels(label)` and
+adds BEFORE INSERT / BEFORE UPDATE OF label triggers that RAISE(ABORT) on an unknown label. The
+trigger bodies are written on one line each.
+**Why.** SQLite enforces REFERENCES only on a connection that ran `PRAGMA foreign_keys = ON`; the
+pipeline's connection doesn't, and the T-042 test opens a plain connection. The triggers keep the
+guarantee the old CHECK gave on every connection. One line per body because `migrate.py` refuses a
+line that is only `END;` (it reads as a transaction statement, which would break the
+one-transaction rule). Removing the triggers would silently let off-list labels in.
+**Supersedes.** —
+
+## D-072 · Dataset v2: append, never re-split · 2026-11-14 · test
+**Decision.** `build_dataset.py` no longer draws the split. Every v1 case is kept as written (only its
+`dataset_version` changes) and keeps its case id; a new session takes the split its spec names
+(`dev` or `test`, `unassigned` is refused) and is appended with the next case id. All six files bump
+(failure dev-v3, timeline dev-v4, algorithm dev-v2, every test file test-v2). `v1_case_digests.json`,
+written from the v1 files before the rebuild and frozen in the manifest, lets
+`tests/contract/test_dataset_v2.py` prove no v1 case moved or changed. The builder also refuses an
+existing case whose label no longer matches its source; such a change needs its own reason.
+**Result (counts only).** 35 sessions: 19 dev, 16 test. Added: 7 synthetic sessions to every test
+file (written and reviewed by the human; 5 course-corrected), and Merge Sorted Array's algorithm case
+to algorithm/dev (labelled `sorting`, D-070).
+**Why.** A re-split would move sessions between dev and test: dev sessions everyone has seen would
+land in the sealed split (rule 2), and every earlier baseline would stop being comparable. The human
+wrote all 7 new sessions for test, so the split is now 19/16 rather than the eval plan's 20/10: a larger
+test split gives a steadier test number; dev's LLM-decided failure count stays at 9.
+**Supersedes.** D-045's seeded draw, for every build after v1.

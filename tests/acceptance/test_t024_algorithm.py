@@ -80,7 +80,8 @@ def test_the_input_has_the_final_code_title_and_tags(settings):
     assert "array" in text and "hash-table" in text
 
 
-@pytest.mark.parametrize("bad", [[], ["hash_map", "stack", "heap"], ["sorting"]])
+# `/test write T-042` correction: "sorting" is a label now (D-070), so the off-list example is "hashmap"
+@pytest.mark.parametrize("bad", [[], ["hash_map", "stack", "heap"], ["hashmap"]])
 def test_zero_three_or_unknown_labels_are_invalid_and_retried(settings, bad):
     from tutor.fields.algorithm import algorithm
 
@@ -95,7 +96,7 @@ def test_the_call_is_logged_with_field_and_prompt_version(settings):
     client, _ = _client(settings, [{"algorithms": ["hash_map"]}])
     algorithm(_session(), client=client, settings=settings, run_id="r-log")
     rows = [json.loads(x) for x in (settings.paths.logs / "llm_calls.jsonl").read_text().splitlines()]
-    assert rows and rows[-1]["field"] == "algorithm" and rows[-1]["prompt_version"] == "v1"
+    assert rows and rows[-1]["field"] == "algorithm" and rows[-1]["prompt_version"] == settings.prompts["algorithm"]
     assert rows[-1]["run_id"] == "r-log"
 
 
@@ -118,17 +119,21 @@ def test_an_explicit_model_is_used(settings, tmp_path):
 def test_the_prompt_is_a_versioned_file_pinned_in_config(settings):
     from tutor.prompts import load_prompt
 
-    assert settings.prompts.get("algorithm") == "v1", "tutor.toml [prompts] pins algorithm = \"v1\""
-    p = load_prompt("algorithm", "v1")
+    # `/test write T-042` correction, 2026-11-14: the pinned version, not v1 (algorithm v2 adds sorting, D-070)
+    pin = settings.prompts.get("algorithm")
+    assert pin and pin.startswith("v"), "tutor.toml [prompts] pins an algorithm version"
+    p = load_prompt("algorithm", pin)
     manifest = json.loads((REPO / "prompts" / "manifest.json").read_text())
-    assert manifest.get("algorithm/v1.md") == p.sha256
+    assert manifest.get(f"algorithm/{pin}.md") == p.sha256
     assert "final_code" in p.variables
 
 
 def test_the_prompt_lists_every_label_and_no_dataset_example():
     from tutor.models import AlgorithmLabel
 
-    text = (REPO / "prompts" / "algorithm" / "v1.md").read_text()
+    from tutor.config import load_settings
+
+    text = (REPO / "prompts" / "algorithm" / f"{load_settings().prompts['algorithm']}.md").read_text()
     missing = [a.value for a in AlgorithmLabel if a.value not in text]
     assert not missing, f"the prompt must offer every label: {missing}"
     slugs = {json.loads(r)["problem"]["slug"] for r in (SYN / "specs.jsonl").read_text().splitlines() if r.strip()}
@@ -167,15 +172,16 @@ def test_the_runner_records_versions_cost_and_accuracy_for_the_llm_predictor(roo
     rec = run("algorithm", "dev", predictor=pred, settings=settings, root=root, results_dir=tmp_path / "results")
 
     assert (rec["provider"], rec["model"]) == ("openai", "gpt-5.5")
-    assert rec["prompt_versions"] == {"algorithm": "v1"}
-    assert rec["prompt_sha256"] == {"algorithm": load_prompt("algorithm", "v1").sha256}
+    pin = settings.prompts["algorithm"]   # `/test write T-042` correction: the pinned version
+    assert rec["prompt_versions"] == {"algorithm": pin}
+    assert rec["prompt_sha256"] == {"algorithm": load_prompt("algorithm", pin).sha256}
     assert rec["aggregates"]["accuracy"] == 0.5 and rec["aggregates"]["errors"] == 0
     assert [c["output"] for c in rec["cases"]] == [{"labels": ["two_pointers"]}, {"labels": ["heap"]}]
     # FakeAdapter bills 1000 in / 500 out per call; gpt-5.5 is $5 / $30 per 1M → $0.02 per call
     assert all(c["input_tokens"] == 1000 and c["output_tokens"] == 500 for c in rec["cases"])
     assert rec["cost_usd_total"] == pytest.approx(0.04)
     line = summary_line(rec)
-    assert "prompt algorithm-v1" in line and "model openai:gpt-5.5" in line and "dataset dev-v1" in line
+    assert f"prompt algorithm-{settings.prompts['algorithm']}" in line and "model openai:gpt-5.5" in line and "dataset dev-v1" in line
 
 
 def test_the_runner_hands_the_field_no_label(root, settings, tmp_path):
@@ -203,7 +209,7 @@ def test_predictor_named_takes_a_model(settings):
     from tutor.llm.client import ModelRef
 
     pred = predictor_named("algorithm", settings=settings, model=ModelRef.parse("openai:gpt-other"))
-    assert pred.name == "algorithm" and pred.version == "v1" and pred.provider == "openai"
+    assert pred.name == "algorithm" and pred.version == settings.prompts["algorithm"] and pred.provider == "openai"
 
 
 def test_tutor_eval_accepts_a_model_flag(capsys):

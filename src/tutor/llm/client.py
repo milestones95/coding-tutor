@@ -74,7 +74,11 @@ class LLMResult(BaseModel, Generic[T]):
 
 
 def _real_adapter(provider: str) -> Adapter:
-    """Adapters that exist so far. Anthropic arrives by M2, Gemini at build step 7 (D-018)."""
+    """Adapters that exist so far: OpenAI, Anthropic (T-015). Gemini at build step 7 (D-018)."""
+    if provider == "anthropic":
+        from tutor.llm.adapters.anthropic import AnthropicAdapter  # deferred: only load the SDK in use
+
+        return AnthropicAdapter()
     if provider == "openai":
         from tutor.llm.adapters.openai import OpenAIAdapter  # deferred: only load the SDK in use
 

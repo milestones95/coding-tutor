@@ -13,3 +13,9 @@ input_per_mtok = 4.00
 output_per_mtok = 20.00
 as_of = "2026-11-07"     # Anthropic's model table (claude-api reference, cached 2026-10-06); human confirmed the model
 # cached-prompt reads are $0.20 / 1M; not used for cost until the client reports cached tokens
+
+[models."anthropic:claude-sonnet-5-5"]
+input_per_mtok = 2.00
+output_per_mtok = 10.00
+as_of = "2026-11-14"     # pricing table screenshot from the human (MindStudio, matches Opus 5.5 at $4/$20)
+# cached input is $0.10 / 1M; not used for cost until the client reports cached tokens

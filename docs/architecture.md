@@ -306,6 +306,13 @@ Rules:
 - **`0002_add_prefix_sum.sql`** (D-044) recreates `session_algorithms` with `'prefix_sum'` added to
   the `label` CHECK, copying any existing rows. §3.2 shows the schema as `0001` creates it. A contract test
   compares each migration's sha256 against `migrations/manifest.json`.
+- **`0003_algorithm_labels.sql`** (D-070, building D-050's deferred table) creates
+  `algorithm_labels(label TEXT PRIMARY KEY)` seeded with the 20 labels (adding `'sorting'`) and
+  rebuilds `session_algorithms` so `label` REFERENCES it instead of a CHECK, copying every row. Two
+  triggers refuse an unknown label on any connection, since SQLite enforces REFERENCES only with
+  `PRAGMA foreign_keys = ON`. A new label is now one `INSERT INTO algorithm_labels` in a migration.
+  `tests/contract/test_label_lists.py` keeps the enum, the pinned algorithm prompt, these rows and
+  the eval checkers identical.
 - No `CREATE TABLE IF NOT EXISTS` in migrations — a migration that runs twice is a bug.
 - **Rows already stored:** `analysis.db` is derived data; every row can be rebuilt from
   `capture.db` + LLM calls. A migration may therefore transform or rebuild its tables, but
@@ -409,7 +416,7 @@ class SessionAnalysis(BaseModel):
 ```
 
 `Verdict`, `Status`, `StatusSource`, `FailureType`, `AlgorithmLabel` are `StrEnum`s whose
-values are exactly the CHECK lists in §3.2 (`AlgorithmLabel` also has `prefix_sum`, added by migration `0002`, D-044) (`Verdict`: Accepted, Wrong Answer, Time Limit
+values are exactly the CHECK lists in §3.2 (`AlgorithmLabel` also has `prefix_sum`, added by migration `0002`, D-044, and `sorting`, added by `0003`, D-070, where the labels become rows of `algorithm_labels`) (`Verdict`: Accepted, Wrong Answer, Time Limit
 Exceeded, Runtime Error, Memory Limit Exceeded, Output Limit Exceeded, Compile Error).
 
 ### 4.3 Status is a fact; human eval labels are what stay hidden

@@ -64,8 +64,8 @@ class FailureType(StrEnum):
 
 
 class AlgorithmLabel(StrEnum):
-    """The fixed algorithm labels (eval plan; D-044 added PREFIX_SUM). Values equal the
-    session_algorithms CHECK list in the latest migration; a unit test keeps them in step."""
+    """The fixed algorithm labels (eval plan; D-044 added PREFIX_SUM, D-070 SORTING). Values equal the
+    `algorithm_labels` rows (migration 0003); tests/contract/test_label_lists.py keeps every copy in step."""
 
     HASH_MAP = "hash_map"
     TWO_POINTERS = "two_pointers"
@@ -86,6 +86,7 @@ class AlgorithmLabel(StrEnum):
     BIT_MANIPULATION = "bit_manipulation"
     MATH = "math"
     PREFIX_SUM = "prefix_sum"
+    SORTING = "sorting"
 
 
 class _Model(BaseModel):

@@ -26,11 +26,14 @@ CAPTURE_DB = REPO / "data" / "capture.db"
 # LeetCode's verdict text, verbatim (architecture §4.3; D-019, D-022).
 VERDICTS = {"Accepted", "Wrong Answer", "Time Limit Exceeded", "Memory Limit Exceeded", "Runtime Error",
             "Compile Error", "Output Limit Exceeded"}
+# LeetCode reports a Python SyntaxError as "Runtime Error" (the human, 2026-11-11, from a real capture),
+# so a python3 session never ends in Compile Error: it isn't a coverage gap and a python3 spec can't claim it (D-069).
+NOT_FOR_PYTHON = {"Compile Error"}
 FAILURE_TYPES = {"edge_case_missed", "wrong_approach", "too_slow", "implementation_bug", "did_not_finish", "none"}
 ALGORITHMS = {"hash_map", "two_pointers", "sliding_window", "binary_search", "stack", "heap", "bfs",
               "dfs_backtracking", "dynamic_programming", "greedy", "intervals", "linked_list",
               "tree_traversal", "trie", "union_find", "graph_topological_sort", "bit_manipulation", "math",
-              "prefix_sum"}  # prefix_sum: D-044
+              "prefix_sum", "sorting"}  # prefix_sum: D-044; sorting: D-070 (the human added it, adopted by `/test write T-042`)
 # Python only for now (human, 2026-11-07, D-042). Widening this is a recorded decision.
 LANGUAGES = {"python3"}
 SPLITS = {"dev", "test", "unassigned"}
@@ -90,6 +93,8 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
                 err.append("Accepted means every test passed")
             elif status != "Accepted" and passed == total:
                 err.append("a failing verdict can't have every test passed")
+            elif status in NOT_FOR_PYTHON and spec.get("language") == "python3":
+                err.append("python3 never ends in Compile Error on LeetCode: a SyntaxError is a Runtime Error (D-069)")
             elif status == "Compile Error" and passed != 0:
                 err.append("Compile Error runs no tests: tests_passed must be 0")
 
@@ -216,7 +221,7 @@ def coverage(rows: list[dict]) -> tuple[str, list[str]]:
     lines, skew = [], []
     n_real = sum(r["source"] == "real" for r in rows)
     lines.append(f"coverage over {len(rows)} sessions ({len(rows) - n_real} synthetic, {n_real} real)")
-    universes = {"status": VERDICTS | {"not submitted"}, "failure type": FAILURE_TYPES,
+    universes = {"status": (VERDICTS - NOT_FOR_PYTHON) | {"not submitted"}, "failure type": FAILURE_TYPES,
                  "difficulty": DIFFICULTIES, "time spent": set(TIME_BUCKETS), "algorithm": None,
                  "first approach": {"on track", "corrected", "not corrected"}}
     for dim, universe in universes.items():
