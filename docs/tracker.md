@@ -1286,9 +1286,9 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-040 | Dataset v2 build: add the 8 to dev/test without moving any existing session; bump versions; freeze | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "split 20 dev / 10 test"; arch §8.1; rule 10 |
 | T-042 | `sorting` label everywhere the list lives, via an `algorithm_labels` table; one contract test keeps every copy identical | build | M | required | ✅ 2026-11-14 `/test run` | D-070; eval plan "Algorithm labels"; D-050 Deferred row |
 | T-041 | Dev re-baseline on dataset v2: all four Part 1 metrics, 3 repeats, current prompts and judges | test | S | required | ✅ 2026-11-14 `/test run` (the human confirmed) | eval plan "measure a baseline"; tuning rules |
-| T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | 🔄 | eval plan "Model comparison"; build order step 6 |
-| T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | 🔄 | eval plan "Model comparison" |
-| T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ⬜ | eval plan "test split"; rule 2 |
+| T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | ✅ 2026-11-15 `/test run` (the human confirmed) | eval plan "Model comparison"; build order step 6 |
+| T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | ✅ 2026-11-15 `/test run` (the human confirmed) | eval plan "Model comparison" |
+| T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ✅ 2026-11-15 `/test run milestone` (the human approved: "we can do the sealed test split", option A, `evals/test_approvals.json` written by the human) | eval plan "test split"; rule 2 |
 | — | *Option, the human decides after T-043:* a Sonnet judge. Needs first: `_is_calibrated` to match the judge's **model** as well as name and version (today a judge pointed at another model would read as calibrated off gpt-5.5's entry, found 2026-11-14), then calibration on the existing 20-item sets, then re-grading both models' saved outputs (judge calls only, ≈ $1–2) for a 2×2 of models × judges | | | | | rule 8; D-064 |
 
 ### T-038 · Dataset v2 specs
@@ -1376,6 +1376,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
   - **Generator bias (D-018):** not seen. Sonnet does no better on the Claude-drafted synthetic sessions; it is lower there than on real ones (failure 0.92 vs 0.83 real equal to gpt's 0.83; timeline 0.94 synthetic vs 0.98 real).
   - **Judge bias:** can't be ruled out (gpt-5.5 judges). The code-counted and exact-match metrics don't depend on it: failure type 0.89 vs 0.95 and the ≤ 5-sentence item 0.96 vs 1.00 favour gpt-5.5 too.
   - Waiting on the human's confirmation; the Opus 5.5 run (T-044) waits on the human's approval.
+- 2026-11-15 the human confirmed the comparison and the disagreements above ("i reviewed the comparison for t 43 and t44 already"), and decided against a Sonnet judge for now ("i don't want it right now to use sonnet judge"); the option row is left for `/pm review` to defer. `/test run` → ✅. Done-when 1–3 met. Gates: 649 passed, 10 skipped; `ruff check src tests`, mypy, `prompts check` clean. No code changed since the runs; no new eval run (cost $0).
 
 ### T-044 · Model comparison on dev (Opus 5.5)
 **Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** eval plan "Model comparison". Done when: as T-043, for `anthropic:claude-opus-5-5`.
@@ -1387,6 +1388,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
   - **timeline:** main loss is length: > 5 sentences in 13 of 57 summaries across 11 sessions (code-counted, no judge). First approach misread on dev-008 (syn-003, as Sonnet) and dev-012 in all 3, dev-018 once. No invented corrections; approaches and final/outcome 1.00.
   - **Generator bias (D-018):** not seen on timeline (synthetic 0.92 < real 0.95). Failure synthetic 0.95 vs real 0.83, but real equals the other two models' 0.83 (same real miss), and the synthetic gap is gpt-5.5's 1.00 as well.
   - Waiting on the human's confirmation.
+- 2026-11-15 the human confirmed (see T-043). `/test run` → ✅. Done-when 1–3 met. Gates: 649 passed, 10 skipped; `ruff check src tests`, mypy, `prompts check` clean. No code changed since the runs; no new eval run (cost $0).
 
 ## Eval baselines (dev)
 
@@ -1427,6 +1429,12 @@ Run only via `/test milestone`. Aggregates only.
 
 | Date | Milestone | Metric | Dev | Test | Gap |
 |---|---|---|---|---|---|
+| 2026-11-15 | M7 | algorithm overlap @ model openai:gpt-5.5, condenser c1, 3 repeats | 0.95 (algorithm-v2, dev-v2) | **0.98** (test-v2; real 1.00 n=2, synthetic 0.98 n=14); consistency 0.81 vs dev 1.00 | +0.03 |
+| 2026-11-15 | M7 | failure type, all @ model openai:gpt-5.5, condenser c1, 3 repeats | 0.95 (failure-v1, dev-v3; rule 1.00 n=10, LLM 0.89 n=9) | **0.79** (test-v2; rule 1.00 n=8, **LLM 0.58 n=8**) | **−0.16** (LLM-decided −0.31), outside the ±0.00 band |
+| 2026-11-15 | M7 | failure explanation checklist @ model openai:gpt-5.5, condenser c1, 3 repeats | 0.96 (failure-explanation-judge-v2, calibrated) | **0.98** (consistent 0.97, no invented cause 1.00; n=33) | +0.02 |
+| 2026-11-15 | M7 | timeline checklist @ model openai:gpt-5.5, condenser c1, 3 repeats | 0.98 ±0.03 (timeline-v3, dev-v4, timeline-judge-v1, calibrated) | **0.97** (first approach 0.92, no invented correction 0.88 n=33, ≤ 5 sentences 1.00, others ≥ 0.98) | −0.01, inside the band |
+
+M7 test run (T-045): runs 20261116T015552Z-a95d2a9f, 20261116T015659Z-002ff9ab, 20261116T020147Z-8aa36695 at git 603375b (working tree dirty only from the tracker and untracked files outside `src/`, `prompts/`, `evals/`). Cost **$3.73** (0.25 + 1.06 + 2.42). Result records hold aggregates only (`cases` empty in all three, checked by count). **Finding:** failure type on LLM-decided cases drops from 0.89 to 0.58 (n=8, 3 repeats). Per the eval plan this reads as overfit to dev, but n is small and the 4 test-only model-decided failures were written by the human in v2 (T-038), so a harder test mix can't be ruled out; telling the two apart would need the case details, which stay sealed. Algorithm consistency also drops (0.81 vs 1.00). Everything else holds. Next step is `/pm`'s: a general failure-type fix tuned on dev only (rule 9), if the human wants one.
 
 ## Model comparison
 
