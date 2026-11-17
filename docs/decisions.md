@@ -1185,3 +1185,22 @@ contract test re-runs them on the fixture.
 drift daily. A pattern the agent can get right while breaking the rule tests nothing. The
 fixture isn't built yet, so adjusting the patterns now edits no frozen expectation (rule 10).
 **Supersedes.** The plan's "about 50 fake sessions".
+
+## D-079 · Failure types v2: edge case merged into bug; the verdict decides all but one choice · 2026-11-17 · human
+**Decision.** `edge_case_missed` merges into `implementation_bug`. By rule, from the verdict:
+Accepted → `none`, TLE/MLE → `too_slow` (unchanged), not submitted → `did_not_finish`, no
+verdict → a new `unknown` failure type (NULL keeps meaning "not analyzed yet"). The LLM decides
+only `wrong_approach` vs `implementation_bug`, for Wrong Answer, Runtime Error and Output Limit.
+Labels are remapped mechanically by script; the test split stays sealed (counts only).
+**Why.** The human can't reliably tell a missed edge case from a bug, or an unfinished session
+from a buggy one (syn-016, missed by Sonnet and Opus on dev), and a missing verdict is not a
+failure (rule 1; D-075 already treats it as unscored). It came after the M7 test run showed
+failure type at 0.79 vs dev 0.95 (LLM-decided 0.58 vs 0.89); the reason is the taxonomy's
+ambiguity, not the number, and the M7 failure-type numbers are not comparable afterwards.
+**Measured before the change (counts).** Dev: 3 `edge_case_missed` → `implementation_bug`; the 2
+not-submitted cases are already `did_not_finish`. Test: 2 `edge_case_missed` →
+`implementation_bug`; **1 not-submitted case labelled `wrong_approach` becomes `did_not_finish`
+by rule** (the human confirms, by count). No `unknown`-status case in either split. LLM-decided
+cases: dev 9 → 7, test 8 → 7.
+**Supersedes.** The eval plan's six-type list; D-014's "LLM decides failure type when the verdict
+doesn't" narrows to this one choice. Part 2's `FailureKey` (§17.5) follows it.
