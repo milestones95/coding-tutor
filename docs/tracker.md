@@ -1403,6 +1403,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Not included:** any code change (T-047); an eval run (T-048).
 **Log:**
 - 2026-11-17 `/pm idea` (the human): **Add** as T-046 – T-049, inside M7 because Part 2's claims schema and fixture use failure types (§17.5), so the change has to land before M5. Counts measured by `/pm` from status + label pairs only.
+- 2026-11-17 the human confirmed the one test case that changes by rule (a not-submitted session labelled `wrong_approach` becomes `did_not_finish`): "that's correct it was never submitted". Identified to the human by id and label only; no model output exists or was read, so it stays in test. Done-when 4 is met for this case; the full count report still comes from T-046's script.
 
 ### T-047 · Failure types v2: code
 **Milestone:** M7 · **Size:** M · **Owner:** build · **Test assets:** required (`/test write T-047` first) · **Traces to:** D-079.
