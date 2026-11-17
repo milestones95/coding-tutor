@@ -49,17 +49,19 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
    `Accepted` · `Wrong Answer` · `Time Limit Exceeded` · `Memory Limit Exceeded` · `Runtime Error` ·
    `Compile Error` · `Output Limit Exceeded`. Test counts must be plausible for the problem. A
    failing verdict never has every test passing; Accepted always does; Compile Error passes 0.
-3. **Failure type**: `edge_case_missed` · `wrong_approach` · `too_slow` · `implementation_bug` ·
-   `did_not_finish` · `none`. Fixed by the verdict in two cases (the pipeline applies these as rules):
+3. **Failure type** (D-079): `wrong_approach` · `implementation_bug` · `too_slow` ·
+   `did_not_finish` · `none` (and `unknown`, for real sessions with no captured verdict only; never
+   in a spec). The verdict decides it in three cases (the pipeline applies these as rules):
    - Accepted ⇒ `none`, and only Accepted is `none`;
-   - Time / Memory Limit Exceeded ⇒ `too_slow`.
+   - Time / Memory Limit Exceeded ⇒ `too_slow`;
+   - never submitted (`verdict: null`) ⇒ `did_not_finish`, whatever the code looks like.
 
-   For anything else, it is the human's judgment of *why* it failed:
-   - `edge_case_missed`: the idea is right, a corner case breaks it (empty input, duplicates,
-     overflow, off-by-one at a boundary);
+   For Wrong Answer, Runtime Error and Output Limit Exceeded it is the human's judgment of *why*,
+   and only two answers exist:
    - `wrong_approach`: the idea itself can't solve the problem (e.g. greedy where DP is needed);
-   - `implementation_bug`: right idea, broken code (wrong index, typo, crash);
-   - `did_not_finish`: gave up or ran out of time, often with no submit.
+   - `implementation_bug`: right idea, broken code: a wrong index or variable, a typo, a crash, **or a
+     corner case it doesn't handle** (empty input, duplicates, overflow, an off-by-one at a boundary).
+     `edge_case_missed` was merged into this label (D-079).
 4. **Algorithms**: 1–2 labels describing **what the final code does**, not what the problem
    ideally needs. A wrong greedy attempt at a DP problem is labelled `greedy`. Use labels from:
    `hash_map` `two_pointers` `sliding_window` `binary_search` `stack` `heap` `bfs` `dfs_backtracking`

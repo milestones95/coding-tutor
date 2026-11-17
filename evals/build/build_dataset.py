@@ -18,6 +18,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))   # remap_failure_types (T-046)
 DATA = REPO / "evals" / "data"
 SEED = 20261107
 TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
@@ -25,7 +26,8 @@ TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
 # (D-063), timeline/dev-v3 + failure/dev-v2 Sort Colors (D-066). Dataset v2 (T-040, D-072) bumps all
 # six files: new sessions in every test file, Merge Sorted Array's algorithm case in algorithm/dev.
 # T-050 (rule 2) moves the 8 unsealed sessions to dev in every suite: dev-v5 / dev-v4 / dev-v3, test-v3.
-VERSIONS = {("timeline", "dev"): "dev-v5", ("failure", "dev"): "dev-v4", ("algorithm", "dev"): "dev-v3",
+# T-046 (D-079) remaps failure labels: failure dev-v5 (no test label changed, so failure test stays test-v3).
+VERSIONS = {("timeline", "dev"): "dev-v5", ("failure", "dev"): "dev-v5", ("algorithm", "dev"): "dev-v3",
             ("timeline", "test"): "test-v3", ("failure", "test"): "test-v3", ("algorithm", "test"): "test-v3"}
 # Test sessions whose failure details the human saw on 2026-11-17 (rule 2: "that case moves to dev and gets a
 # replacement"; T-050). They leave every test file and are appended to dev with the next ids, labels unchanged.
@@ -161,8 +163,15 @@ def main():
                 r = by_ref[_ref(c["session"])]
                 if where[r["key"]] != sp:
                     continue   # moved out of this split (T-050); it is appended to the other one below
-                if c["expected"] != _expected(suite, r):
-                    raise SystemExit(f"{c['case_id']}: its label changed; that needs its own reason and version")
+                want = _expected(suite, r)
+                if c["expected"] != want:
+                    # The one allowed change: a failure label remapped by D-079's table (T-046), from status alone.
+                    from remap_failure_types import VERDICT_STATUS, remap
+                    old = c["expected"]["failure_type"] if suite == "failure" else None
+                    if not (old and {**c["expected"], "failure_type": want["failure_type"]} == want
+                            and remap(old, VERDICT_STATUS[r["status"]]) == want["failure_type"]):
+                        raise SystemExit(f"{c['case_id']}: its label changed; that needs its own reason and version")
+                    c = {**c, "expected": want}
                 cases.append({**c, "dataset_version": version})
                 have.add(_ref(c["session"]))
             for r in sorted((r for r in rows if where[r["key"]] == sp), key=lambda r: r["key"]):

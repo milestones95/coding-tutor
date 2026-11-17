@@ -29,7 +29,9 @@ VERDICTS = {"Accepted", "Wrong Answer", "Time Limit Exceeded", "Memory Limit Exc
 # LeetCode reports a Python SyntaxError as "Runtime Error" (the human, 2026-11-11, from a real capture),
 # so a python3 session never ends in Compile Error: it isn't a coverage gap and a python3 spec can't claim it (D-069).
 NOT_FOR_PYTHON = {"Compile Error"}
-FAILURE_TYPES = {"edge_case_missed", "wrong_approach", "too_slow", "implementation_bug", "did_not_finish", "none"}
+# Failure types v2 (D-079, T-046): edge_case_missed merged into implementation_bug; `unknown` (no verdict captured)
+# exists for real sessions only, never for a spec.
+FAILURE_TYPES = {"wrong_approach", "too_slow", "implementation_bug", "did_not_finish", "none", "unknown"}
 ALGORITHMS = {"hash_map", "two_pointers", "sliding_window", "binary_search", "stack", "heap", "bfs",
               "dfs_backtracking", "dynamic_programming", "greedy", "intervals", "linked_list",
               "tree_traversal", "trie", "union_find", "graph_topological_sort", "bit_manipulation", "math",
@@ -105,14 +107,17 @@ def check(spec: dict, db) -> tuple[list[str], list[str]]:
         err.append(f"labels.failure_type must be one of {sorted(FAILURE_TYPES)}")
     # The status → failure-type rules the pipeline applies (architecture §6.3): a spec that broke
     # them would label a case the rule-decided path can never get right.
+    elif ft == "unknown":
+        err.append("'unknown' is for a real session with no captured verdict; a spec has a verdict or null")
     elif status == "Accepted" and ft != "none":
         err.append("Accepted ⇒ failure_type 'none'")
     elif status in ("Time Limit Exceeded", "Memory Limit Exceeded") and ft != "too_slow":
         err.append(f"{status} ⇒ failure_type 'too_slow' (rule-decided)")
-    elif status not in ("Accepted",) and ft == "none":
-        err.append("only an Accepted session has failure_type 'none'")
-    elif status in ("Wrong Answer", "Runtime Error", "Compile Error", "Output Limit Exceeded") and ft == "too_slow":
-        err.append(f"{status} isn't a too-slow failure")
+    elif status is None and v is None and ft != "did_not_finish":
+        err.append("never submitted ⇒ failure_type 'did_not_finish' (rule-decided, D-079)")
+    elif status in ("Wrong Answer", "Runtime Error", "Compile Error", "Output Limit Exceeded") \
+            and ft not in ("wrong_approach", "implementation_bug"):
+        err.append(f"{status} ⇒ failure_type 'wrong_approach' or 'implementation_bug' (D-079)")
     if not (isinstance(algos, list) and 1 <= len(algos) <= 2 and len(set(algos)) == len(algos)
             and set(algos) <= ALGORITHMS):
         err.append(f"labels.algorithms must be 1–2 distinct labels from {sorted(ALGORITHMS)}")

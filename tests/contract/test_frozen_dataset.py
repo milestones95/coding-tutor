@@ -33,7 +33,7 @@ def test_dev_cases_load_and_never_reference_a_test_session():
 
     for suite in ("failure", "algorithm", "timeline"):
         dev = load_cases(suite, "dev")
-        want = {"timeline": "dev-v5", "failure": "dev-v4", "algorithm": "dev-v3"}[suite]   # T-050 move (rule 2)
+        want = {"timeline": "dev-v5", "failure": "dev-v5", "algorithm": "dev-v3"}[suite]   # T-050 move; T-046 relabel
         assert dev and all(c.split == "dev" and c.dataset_version == want for c in dev)
     dev_refs = {json.dumps(json.loads(row)["session"], sort_keys=True)
                 for s in ("failure", "algorithm", "timeline")

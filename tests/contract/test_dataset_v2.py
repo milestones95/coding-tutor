@@ -14,7 +14,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "evals" / "data"
 DIGESTS = json.loads((DATA / "v1_case_digests.json").read_text())
-WANT = {("timeline", "dev"): "dev-v5", ("failure", "dev"): "dev-v4", ("algorithm", "dev"): "dev-v3",
+WANT = {("timeline", "dev"): "dev-v5", ("failure", "dev"): "dev-v5", ("algorithm", "dev"): "dev-v3",
         ("timeline", "test"): "test-v3", ("failure", "test"): "test-v3", ("algorithm", "test"): "test-v3"}
 # T-050 (rule 2, 2026-11-17): v1 test sessions the human unsealed; they moved to dev with their labels.
 # Every other v1 case must still be byte-for-byte where it was.
@@ -26,6 +26,21 @@ def _rows(path):
     return [json.loads(x) for x in (REPO / path).read_text().splitlines() if x.strip()]
 
 
+# T-046 (D-079): a v1 failure label may differ only by the remap table. These are the old labels that
+# remap to each new one, so the test can rebuild the v1 row and check its digest.
+PREIMAGES = {"implementation_bug": ["edge_case_missed"],
+             "did_not_finish": ["wrong_approach", "implementation_bug", "edge_case_missed"]}
+
+
+def _remapped_from_v1(row, h):
+    """True when `row` equals its frozen v1 row except for a failure label D-079 remapped."""
+    ft = row["expected"].get("failure_type")
+    for old in PREIMAGES.get(ft, []):
+        if _digest({**row, "expected": {**row["expected"], "failure_type": old}}) == h:
+            return True
+    return False
+
+
 def _digest(row):
     r = {k: v for k, v in row.items() if k != "dataset_version"}
     return hashlib.sha256(json.dumps(r, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
@@ -34,7 +49,8 @@ def _digest(row):
 def test_every_v1_case_is_kept_byte_for_byte_in_its_split():
     for path, cases in DIGESTS.items():
         rows = {r["case_id"]: r for r in _rows(path)}
-        changed = [cid for cid, h in cases.items() if cid in rows and _digest(rows[cid]) != h]
+        changed = [cid for cid, h in cases.items() if cid in rows and _digest(rows[cid]) != h
+                   and not ("/failure/" in path and _remapped_from_v1(rows[cid], h))]
         assert not changed, f"{path}: {len(changed)} v1 case(s) changed"
         gone = [cid for cid in cases if cid not in rows]
         if "/dev/" in path:
