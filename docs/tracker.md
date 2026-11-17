@@ -1290,7 +1290,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | ✅ 2026-11-15 `/test run` (the human confirmed) | eval plan "Model comparison" |
 | T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ✅ 2026-11-15 `/test run milestone` (the human approved: "we can do the sealed test split", option A, `evals/test_approvals.json` written by the human) | eval plan "test split"; rule 2 |
 | T-050 | Move the 8 unsealed test sessions to dev in all three suites (rule 2), new dataset versions, contract test lists the moved sessions | test | S | required | ⬜ | rule 2; eval plan "If I look at a test case's failures, move it into dev"; T-046 log 2026-11-17 |
-| T-051 | 8 replacement test specs, written by the human in the D-079 taxonomy (after T-046), same status mix as the 8 moved | test | M | required | ⬜ | rule 2 ("…and gets a replacement"); eval plan "Dataset" |
+| T-051 | 8 replacement test specs in the D-079 taxonomy, mix fixed by the human before drafting, problems drawn by rule, drafted by Claude and approved by the human; before T-047 | test | M | required | ⬜ | rule 2 ("…and gets a replacement"); eval plan "Dataset" |
 | T-052 | Session files for T-051's specs: drafted, reviewed by the human, passing the T-017 checks; added to test | test | M | required | ⬜ | rule 2; D-048; arch §8.5 |
 | T-046 | Failure types v2 labels: remap script (edge case → bug; not submitted → did not finish; no verdict → unknown), dev and test remapped mechanically, new dataset versions, counts-only report | test | S | required | ⬜ | D-079; eval plan "Failure types"; rule 10 |
 | T-047 | Failure types v2 code: migration 0005 for the `failure_type` CHECK, enum, rule table, LLM output limited to wrong approach / bug, prompt `failure/v2`, architecture §3.2/§4/§17.5 | build | M | required | ⬜ | D-079; eval plan "Failure types" |
@@ -1406,11 +1406,20 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 **Not included:** relabeling (T-046); replacements (T-051, T-052).
 
 ### T-051 · Replacement test specs
-**Milestone:** M7 · **Size:** M · **Owner:** test · **Test assets:** required · **Order:** after T-046 (the spec checker knows the D-079 types) · **Traces to:** rule 2.
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Test assets:** required · **Order:** after T-046 (the spec checker knows the D-079 types), **before T-047 and T-048**, so the specs are written without seeing how prompt v2 behaves · **Traces to:** rule 2.
+**Mix (fixed by the human 2026-11-17, before any drafting):**
+| Category | Count |
+|---|---|
+| implementation_bug, edge-case flavored (empty input, duplicates, a boundary) | 2 |
+| implementation_bug, plain (wrong variable or index, typo on ordinary input) | 2 |
+| wrong_approach | 3 |
+| did_not_finish (not submitted) | 1 |
+
+Verdicts: Wrong Answer 4 · Runtime Error 3 · not submitted 1. Difficulty: at least 1 Easy and 1 Hard, the rest Medium. Course correction: at least 2 corrected and 2 on track from the start.
 **Done when:**
-1. 8 specs with `"split": "test"`, drafted with the `synthetic-spec` skill and approved by the human; labels in the D-079 taxonomy, written by the human.
-2. Same verdict mix as the moved 8 (Wrong Answer 4, Runtime Error 3, not submitted 1), and at least 2 `wrong_approach` and 2 `implementation_bug` among the LLM-decided, so T-049 measures the one choice the LLM still makes. No problem already in the dataset.
-3. `check_specs --with-real` passes with no errors.
+1. The 8 problems are drawn at random (a recorded seed) from LeetCode problems not yet in the dataset, before any story is written; the draw is recorded here.
+2. 8 specs with `"split": "test"`, drafted by Claude with the `synthetic-spec` skill (D-017) to the mix above, each approved by the human; labels are the human's.
+3. `check_specs --with-real` passes with no errors, and its coverage table matches the mix.
 **Not included:** session files (T-052).
 
 ### T-052 · Replacement session files
@@ -1445,7 +1454,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 
 ### T-049 · Test split, failure suite v2
 **Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** D-079; rule 2.
-**Depends on:** T-052 (without the replacements, test has no LLM-decided failure case). **Done when:** with the human's approval in the conversation, the failure suite runs on the rebuilt test split, aggregates only; the Test-split log gets the dev/test pair. Closes M7.
+**Depends on:** T-052 (without the replacements, test has no LLM-decided failure case). **Reported as a second-generation test split:** the failure types changed after the M7 test run and 8 test sessions were unsealed, so this is not a first look at unseen data. **Done when:** with the human's approval in the conversation, the failure suite runs on the rebuilt test split, aggregates only; the Test-split log gets the dev/test pair. Closes M7.
 
 ## Eval baselines (dev)
 
@@ -1568,3 +1577,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-15 | T-043, T-044, T-045 | — | — | `/test run`: T-043/T-044 ✅ (the human confirmed; no Sonnet judge for now); T-045 sealed test split ✅, $3.73: failure type 0.79 vs dev 0.95 (LLM-decided 0.58 vs 0.89), everything else holds. |
 | 2026-11-17 | — | — | T-046 – T-049 | `/pm idea` failure types v2 (the human): **Add** to M7 (D-079). Part 2 waits on it, since §17.5 uses failure types. Displaces: M5's start, and the on-track-field idea queued behind M7. |
 | 2026-11-17 | — | — | T-050 – T-052 | `/pm` re-plan after the human unsealed 8 test sessions (rule 2). Order: T-050 move → T-046 labels + judge v3 → T-047 code → T-048 dev baseline → T-051 / T-052 replacements → T-049 test run. Not chosen: closing M7 after T-048 with the replacements deferred — test would hold no LLM-decided failure case, and the human keeps dataset quality ahead of early numbers. **Scope health:** 7 tasks added since 2026-11-15 (T-046 – T-052) against 3 completed (T-043 – T-045); additions are outpacing completions. Every addition traces to D-079 or rule 2, but M7 is now ~8 tasks from closing and Part 2 waits behind it. |
+| 2026-11-17 | — | — | — | `/pm`: replacement plan fixed with the human. Synthetic, mix set before drafting (bug edge-flavored 2, bug plain 2, wrong approach 3, did not finish 1; WA 4 · RE 3 · not submitted 1), problems drawn by seeded rule, T-051/T-052 before T-047/T-048, T-049 labelled second-generation. Real sessions considered and not chosen (the human): slower, and the mix can't be controlled. Order: T-050 → T-046 → T-051 → T-052 → T-047 → T-048 → T-049. |
