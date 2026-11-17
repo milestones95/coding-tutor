@@ -1289,6 +1289,9 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 | T-043 | Model comparison on dev: `anthropic:claude-sonnet-5-5` vs `openai:gpt-5.5`, the three Part 1 suites, 3 repeats, gpt-5.5 judges | test | S | none (runner, adapter and graders already tested) | ✅ 2026-11-15 `/test run` (the human confirmed) | eval plan "Model comparison"; build order step 6 |
 | T-044 | The same comparison for `anthropic:claude-opus-5-5`; **runs only after the human approves it** | test | S | none | ✅ 2026-11-15 `/test run` (the human confirmed) | eval plan "Model comparison" |
 | T-045 | `/test run milestone`: the sealed test split, aggregates only, the human's approval in this conversation | test | S | none | ✅ 2026-11-15 `/test run milestone` (the human approved: "we can do the sealed test split", option A, `evals/test_approvals.json` written by the human) | eval plan "test split"; rule 2 |
+| T-050 | Move the 8 unsealed test sessions to dev in all three suites (rule 2), new dataset versions, contract test lists the moved sessions | test | S | required | ⬜ | rule 2; eval plan "If I look at a test case's failures, move it into dev"; T-046 log 2026-11-17 |
+| T-051 | 8 replacement test specs, written by the human in the D-079 taxonomy (after T-046), same status mix as the 8 moved | test | M | required | ⬜ | rule 2 ("…and gets a replacement"); eval plan "Dataset" |
+| T-052 | Session files for T-051's specs: drafted, reviewed by the human, passing the T-017 checks; added to test | test | M | required | ⬜ | rule 2; D-048; arch §8.5 |
 | T-046 | Failure types v2 labels: remap script (edge case → bug; not submitted → did not finish; no verdict → unknown), dev and test remapped mechanically, new dataset versions, counts-only report | test | S | required | ⬜ | D-079; eval plan "Failure types"; rule 10 |
 | T-047 | Failure types v2 code: migration 0005 for the `failure_type` CHECK, enum, rule table, LLM output limited to wrong approach / bug, prompt `failure/v2`, architecture §3.2/§4/§17.5 | build | M | required | ⬜ | D-079; eval plan "Failure types" |
 | T-048 | Dev re-baseline: failure suite on the v2 dataset, gpt-5.5, 3 repeats (≈ $2) | test | S | none | ⬜ | D-079; eval plan "measure a baseline" |
@@ -1393,12 +1396,33 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
   - Waiting on the human's confirmation.
 - 2026-11-15 the human confirmed (see T-043). `/test run` → ✅. Done-when 1–3 met. Gates: 649 passed, 10 skipped; `ruff check src tests`, mypy, `prompts check` clean. No code changed since the runs; no new eval run (cost $0).
 
+### T-050 · Move the unsealed sessions to dev
+**Milestone:** M7 · **Size:** S · **Owner:** test · **Test assets:** required · **Order:** first; then T-046 · **Traces to:** rule 2; eval plan tuning rules.
+**Done when:**
+1. syn-009, -013, -018, -023, -025, -027, -029, -030 are in dev in the failure, algorithm and timeline suites, appended with the next dev case ids; no other session moves.
+2. Every changed file gets a new `dataset_version`, with the reason (rule 10): unsealed at the human's request, 2026-11-17.
+3. `test_dataset_v2.py` still holds every other v1 case byte-for-byte; the 4 moved v1 test cases (syn-009, -013, -018, -023) are listed by name as moved, with this reason. A contract test fails if any other session changes split.
+4. Counts reported: dev 27, test 8 sessions per suite (all 8 test sessions rule-decided for failure).
+**Not included:** relabeling (T-046); replacements (T-051, T-052).
+
+### T-051 · Replacement test specs
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Test assets:** required · **Order:** after T-046 (the spec checker knows the D-079 types) · **Traces to:** rule 2.
+**Done when:**
+1. 8 specs with `"split": "test"`, drafted with the `synthetic-spec` skill and approved by the human; labels in the D-079 taxonomy, written by the human.
+2. Same verdict mix as the moved 8 (Wrong Answer 4, Runtime Error 3, not submitted 1), and at least 2 `wrong_approach` and 2 `implementation_bug` among the LLM-decided, so T-049 measures the one choice the LLM still makes. No problem already in the dataset.
+3. `check_specs --with-real` passes with no errors.
+**Not included:** session files (T-052).
+
+### T-052 · Replacement session files
+**Milestone:** M7 · **Size:** M · **Owner:** test · **Test assets:** required · **Traces to:** rule 2; D-048.
+**Done when:** 8 session files + meta drafted from T-051's specs, reviewed by the human, final code checked on LeetCode by the human, `checks.py` passing; appended to every test file with new versions (counts only reported).
+
 ### T-046 · Failure types v2: labels
 **Milestone:** M7 · **Size:** S · **Owner:** test · **Test assets:** required · **Traces to:** D-079; eval plan "Failure types"; rule 10.
 **Done when:**
 1. A tester-owned script in `evals/build/` remaps every failure label by D-079's table, from the session's status alone, and refuses any label it has no rule for.
 2. failure dev and test files rebuilt with new `dataset_version`s; the change and its reason recorded (rule 10). Every tester-owned failure-type list (graders, `check_specs.py`, judge prompts, the `synthetic-spec` skill) matches the new list; a contract test keeps them identical.
-3. Report by count only: per split, labels changed by each rule. Expected from D-079: dev 3, test 3 (2 edge case → bug, 1 wrong approach → did not finish).
+3. Report by count only: per split, labels changed by each rule. Expected after T-050's move: dev 6 (5 edge case → bug, 1 wrong approach → did not finish), test 0.
 4. The human confirms the counts in this log, including the one test case that becomes `did_not_finish`.
 **Not included:** any code change (T-047); an eval run (T-048).
 **Log:**
@@ -1421,7 +1445,7 @@ T-041 ≈ $7; the comparison and test run are costed when planned (≈ $10–20)
 
 ### T-049 · Test split, failure suite v2
 **Milestone:** M7 · **Size:** S · **Owner:** test · **Traces to:** D-079; rule 2.
-**Done when:** with the human's approval in the conversation, the failure suite runs on test v2, aggregates only; the Test-split log gets the dev/test pair. Closes M7.
+**Depends on:** T-052 (without the replacements, test has no LLM-decided failure case). **Done when:** with the human's approval in the conversation, the failure suite runs on the rebuilt test split, aggregates only; the Test-split log gets the dev/test pair. Closes M7.
 
 ## Eval baselines (dev)
 
@@ -1543,3 +1567,4 @@ Every item has a trigger: the condition that would make it worth doing.
 | 2026-11-14 | T-015, T-041 | — | T-043 – T-045 | `/pm plan` rest of M7 (Part 1): Sonnet 5.5 comparison first (the human), Opus 5.5 only on the human's approval, then the sealed test-split run. Claude judge recalibration not planned unless the comparison shows judge self-preference. Sonnet 5.5 priced from the human's screenshot ($2 / $10). |
 | 2026-11-15 | T-043, T-044, T-045 | — | — | `/test run`: T-043/T-044 ✅ (the human confirmed; no Sonnet judge for now); T-045 sealed test split ✅, $3.73: failure type 0.79 vs dev 0.95 (LLM-decided 0.58 vs 0.89), everything else holds. |
 | 2026-11-17 | — | — | T-046 – T-049 | `/pm idea` failure types v2 (the human): **Add** to M7 (D-079). Part 2 waits on it, since §17.5 uses failure types. Displaces: M5's start, and the on-track-field idea queued behind M7. |
+| 2026-11-17 | — | — | T-050 – T-052 | `/pm` re-plan after the human unsealed 8 test sessions (rule 2). Order: T-050 move → T-046 labels + judge v3 → T-047 code → T-048 dev baseline → T-051 / T-052 replacements → T-049 test run. Not chosen: closing M7 after T-048 with the replacements deferred — test would hold no LLM-decided failure case, and the human keeps dataset quality ahead of early numbers. **Scope health:** 7 tasks added since 2026-11-15 (T-046 – T-052) against 3 completed (T-043 – T-045); additions are outpacing completions. Every addition traces to D-079 or rule 2, but M7 is now ~8 tasks from closing and Part 2 waits behind it. |
