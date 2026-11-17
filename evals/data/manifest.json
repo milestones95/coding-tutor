@@ -1,13 +1,14 @@
 {
-  "evals/data/algorithm/dev/cases.jsonl": "5bd4fbf015cb84ce2a6973ff504f3dd867388d7ff5911491f6afb3256b1330be",
-  "evals/data/algorithm/test/cases.jsonl": "8e37b43066b65fbf86b2e4b4eb8a094e6d19d3a8a5cbf4f68777a8b935b8f42a",
-  "evals/data/failure/dev/cases.jsonl": "322c956e8c5150b70bbde5ffc1c59a3d5361b9ca764b6773d7b11fdecb82d4d7",
-  "evals/data/failure/test/cases.jsonl": "d4697b51a9332a3ba28dcb7ee4f42684d46168dff2e2eaef84c7f1a446a45ec2",
-  "evals/data/timeline/dev/cases.jsonl": "2a071715fe3adee0f51e2d730fcba0b7f5463087e3a4728e4f4d4e487d38ca02",
-  "evals/data/timeline/test/cases.jsonl": "e5f10f56241594dfc80044ff0480ed078d6a54fa255d292c65f2aab7fa608b98",
-  "evals/data/sessions/synthetic/specs.jsonl": "6654240564752e622dd32420937711a27b46a6d9571b5f00cc23dcf77f9409fe",
+  "evals/data/algorithm/dev/cases.jsonl": "e978e68b5989b675a2f8bc3c955021d44dcb99a3f95aea657ddb1febd847937e",
+  "evals/data/algorithm/test/cases.jsonl": "9553b27e442570b53ea633181e56e65b4d1f0daadfa3577f4ee4215d02c4d246",
+  "evals/data/failure/dev/cases.jsonl": "ed30696426d5417133018b7b289c92fc7dd1f696834ff9cc6b84ba5aea329600",
+  "evals/data/failure/test/cases.jsonl": "4dc68c52249cacd8d575e912012097ec2386e62452b50b324c904076aad1c783",
+  "evals/data/timeline/dev/cases.jsonl": "9968f3c21c8fe37a9439b30775238fdb180059e4058543036eda9cea36d15f68",
+  "evals/data/timeline/test/cases.jsonl": "a458dac87daa811473fe48253651a99e6084477c394ff69af819406762f10e99",
+  "evals/data/sessions/synthetic/specs.jsonl": "9073f008e17b25cfd92338cf48f296bedc863d8f6129f466929e7c1fde929f8c",
   "evals/data/sessions/real/labels.jsonl": "a12775379c7461e84e7b38a55fdf3ea2aa27c073dc611dd853fcd9bda1f2ed02",
   "evals/data/calibration/timeline/v1.jsonl": "6ab22187182c0a54665bf01a4929334ca9e99e8bdd4f9402d34031fc74cd7116",
   "evals/data/calibration/failure_explanation/v1.jsonl": "4222ca65fa2c58c94da4d8799e67950aa741b5dce67b88df73152ffc091aa0da",
-  "evals/data/v1_case_digests.json": "a24dc435e62510b5b2b0c5593fe440bbfb6086437fde31051fbf23cf681a16f4"
+  "evals/data/v1_case_digests.json": "a24dc435e62510b5b2b0c5593fe440bbfb6086437fde31051fbf23cf681a16f4",
+  "evals/data/split_v2.json": "97ac6f009e8fe0fb4fb40f10e93e5b4a4744c0ec9e5fe91a4419ab8b1ff707da"
 }

@@ -14,8 +14,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "evals" / "data"
 DIGESTS = json.loads((DATA / "v1_case_digests.json").read_text())
-WANT = {("timeline", "dev"): "dev-v4", ("failure", "dev"): "dev-v3", ("algorithm", "dev"): "dev-v2",
-        ("timeline", "test"): "test-v2", ("failure", "test"): "test-v2", ("algorithm", "test"): "test-v2"}
+WANT = {("timeline", "dev"): "dev-v5", ("failure", "dev"): "dev-v4", ("algorithm", "dev"): "dev-v3",
+        ("timeline", "test"): "test-v3", ("failure", "test"): "test-v3", ("algorithm", "test"): "test-v3"}
+# T-050 (rule 2, 2026-11-17): v1 test sessions the human unsealed; they moved to dev with their labels.
+# Every other v1 case must still be byte-for-byte where it was.
+MOVED_V1 = {"evals/data/sessions/synthetic/syn-009.json", "evals/data/sessions/synthetic/syn-013.json",
+            "evals/data/sessions/synthetic/syn-018.json", "evals/data/sessions/synthetic/syn-023.json"}
 
 
 def _rows(path):
@@ -28,18 +32,30 @@ def _digest(row):
 
 
 def test_every_v1_case_is_kept_byte_for_byte_in_its_split():
-    changed = []
     for path, cases in DIGESTS.items():
-        now = {r["case_id"]: _digest(r) for r in _rows(path)}
-        changed += [f"{path}:{cid}" for cid, h in cases.items() if now.get(cid) != h]
-    assert not changed, f"{len(changed)} v1 case(s) moved or changed"
+        rows = {r["case_id"]: r for r in _rows(path)}
+        changed = [cid for cid, h in cases.items() if cid in rows and _digest(rows[cid]) != h]
+        assert not changed, f"{path}: {len(changed)} v1 case(s) changed"
+        gone = [cid for cid in cases if cid not in rows]
+        if "/dev/" in path:
+            assert not gone, f"{path}: {len(gone)} v1 dev case(s) missing"
+        else:
+            # A v1 test case may be missing only because T-050 moved its session: exactly as many v1 cases
+            # left this test file as MOVED_V1 sessions now sit in the same suite's dev file.
+            dev = {r["session"].get("synthetic_path") for r in _rows(path.replace("/test/", "/dev/"))}
+            assert len(gone) == len(MOVED_V1 & dev), f"{path}: {len(gone)} v1 test case(s) left test"
 
 
 def test_v1_cases_come_first_and_new_ones_follow_with_the_next_ids():
+    """Dev files never skip an id. A test file may skip only where T-050 moved a case out; ids still increase."""
     for path, cases in DIGESTS.items():
         ids = [r["case_id"] for r in _rows(path)]
-        assert ids[:len(cases)] == sorted(cases), f"{path}: v1 cases are not first, in order"
-        assert ids == [f"{ids[0].rsplit('-', 1)[0]}-{i:03d}" for i in range(1, len(ids) + 1)], f"{path}: ids skip"
+        kept = [c for c in sorted(cases) if c in ids]
+        assert ids[:len(kept)] == kept, f"{path}: v1 cases are not first, in order"
+        nums = [int(i.rsplit("-", 1)[1]) for i in ids]
+        assert nums == sorted(set(nums)), f"{path}: ids repeat or go backwards"
+        if "/dev/" in path:
+            assert nums == list(range(1, len(nums) + 1)), f"{path}: ids skip"
 
 
 def test_every_file_carries_its_v2_version():

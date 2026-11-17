@@ -54,7 +54,7 @@ def test_cases_load_with_the_runner_contract(split):
 
     for c in _cases("timeline", split):
         case = Case.model_validate(c)
-        want = "dev-v4" if split == "dev" else "test-v2"   # dev-v3: Sort Colors (D-066); v4/test-v2: dataset v2 (T-040, D-072)
+        want = "dev-v5" if split == "dev" else "test-v3"   # T-050: the 8 unsealed sessions moved to dev (rule 2)   # dev-v3: Sort Colors (D-066); v4/test-v2: dataset v2 (T-040, D-072)
         assert (case.suite, case.split, case.dataset_version) == ("timeline", split, want)
         assert case.label_source == "human_written"
 

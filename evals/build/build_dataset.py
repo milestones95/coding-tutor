@@ -24,8 +24,13 @@ TEST_SHARE = 9 / 28   # 19 dev / 9 test (D-045)
 # A split's version bumps when any of its cases changes (rule 10). History: timeline/dev-v2 syn-003
 # (D-063), timeline/dev-v3 + failure/dev-v2 Sort Colors (D-066). Dataset v2 (T-040, D-072) bumps all
 # six files: new sessions in every test file, Merge Sorted Array's algorithm case in algorithm/dev.
-VERSIONS = {("timeline", "dev"): "dev-v4", ("failure", "dev"): "dev-v3", ("algorithm", "dev"): "dev-v2",
-            ("timeline", "test"): "test-v2", ("failure", "test"): "test-v2", ("algorithm", "test"): "test-v2"}
+# T-050 (rule 2) moves the 8 unsealed sessions to dev in every suite: dev-v5 / dev-v4 / dev-v3, test-v3.
+VERSIONS = {("timeline", "dev"): "dev-v5", ("failure", "dev"): "dev-v4", ("algorithm", "dev"): "dev-v3",
+            ("timeline", "test"): "test-v3", ("failure", "test"): "test-v3", ("algorithm", "test"): "test-v3"}
+# Test sessions whose failure details the human saw on 2026-11-17 (rule 2: "that case moves to dev and gets a
+# replacement"; T-050). They leave every test file and are appended to dev with the next ids, labels unchanged.
+# Remaining test cases keep their ids, so a test file's ids may skip where a moved case was.
+MOVED = {"syn-009", "syn-013", "syn-018", "syn-023", "syn-025", "syn-027", "syn-029", "syn-030"}
 
 
 def outcome(verdict, passed, total):
@@ -129,7 +134,9 @@ def pinned_split(rows, existing, spec_splits):
     out = {}
     for r in rows:
         ref = _ref(r["session"])
-        if ref in where:
+        if r["key"] in MOVED:
+            out[r["key"]] = "dev"
+        elif ref in where:
             out[r["key"]] = where[ref]
         elif r["source"] == "synthetic" and spec_splits.get(r["key"]) in ("dev", "test"):
             out[r["key"]] = spec_splits[r["key"]]
@@ -152,6 +159,8 @@ def main():
             cases, have = [], set()
             for c in existing[(suite, sp)]:
                 r = by_ref[_ref(c["session"])]
+                if where[r["key"]] != sp:
+                    continue   # moved out of this split (T-050); it is appended to the other one below
                 if c["expected"] != _expected(suite, r):
                     raise SystemExit(f"{c['case_id']}: its label changed; that needs its own reason and version")
                 cases.append({**c, "dataset_version": version})
@@ -163,7 +172,8 @@ def main():
                     continue  # no label in the fixed list applies (D-050)
                 tags = (["near_miss"] if r["near_miss"] else []) + (["rule_decided"] if suite == "failure" and r["status"] in
                         ("Accepted", "Time Limit Exceeded", "Memory Limit Exceeded") else [])
-                cases.append({"case_id": f"{suite}-{sp}-{len(cases) + 1:03d}", "suite": suite, "split": sp,
+                nxt = max((int(c["case_id"].rsplit("-", 1)[1]) for c in cases), default=0) + 1
+                cases.append({"case_id": f"{suite}-{sp}-{nxt:03d}", "suite": suite, "split": sp,
                               "dataset_version": version, "source": r["source"], "session": r["session"],
                               "expected": _expected(suite, r), "label_source": "human_written", "tags": tags, "notes": ""})
                 added[(suite, sp)] += 1
@@ -175,7 +185,8 @@ def main():
     for p in ("evals/data/sessions/synthetic/specs.jsonl", "evals/data/sessions/real/labels.jsonl",
               "evals/data/calibration/timeline/v1.jsonl",   # the human's judge grades are frozen too (D-063)
               "evals/data/calibration/failure_explanation/v1.jsonl",
-              "evals/data/v1_case_digests.json"):           # what dataset v2 must keep (T-040)
+              "evals/data/v1_case_digests.json",            # what dataset v2 must keep (T-040)
+              "evals/data/split_v2.json"):                  # every session's split before T-050's move
         manifest[p] = hashlib.sha256((REPO / p).read_bytes()).hexdigest()
     (DATA / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     # counts only
