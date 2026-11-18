@@ -1,5 +1,5 @@
 {
-  "_comment": "Judge calibration (rule 8; architecture \u00a78.4). Tester-owned. One entry per judge version, written after the human hand-grades its calibration set: {judge, version, agreement, n, decision}. A judge's metrics count only when its exact version has agreement >= 0.85.",
+  "_comment": "Judge calibration (rule 8; architecture §8.4). Tester-owned. One entry per judge version, written after the human hand-grades its calibration set: {judge, version, agreement, n, decision}. A judge's metrics count only when its exact version has agreement >= 0.85.",
   "entries": [
     {
       "judge": "timeline-judge",
@@ -65,6 +65,38 @@
       "run_id": "20261108T214135Z-b3cedb3e",
       "date": "2026-11-08",
       "decision": "accept"
+    },
+    {
+      "judge": "failure-explanation-judge",
+      "n": 40,
+      "always_yes": 0.9,
+      "model": "openai:gpt-5.5",
+      "calibration_set": "evals/data/calibration/failure_explanation/v1.jsonl",
+      "version": "v3",
+      "agreement": 0.975,
+      "misses_caught": [
+        3,
+        4
+      ],
+      "run_id": "20261117T234646Z-a1978171",
+      "date": "2026-11-17",
+      "decision": "not chosen: missed cal-fx-04 consistent on 2 of 2 runs (re-run 20261118T010802Z-bcc260de); replaced by v4 (D-080)"
+    },
+    {
+      "judge": "failure-explanation-judge",
+      "n": 40,
+      "always_yes": 0.9,
+      "model": "openai:gpt-5.5",
+      "calibration_set": "evals/data/calibration/failure_explanation/v1.jsonl",
+      "version": "v4",
+      "agreement": 1.0,
+      "misses_caught": [
+        4,
+        4
+      ],
+      "run_id": "20261118T013301Z-974f2897",
+      "date": "2026-11-17",
+      "decision": "accept (D-080); 1.00 and 4/4 on 3 of 3 runs (also 20261118T013954Z-fe68a6e7, 20261118T014140Z-774e2314)"
     }
   ]
 }

@@ -38,7 +38,13 @@ Every LLM field reads this condensed version. It is stored in the analysis datab
 | Algorithm type | LLM reads the final code | Up to 2 labels from the fixed list below |
 | Timeline summary | LLM reads the condensed events | 3–5 sentences: approaches tried, whether the first approach was on the right track and whether I course-corrected, final outcome |
 
-**Failure types:** wrong approach · too slow (complexity) · implementation bug (including a missed edge case) · didn't finish · none (passed) · unknown (no verdict). The verdict decides wherever it can: Accepted → none, time or memory limit → too slow, not submitted → didn't finish, no verdict → unknown. The LLM decides only wrong approach vs. implementation bug, for the other failed submits (D-079, 2026-11-17; edge case missed was merged into implementation bug).
+**Failure types:** wrong approach · too slow (complexity) · implementation bug · didn't finish · none (passed) · unknown (no verdict). The verdict decides wherever it can: Accepted → none, time or memory limit → too slow, not submitted → didn't finish, no verdict → unknown. The LLM decides only wrong approach vs. implementation bug, for the other failed submits (D-079, 2026-11-17):
+
+- **Wrong approach (a flawed algorithm):** the idea itself is wrong. Even a perfect implementation gives wrong answers, e.g. greedy where you need DP, or binary search on unsorted data. The fix is to change the approach.
+- **Implementation bug:** the idea is correct, but the code doesn't faithfully carry it out. The fix is to change a line or two.
+- **Edge case bug:** a kind of implementation bug (same label) that only shows up on unusual inputs, like an empty array, a single element, all duplicates, or integer overflow. Normal inputs work fine.
+
+(Definitions D-080, 2026-11-17.)
 
 **Algorithm labels:** hash map · two pointers · sliding window · binary search · stack / monotonic stack · heap · BFS · DFS / backtracking · dynamic programming · greedy · intervals · linked list · tree traversal · trie · union find · graph / topological sort · bit manipulation · math · prefix sum · sorting.
 

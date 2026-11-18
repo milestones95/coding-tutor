@@ -1204,3 +1204,28 @@ by rule** (the human confirms, by count). No `unknown`-status case in either spl
 cases: dev 9 → 7, test 8 → 7.
 **Supersedes.** The eval plan's six-type list; D-014's "LLM decides failure type when the verdict
 doesn't" narrows to this one choice. Part 2's `FailureKey` (§17.5) follows it.
+
+## D-080 · Failure type definitions; failure-explanation-judge v4 is calibrated · 2026-11-17 · human
+**Definitions (the human's words).** Wrong approach (a flawed algorithm): the idea itself is wrong;
+even a perfect implementation gives wrong answers (greedy where DP is needed, binary search on
+unsorted data); the fix is to change the approach. Implementation bug: the idea is correct, but the
+code doesn't faithfully carry it out; the fix is a line or two. Edge case bug: a kind of
+implementation bug (same label, D-079) that only shows on unusual inputs (empty array, one element,
+all duplicates, overflow). Kept: the key `wrong_approach` (no rename), and one label for bugs.
+**Judge.** v3 (D-079's list, plus "calling a bug a missed corner case, or the reverse, is the same
+cause: met") missed cal-fx-04 consistent on 2 of 2 runs (0.97, misses caught 3/4; runs
+`20261117T234646Z-a1978171`, `20261118T010802Z-bcc260de`): it read an explanation that blames the
+algorithm as a bug-vs-corner-case wording difference. v4 puts the definitions in and asks one
+question: would a perfect implementation of the idea still give wrong answers? Saying the algorithm
+fails without placing the cause in a fixable mistake blames the idea; how many inputs a bug breaks
+does not decide the type. **v4 @ openai:gpt-5.5: agreement 1.00 (n=40), always-yes 0.90, misses
+caught 4/4 on 3 of 3 runs** (`20261118T013301Z-974f2897`, `…013954Z-fe68a6e7`, `…014140Z-774e2314`;
+$1.86). The grader is pinned to v4.
+**Grades kept (the human).** All 40 grades of the set stand, including the 3 items D-079 relabelled.
+The human asked whether an example input the timeline doesn't show (`[2,0,1]`, LeetCode's sample,
+which the capture records only as outputs) should count against an explanation whose cause is right.
+Decided: yes, on `no_invented_cause` only; `consistent` is judged on the cause alone. So a right
+cause with an unseen detail scores 0.5, not 0.
+**Caveat.** As with v2 (D-067), v4 was written after seeing the miss and measured on the same 20
+items, all 4 misses from one session. Three runs show it is stable, not that it generalises; T-049's
+second-generation test run is the first check on unseen explanations.

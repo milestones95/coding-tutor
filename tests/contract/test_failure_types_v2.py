@@ -95,8 +95,9 @@ def test_the_skill_lists_the_v2_types():
     assert "edge_case_missed" not in named - {"edge_case_missed"} or "merged" in section
 
 
-def test_judge_v3_defines_exactly_the_failure_types_a_failed_session_can_have():
-    text = (REPO / "prompts/judges/failure_explanation/v3.md").read_text()
+@pytest.mark.parametrize("version", ["v3", "v4"])
+def test_the_judge_defines_exactly_the_failure_types_a_failed_session_can_have(version):
+    text = (REPO / f"prompts/judges/failure_explanation/{version}.md").read_text()
     block = text[text.index("Failure types:"):text.index("Person's account:")]
-    defined = set(re.findall(r"^- ([a-z_]+):", block, re.M))
+    defined = set(re.findall(r"^- ([a-z_]+)[ :]", block, re.M))
     assert defined == FAILURE_TYPES_V2 - {"none", "unknown"}

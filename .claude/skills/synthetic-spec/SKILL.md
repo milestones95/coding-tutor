@@ -58,10 +58,13 @@ One JSON object per line. IDs run `syn-001`, `syn-002`, … across both files an
 
    For Wrong Answer, Runtime Error and Output Limit Exceeded it is the human's judgment of *why*,
    and only two answers exist:
-   - `wrong_approach`: the idea itself can't solve the problem (e.g. greedy where DP is needed);
-   - `implementation_bug`: right idea, broken code: a wrong index or variable, a typo, a crash, **or a
-     corner case it doesn't handle** (empty input, duplicates, overflow, an off-by-one at a boundary).
-     `edge_case_missed` was merged into this label (D-079).
+   - `wrong_approach` (a flawed algorithm): the idea itself is wrong. Even a perfect implementation
+     gives wrong answers (greedy where DP is needed, binary search on unsorted data). The fix is to
+     change the approach;
+   - `implementation_bug`: the idea is correct, but the code doesn't faithfully carry it out. The fix
+     is to change a line or two. It may break many inputs, or only unusual ones: an **edge case bug**
+     (empty array, a single element, all duplicates, overflow) is a kind of implementation bug.
+     `edge_case_missed` was merged into this label (D-079; definitions D-080).
 4. **Algorithms**: 1–2 labels describing **what the final code does**, not what the problem
    ideally needs. A wrong greedy attempt at a DP problem is labelled `greedy`. Use labels from:
    `hash_map` `two_pointers` `sliding_window` `binary_search` `stack` `heap` `bfs` `dfs_backtracking`
